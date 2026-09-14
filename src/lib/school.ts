@@ -1,10 +1,30 @@
 import { db } from "../prisma/db";
 import { writeAuditLog } from "./audit";
+import { getSession } from "./session";
 
+/**
+ * Resolve the school from the authenticated session's user.
+ *
+ * This must never fall back to "the first school" because that would make
+ * school context depend on database ordering and can cross tenant boundaries.
+ */
 export async function getSchool() {
+  const session = await getSession();
+
+  if (!session.userId) {
+    return null;
+  }
+
+  const users = await db.orm.public.User.all();
+  const user = users.find((item) => item.id === session.userId);
+
+  if (!user) {
+    return null;
+  }
+
   const schools = await db.orm.public.School.all();
 
-  return schools[0] ?? null;
+  return schools.find((school) => school.id === user.schoolId) ?? null;
 }
 
 export async function updateSchool(input: {
