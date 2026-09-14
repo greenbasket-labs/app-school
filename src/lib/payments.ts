@@ -169,6 +169,21 @@ export async function createPayment(
     throw new Error("School not found.");
   }
 
+  const users =
+    await db.orm.public.User.all();
+
+  const cashier = users.find(
+    (user) =>
+      user.id === input.cashierUserId &&
+      user.schoolId === input.schoolId,
+  );
+
+  if (!cashier) {
+    throw new Error(
+      "Cashier does not belong to this school.",
+    );
+  }
+
   const students =
     await db.orm.public.Student.all();
 
@@ -233,20 +248,20 @@ export async function createPayment(
     });
 
   await writeAuditLog({
-  schoolId: input.schoolId,
-  userId: input.cashierUserId,
-  action: "CREATE",
-  entity: "Payment",
-  entityId: payment.id,
-  newValue: {
-    studentId: input.studentId,
-    amount: input.amount,
-    method: input.method,
-    paymentDate: input.paymentDate,
-    reference: input.reference?.trim() || null,
-    receiptNumber,
-  },
-});
+    schoolId: input.schoolId,
+    userId: input.cashierUserId,
+    action: "CREATE",
+    entity: "Payment",
+    entityId: payment.id,
+    newValue: {
+      studentId: input.studentId,
+      amount: input.amount,
+      method: input.method,
+      paymentDate: input.paymentDate,
+      reference: input.reference?.trim() || null,
+      receiptNumber,
+    },
+  });
 
   const updatedBalance =
     await getStudentBalance(
