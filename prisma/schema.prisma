@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  LOCKED
+  DISABLED
+}
+
+enum OrganizationStatus {
+  SETUP
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum SchoolStatus {
+  SETUP
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum SetupStatus {
+  NOT_STARTED
+  ORGANIZATION_CREATED
+  SCHOOL_INFORMATION_REQUIRED
+  CAC_REQUIRED
+  IDENTITY_READY
+  COMPLETED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  SUSPENDED
+  ENDED
+}
+
+enum IdentityVerificationStatus {
+  SUPPLIED
+  VERIFIED
+  REJECTED
+  REVIEW_REQUIRED
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  email        String     @unique
+  passwordHash String
+  status       UserStatus @default(ACTIVE)
+  memberships Membership[]
+  sessions     UserSession[]
+  auditEvents  AuditEvent[] @relation("AuditActor")
+  createdAt    DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime   @updatedAt @db.Timestamptz(6)
+}
+
+model Organization {
+  id             String             @id @default(uuid()) @db.Uuid
+  name           String
+  normalizedName String
+  status         OrganizationStatus @default(SETUP)
+  identity       OrganizationIdentity?
+  schools        School[]
+  memberships    Membership[]
+  createdAt      DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime           @updatedAt @db.Timestamptz(6)
+}
+
+model OrganizationIdentity {
+  id                 String                     @id @default(uuid()) @db.Uuid
+  organizationId     String                     @unique @db.Uuid
+  cacNumber          String
+  normalizedCacNumber String                    @unique
+  verificationStatus IdentityVerificationStatus @default(SUPPLIED)
+  organization       Organization               @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdAt          DateTime                   @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime                   @updatedAt @db.Timestamptz(6)
+}
+
+model School {
+  id                   String       @id @default(uuid()) @db.Uuid
+  organizationId       String       @db.Uuid
+  name                 String
+  normalizedName       String
+  status               SchoolStatus @default(SETUP)
+  setupStatus           SetupStatus  @default(NOT_STARTED)
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  memberships          Membership[]
+  membershipCapabilities MembershipCapability[]
+  auditEvents          AuditEvent[]
+  createdAt            DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime     @updatedAt @db.Timestamptz(6)
+
+  @@index([organizationId])
+  @@index([normalizedName])
+}
+
+model Membership {
+  id             String           @id @default(uuid()) @db.Uuid
+  userId         String           @db.Uuid
+  organizationId String           @db.Uuid
+  schoolId       String           @db.Uuid
+  status         MembershipStatus @default(ACTIVE)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  school         School           @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  capabilities   MembershipCapability[]
+  createdAt      DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@unique([userId, schoolId])
+  @@index([organizationId, schoolId])
+}
+
+model Capability {
+  id          String @id @default(uuid()) @db.Uuid
+  code        String @unique
+  description String?
+  memberships MembershipCapability[]
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model MembershipCapability {
+  membershipId String @db.Uuid
+  capabilityId String @db.Uuid
+  schoolId     String @db.Uuid
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  capability   Capability @relation(fields: [capabilityId], references: [id], onDelete: Restrict)
+  school       School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@id([membershipId, capabilityId])
+  @@index([schoolId, capabilityId])
+}
+
+model UserSession {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  tokenHash    String   @unique
+  expiresAt    DateTime @db.Timestamptz(6)
+  lastActiveAt DateTime @default(now()) @db.Timestamptz(6)
+  revokedAt    DateTime? @db.Timestamptz(6)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([userId, expiresAt])
+}
+
+model AuditEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  schoolId      String?  @db.Uuid
+  actorUserId   String?  @db.Uuid
+  action        String
+  entityType    String
+  entityId      String?
+  previousState Json?
+  currentState  Json?
+  metadata      Json?
+  school        School?  @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  actor         User?    @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  occurredAt    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([schoolId, occurredAt])
+  @@index([actorUserId, occurredAt])
+  @@index([entityType, entityId])
+}
