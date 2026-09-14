@@ -49,6 +49,12 @@ enum IdentityVerificationStatus {
   REVIEW_REQUIRED
 }
 
+enum AcademicSessionStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
 model User {
   id           String     @id @default(uuid()) @db.Uuid
   email        String     @unique
@@ -85,21 +91,54 @@ model OrganizationIdentity {
 }
 
 model School {
-  id                   String       @id @default(uuid()) @db.Uuid
-  organizationId       String       @db.Uuid
-  name                 String
-  normalizedName       String
-  status               SchoolStatus @default(SETUP)
-  setupStatus           SetupStatus  @default(NOT_STARTED)
-  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  memberships          Membership[]
+  id                     String                 @id @default(uuid()) @db.Uuid
+  organizationId         String                 @db.Uuid
+  name                   String
+  normalizedName         String
+  status                 SchoolStatus           @default(SETUP)
+  setupStatus            SetupStatus            @default(NOT_STARTED)
+  organization           Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  memberships            Membership[]
   membershipCapabilities MembershipCapability[]
-  auditEvents          AuditEvent[]
-  createdAt            DateTime     @default(now()) @db.Timestamptz(6)
-  updatedAt            DateTime     @updatedAt @db.Timestamptz(6)
+  academicSessions       AcademicSession[]
+  auditEvents            AuditEvent[]
+  createdAt              DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime               @updatedAt @db.Timestamptz(6)
 
   @@index([organizationId])
   @@index([normalizedName])
+}
+
+model AcademicSession {
+  id        String                @id @default(uuid()) @db.Uuid
+  schoolId  String                @db.Uuid
+  name      String
+  startsAt  DateTime              @db.Timestamptz(6)
+  endsAt    DateTime              @db.Timestamptz(6)
+  status    AcademicSessionStatus @default(DRAFT)
+  school    School                @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  terms     AcademicTerm[]
+  createdAt DateTime              @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime              @updatedAt @db.Timestamptz(6)
+
+  @@unique([schoolId, name])
+  @@index([schoolId, startsAt])
+}
+
+model AcademicTerm {
+  id              String          @id @default(uuid()) @db.Uuid
+  academicSessionId String        @db.Uuid
+  name            String
+  order           Int
+  startsAt        DateTime        @db.Timestamptz(6)
+  endsAt          DateTime        @db.Timestamptz(6)
+  academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Restrict)
+  createdAt       DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime        @updatedAt @db.Timestamptz(6)
+
+  @@unique([academicSessionId, order])
+  @@unique([academicSessionId, name])
+  @@index([academicSessionId, startsAt])
 }
 
 model Membership {
