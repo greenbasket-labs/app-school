@@ -1,0 +1,61 @@
+import { redirect } from "next/navigation";
+import { CAPABILITIES } from "@/domain/auth/capabilities";
+import { currentSession } from "@/domain/auth/session-cookie";
+import { db } from "@/lib/db";
+
+export default async function SchoolWorkspacePage({ params }: { params: Promise<{ schoolId: string }> }) {
+  const session = await currentSession();
+  if (!session) redirect("/login");
+
+  const { schoolId } = await params;
+  const membership = await db.membership.findFirst({
+    where: { userId: session.user.id, schoolId, status: "ACTIVE" },
+    select: {
+      id: true,
+      school: { select: { id: true, name: true, status: true, setupStatus: true } },
+      capabilities: { select: { capability: { select: { code: true } } } },
+    },
+  });
+
+  if (!membership) redirect("/app");
+
+  const capabilitySet = new Set(membership.capabilities.map(({ capability }) => capability.code));
+  const canManageSchool = capabilitySet.has(CAPABILITIES.MANAGE_SCHOOL);
+
+  return (
+    <main style={{ minHeight: "100vh", padding: 32 }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+        <a href="/app" style={{ color: "#53615a" }}>← All schools</a>
+        <div style={{ marginTop: 24, background: "white", borderRadius: 20, padding: 32, boxShadow: "0 8px 28px rgba(0,0,0,.05)" }}>
+          <p style={{ margin: 0, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", fontSize: 13 }}>School workspace</p>
+          <h1 style={{ margin: "10px 0 8px", fontSize: 36 }}>{membership.school.name}</h1>
+          <p style={{ color: "#53615a", lineHeight: 1.6 }}>
+            This workspace is intentionally small at this stage. The school identity and access boundary are established before operational modules are introduced.
+          </p>
+
+          <div style={{ marginTop: 28, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+            <div style={{ border: "1px solid #e0e6e2", borderRadius: 12, padding: 16 }}>
+              <strong>School status</strong>
+              <div style={{ marginTop: 6 }}>{membership.school.status}</div>
+            </div>
+            <div style={{ border: "1px solid #e0e6e2", borderRadius: 12, padding: 16 }}>
+              <strong>Setup status</strong>
+              <div style={{ marginTop: 6 }}>{membership.school.setupStatus.replaceAll("_", " ").toLowerCase()}</div>
+            </div>
+            <div style={{ border: "1px solid #e0e6e2", borderRadius: 12, padding: 16 }}>
+              <strong>School management</strong>
+              <div style={{ marginTop: 6 }}>{canManageSchool ? "Allowed" : "Not allowed"}</div>
+            </div>
+          </div>
+
+          {canManageSchool && membership.school.setupStatus !== "COMPLETED" && (
+            <div style={{ marginTop: 24, padding: 20, borderRadius: 14, background: "#f3f7f4" }}>
+              <strong>Next: school setup</strong>
+              <p style={{ marginBottom: 0, color: "#53615a" }}>The next workflow will capture the minimum operational configuration needed to make the school usable.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
+  );
+}
