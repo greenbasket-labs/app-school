@@ -240,6 +240,20 @@ export async function saveClassAttendance(
     );
   }
 
+  const users = await db.orm.public.User.all();
+  const marker = users.find(
+    (user) =>
+      user.id === input.markedByUserId &&
+      user.schoolId === input.schoolId &&
+      user.status === "ACTIVE",
+  );
+
+  if (!marker) {
+    throw new Error(
+      "Attendance marker is not an active user in this school.",
+    );
+  }
+
   if (
     input.period !== "FIRST_PERIOD" &&
     input.period !== "SECOND_PERIOD"
