@@ -10,10 +10,20 @@ export type SessionData = {
 const SESSION_COOKIE = "school_session";
 const DEVICE_COOKIE = "school_device_id";
 
+function getSessionSecret() {
+  const secret = process.env.SESSION_SECRET;
+
+  if (process.env.NODE_ENV === "production" && !secret) {
+    throw new Error(
+      "SESSION_SECRET is required in production. Configure it before starting the application.",
+    );
+  }
+
+  return secret ?? "development-only-change-this-secret-1234567890";
+}
+
 const sessionOptions = {
-  password:
-    process.env.SESSION_SECRET ??
-    "development-only-change-this-secret-1234567890",
+  password: getSessionSecret(),
 
   cookieName: SESSION_COOKIE,
 
