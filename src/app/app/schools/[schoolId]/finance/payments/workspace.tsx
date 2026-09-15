@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function PaymentWorkspace({ schoolId }: { schoolId: string }) {
@@ -98,6 +99,7 @@ export default function PaymentWorkspace({ schoolId }: { schoolId: string }) {
               <div key={payment.id} style={{ padding: 12, border: "1px solid #e1e6e3", borderRadius: 10 }}>
                 <strong>{payment.firstName} {payment.lastName}</strong> — {payment.feeName} — {Number(payment.amount).toFixed(2)} — {new Date(payment.paidAt).toLocaleString()}
                 {payment.reference ? ` — Ref: ${payment.reference}` : ""}
+                <div style={{ marginTop: 8 }}><Link href={`/app/schools/${schoolId}/finance/receipts?paymentId=${payment.id}`} style={{ color: "#183c2a", fontWeight: 700 }}>View receipt →</Link></div>
               </div>
             ))}
           </div>
