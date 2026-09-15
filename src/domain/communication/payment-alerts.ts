@@ -16,7 +16,7 @@ export async function notifyParentsOfPayment(
     membershipId: string;
     firstName: string;
     lastName: string;
-  }>`
+  }>>`
     SELECT DISTINCT m."id" AS "membershipId", s."firstName", s."lastName"
     FROM "StudentGuardian" sg
     JOIN "Guardian" g ON g."id" = sg."guardianId" AND g."schoolId" = ${schoolId}::uuid
