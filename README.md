@@ -24,7 +24,7 @@ The product is intentionally built as a configurable school operating platform r
 1. **Identity foundation** — User → Organization → unique CAC identity → School → Membership → audit history.
 2. **Authentication** — password authentication, database-backed sessions and secure session cookie.
 3. **Capability authorization** — school-scoped capability checks rather than hardcoded role behavior.
-4. **School structure** — academic sessions, class levels, class arms, subjects and subject-to-class assignments.
+4. **School structure** — academic sessions, terms, class levels, class arms, subjects and subject-to-class assignments.
 5. **Student operations** — student records and session/class enrollment.
 6. **Attendance** — school-scoped daily attendance roster, quick marking and bulk save/correction.
 7. **School setup** — owner/manager workflow for configuring the academic foundation.
@@ -77,6 +77,7 @@ This catalog will grow as new product modules are implemented. A module can be a
 
 ### Phase 1 — School configuration
 - [x] Academic session foundation
+- [x] Academic terms configuration UI/API
 - [x] Class levels
 - [x] Class arms
 - [x] Subjects
@@ -84,7 +85,6 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [x] School setup workspace
 - [x] Owner-only module settings foundation
 - [x] Backend module enforcement for implemented modules
-- [ ] Academic terms configuration UI
 - [ ] Session lifecycle: draft → active → closed
 - [ ] Formal setup readiness calculation
 - [ ] School profile/configuration settings
