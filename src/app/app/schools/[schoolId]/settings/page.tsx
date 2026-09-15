@@ -6,6 +6,7 @@ import ModuleSettings from "./modules";
 import SessionSettings from "./sessions";
 import StaffSettings from "./staff";
 import SchoolProfileSettings from "./profile";
+import PaymentProviderSettings from "./payment-providers";
 
 export default async function SchoolSettingsPage({ params }: { params: Promise<{ schoolId: string }> }) {
   const session = await currentSession();
@@ -26,6 +27,7 @@ export default async function SchoolSettingsPage({ params }: { params: Promise<{
         <SchoolProfileSettings schoolId={schoolId} canManage={membership.isOwner} />
         <SessionSettings schoolId={schoolId} canManage={membership.isOwner} />
         <StaffSettings schoolId={schoolId} canManage={membership.isOwner} />
+        <PaymentProviderSettings schoolId={schoolId} canManage={membership.isOwner} />
         <ModuleSettings schoolId={schoolId} canManage={membership.isOwner} />
       </div>
     </main>
