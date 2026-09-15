@@ -71,6 +71,7 @@ model School {
   guardians Guardian[]
   attendanceRecords AttendanceRecord[]
   assessments AssessmentDefinition[]
+  assessmentScores AssessmentScore[]
   auditEvents AuditEvent[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
@@ -113,6 +114,7 @@ model AcademicSession {
   enrollments Enrollment[]
   attendanceRecords AttendanceRecord[]
   assessments AssessmentDefinition[]
+  assessmentScores AssessmentScore[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([schoolId, name])
@@ -155,6 +157,7 @@ model ClassArm {
   enrollments Enrollment[]
   attendanceRecords AttendanceRecord[]
   assessments AssessmentDefinition[]
+  assessmentScores AssessmentScore[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([classLevelId, name])
@@ -168,6 +171,7 @@ model Subject {
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   classSubjects ClassSubject[]
   assessments AssessmentDefinition[]
+  assessmentScores AssessmentScore[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([schoolId, name])
@@ -201,6 +205,7 @@ model AssessmentDefinition {
   academicTerm AcademicTerm @relation(fields: [academicTermId], references: [id], onDelete: Restrict)
   classArm ClassArm @relation(fields: [classArmId], references: [id], onDelete: Restrict)
   subject Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  scores AssessmentScore[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([schoolId, academicTermId, classArmId, subjectId, name])
@@ -220,6 +225,7 @@ model Student {
   enrollments Enrollment[]
   attendanceRecords AttendanceRecord[]
   studentGuardians StudentGuardian[]
+  assessmentScores AssessmentScore[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([schoolId, admissionNumber])
@@ -264,9 +270,33 @@ model Enrollment {
   academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Restrict)
   classArm ClassArm @relation(fields: [classArmId], references: [id], onDelete: Restrict)
   attendanceRecords AttendanceRecord[]
+  assessmentScores AssessmentScore[]
   @@unique([studentId, academicSessionId])
   @@index([academicSessionId, classArmId, status])
   @@index([studentId, status])
+}
+model AssessmentScore {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  academicSessionId String @db.Uuid
+  assessmentId String @db.Uuid
+  classArmId String @db.Uuid
+  subjectId String @db.Uuid
+  studentId String @db.Uuid
+  enrollmentId String @db.Uuid
+  score Decimal @db.Decimal(10, 2)
+  assessment AssessmentDefinition @relation(fields: [assessmentId], references: [id], onDelete: Restrict)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Restrict)
+  classArm ClassArm @relation(fields: [classArmId], references: [id], onDelete: Restrict)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  @@unique([assessmentId, studentId])
+  @@index([schoolId, academicSessionId, classArmId, subjectId])
+  @@index([schoolId, studentId])
 }
 model AttendanceRecord {
   id String @id @default(uuid()) @db.Uuid
@@ -320,7 +350,7 @@ model MembershipCapability {
   membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
   capability Capability @relation(fields: [capabilityId], references: [id], onDelete: Restrict)
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdAt DateTime @default(now())
   @@id([membershipId, capabilityId])
   @@index([schoolId, capabilityId])
 }
