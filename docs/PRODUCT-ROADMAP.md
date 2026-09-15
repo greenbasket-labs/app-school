@@ -119,7 +119,14 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Invoice creation is audited
   - Finance module and existing `FINANCE.MANAGE` capability enforced
   - Payment, receipts and reconciliation remain separate slices
-- [ ] Payment recording
+- [x] **Payment recording**
+  - Payment must target an existing invoice in the same school
+  - Amount must be greater than zero and cannot exceed the current outstanding amount
+  - Outstanding balance is derived from invoice amount minus trusted payment records
+  - Optional payment reference and note are preserved
+  - Payment record and audit event are written atomically
+  - Finance module and existing `FINANCE.MANAGE` capability enforced
+  - Provider integration, receipts, refunds and reconciliation remain separate slices
 - [ ] Payment provider integration
 - [ ] Receipts
 - [ ] Balances and reconciliation
