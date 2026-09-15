@@ -69,9 +69,9 @@
 
 ## Phase 6 — Reports & management
 - [x] Attendance report — date-range summary with school-scoped student totals
+- [x] Academic report — published assessment performance by session, term and optional class
+- [x] Finance report — recorded invoices, payments and outstanding obligations
 - [ ] Operational dashboards
-- [ ] Academic reports
-- [ ] Finance reports
 - [ ] Management summaries
 - [ ] Export workflows
 
@@ -94,8 +94,8 @@
 - [ ] Render production deployment
 - [ ] Tenant-safe onboarding and support operations
 
-## Next smallest slice
-Continue Phase 6 from real operational information gaps already created by the platform. Prefer one report that answers a concrete school question over a generic analytics dashboard.
+## V1 completion rule
+Finish the remaining roadmap items before expanding the product beyond V1. Work forward from the current phase; do not reopen completed phases unless verification exposes a real defect. Keep each slice small, production-oriented and tied to an actual school workflow.
 
 ## Rule
 Do not build reports merely because other school systems have them. Each report must turn trusted school records into a decision or action the school actually needs. Keep reports school-scoped, capability-controlled, module-controlled and derived from authoritative records.
