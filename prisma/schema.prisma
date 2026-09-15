@@ -143,10 +143,10 @@ model ClassLevel {
   @@index([schoolId, order])
 }
 model ClassArm {
-  id String @id @default(uuid()) @db.Uuid
-  classLevelId String @db.Uuid
+  id String @id @default(uuid()) @default(uuid()) @db.Uuid
   name String
   classLevel ClassLevel @relation(fields: [classLevelId], references: [id], onDelete: Restrict)
+  classLevelId String @db.Uuid
   subjects ClassSubject[]
   enrollments Enrollment[]
   attendanceRecords AttendanceRecord[]
@@ -182,7 +182,7 @@ model ClassSubject {
   @@index([academicSessionId, subjectId])
 }
 model Student {
-  id String @id @default(uuid()) @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
   admissionNumber String
   firstName String
@@ -263,7 +263,7 @@ model MembershipCapability {
   membershipId String @db.Uuid
   capabilityId String @db.Uuid
   schoolId String @db.Uuid
-  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  membership MembershipCapability[]
   capability Capability @relation(fields: [capabilityId], references: [id], onDelete: Restrict)
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   createdAt DateTime @default(now()) @db.Timestamptz(6)
