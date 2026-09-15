@@ -64,52 +64,65 @@ export async function initializePaystackPayment(
   const amountNaira = outstanding;
   const amountKobo = Math.round(amountNaira * 100);
 
-  const response = await fetch(`${PAYSTACK_API}/transaction/initialize`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${secretKey()}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: payerEmail,
-      amount: String(amountKobo),
-      currency: "NGN",
-      reference: transactionReference,
-      callback_url: `${baseUrl()}/api/schools/${schoolId}/finance/payments/paystack/callback`,
-      metadata: JSON.stringify({
-        paymentIntentId: intentId,
-        schoolId,
-        invoiceId,
-        studentId: row.studentId,
-        feeName: row.feeName,
-      }),
-    }),
-  });
-
-  const data = await response.json() as {
-    status?: boolean;
-    message?: string;
-    data?: { authorization_url?: string; reference?: string };
-  };
-  if (!response.ok || !data.status || !data.data?.authorization_url || !data.data.reference) {
-    throw new PaystackPaymentError(data.message ?? "Paystack transaction initialization failed.");
-  }
-
   await db.$executeRaw(Prisma.sql`
     INSERT INTO "PaymentIntent"
-      ("id", "schoolId", "invoiceId", "provider", "reference", "amount", "currency", "status", "checkoutUrl", "createdAt", "updatedAt")
+      ("id", "schoolId", "invoiceId", "provider", "reference", "amount", "currency", "status", "createdAt", "updatedAt")
     VALUES
-      (${intentId}::uuid, ${schoolId}::uuid, ${invoiceId}::uuid, ${PROVIDER}, ${data.data.reference}, ${amountNaira}, 'NGN', 'INITIALIZED', ${data.data.authorization_url}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      (${intentId}::uuid, ${schoolId}::uuid, ${invoiceId}::uuid, ${PROVIDER}, ${transactionReference}, ${amountNaira}, 'NGN', 'INITIALIZED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
   `);
 
-  return {
-    paymentIntentId: intentId,
-    provider: PROVIDER,
-    reference: data.data.reference,
-    amount: amountNaira,
-    currency: "NGN",
-    checkoutUrl: data.data.authorization_url,
-  };
+  try {
+    const response = await fetch(`${PAYSTACK_API}/transaction/initialize`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${secretKey()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: payerEmail,
+        amount: String(amountKobo),
+        currency: "NGN",
+        reference: transactionReference,
+        callback_url: `${baseUrl()}/api/schools/${schoolId}/finance/payments/paystack/callback`,
+        metadata: JSON.stringify({
+          paymentIntentId: intentId,
+          schoolId,
+          invoiceId,
+          studentId: row.studentId,
+          feeName: row.feeName,
+        }),
+      }),
+    });
+
+    const data = await response.json() as {
+      status?: boolean;
+      message?: string;
+      data?: { authorization_url?: string; reference?: string };
+    };
+    if (!response.ok || !data.status || !data.data?.authorization_url || !data.data.reference) {
+      throw new PaystackPaymentError(data.message ?? "Paystack transaction initialization failed.");
+    }
+
+    await db.$executeRaw(Prisma.sql`
+      UPDATE "PaymentIntent"
+      SET "reference" = ${data.data.reference}, "checkoutUrl" = ${data.data.authorization_url}, "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "id" = ${intentId}::uuid
+    `);
+
+    return {
+      paymentIntentId: intentId,
+      provider: PROVIDER,
+      reference: data.data.reference,
+      amount: amountNaira,
+      currency: "NGN",
+      checkoutUrl: data.data.authorization_url,
+    };
+  } catch (error) {
+    await db.$executeRaw(Prisma.sql`
+      UPDATE "PaymentIntent" SET "status" = 'FAILED', "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = ${intentId}::uuid
+    `);
+    throw error;
+  }
 }
 
 export async function handlePaystackChargeSuccess(event: {
