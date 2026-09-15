@@ -26,7 +26,7 @@ The product is intentionally built as a configurable school operating platform r
 3. **Capability authorization** — school-scoped capability checks rather than hardcoded role behavior.
 4. **School structure** — academic sessions, terms, class levels, class arms, subjects and subject-to-class assignments.
 5. **Student operations** — student records and session/class enrollment.
-6. **Attendance** — school-scoped daily attendance roster, quick marking and bulk save/correction.
+6. **Attendance** — school-scoped daily attendance roster, quick marking, bulk save and audited correction.
 7. **School setup** — owner/manager workflow for configuring the academic foundation.
 8. **Module configuration foundation** — school module catalog plus owner-only enable/disable settings with audit history.
 9. **Module enforcement** — enabled module state is checked by the backend before student, enrollment and attendance operations are allowed; capabilities still apply separately.
@@ -34,6 +34,7 @@ The product is intentionally built as a configurable school operating platform r
 11. **Staff & access foundation** — owner-managed staff accounts, school memberships and explicit capability assignment with audit history.
 12. **Setup readiness** — live checklist verifies the minimum academic foundation required before a school is considered ready.
 13. **School profile configuration** — owner-managed school name and basic contact details with audited changes.
+14. **Attendance history & correction** — historical attendance search plus capability-controlled corrections with previous/current state audit evidence.
 
 ## Module model
 
@@ -93,6 +94,15 @@ This catalog will grow as new product modules are implemented. A module can be a
 - The setup workspace displays the live checklist and missing requirements.
 - Readiness does not delete or mutate configuration records.
 
+### Attendance history & correction rules
+
+- Attendance history is filtered by school, academic session, class and date range.
+- Viewing history requires `ATTENDANCE.VIEW`; corrections require `ATTENDANCE.RECORD`.
+- A correction updates the authoritative `AttendanceRecord`; it does not create a duplicate attendance record or delete history.
+- Corrections record previous and current attendance state in `AuditEvent` with the acting user and school.
+- Bulk attendance saves also produce per-record correction audit events when an existing status or note changes.
+- Attendance module state is enforced before history or correction operations.
+
 ## Roadmap
 
 ### Phase 0 — Foundation & trust
@@ -125,7 +135,7 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [x] Student records
 - [x] Student enrollment
 - [x] Daily attendance
-- [ ] Attendance history and correction workflow
+- [x] Attendance history and correction workflow
 - [x] Staff accounts and school membership management — initial owner-managed slice
 - [x] Capability assignment UI — initial owner-managed slice
 - [ ] Parent/guardian records
@@ -244,6 +254,6 @@ Run the same request again with a different email but the same CAC. Expected res
 
 ## Important current boundary
 
-This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, setup readiness, school profile, students, enrollment, attendance, module configuration/enforcement, academic session lifecycle, and an initial staff/access management slice. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
+This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, setup readiness, school profile, students, enrollment, attendance, attendance history/correction, module configuration/enforcement, academic session lifecycle, and an initial staff/access management slice. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
 
 See `ARCHITECTURE.md` for frozen architectural decisions.
