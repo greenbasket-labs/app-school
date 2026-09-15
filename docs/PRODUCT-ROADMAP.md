@@ -133,13 +133,13 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - A school stores its provider-specific settlement/subaccount reference
   - Only the school owner can configure or update provider settlement settings
   - Provider credentials remain server-side and are not stored in browser code
-  - `PaymentIntent` snapshots the settlement account reference used for the transaction
-  - Paystack currently uses the school's configured subaccount when initializing checkout
-  - Provider-specific adapters can be added without changing the invoice/payment records
-  - Successful provider events still become the existing school-scoped `PaymentRecord`
+  - `PaymentIntent` stores the provider and transaction context for each checkout
+  - Paystack uses the school's configured subaccount when initializing checkout
+  - Flutterwave uses the school's configured subaccount when initializing checkout
+  - Provider-specific adapters map into the same invoice → PaymentIntent → PaymentRecord lifecycle
+  - Provider-confirmed payments are system-recorded without requiring a human actor ID
   - Receipts, refunds and reconciliation remain separate slices
-- [ ] **Additional provider adapters**
-  - Flutterwave checkout + webhook verification
+- [ ] **Additional provider adapter**
   - Monnify checkout + webhook verification
   - Provider-specific verification mapped into the same payment lifecycle
 - [ ] Receipts
