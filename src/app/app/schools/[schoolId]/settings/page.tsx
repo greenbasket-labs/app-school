@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { currentSession } from "@/domain/auth/session-cookie";
 import { db } from "@/lib/db";
 import ModuleSettings from "./modules";
+import SessionSettings from "./sessions";
 
 export default async function SchoolSettingsPage({ params }: { params: Promise<{ schoolId: string }> }) {
   const session = await currentSession();
@@ -19,7 +20,8 @@ export default async function SchoolSettingsPage({ params }: { params: Promise<{
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
         <Link href={`/app/schools/${schoolId}`} style={{ color: "#53615a" }}>← School workspace</Link>
         <h1 style={{ margin: "18px 0 6px", fontSize: 34 }}>{membership.school.name} settings</h1>
-        <p style={{ color: "#53615a", lineHeight: 1.6 }}>The school owner controls which modules are active. Turning a module off hides its operational surface without deleting its records.</p>
+        <p style={{ color: "#53615a", lineHeight: 1.6 }}>Settings is the control surface for school configuration and module updates.</p>
+        <SessionSettings schoolId={schoolId} canManage={membership.isOwner} />
         <ModuleSettings schoolId={schoolId} canManage={membership.isOwner} />
       </div>
     </main>
