@@ -141,7 +141,13 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Provider-specific adapters map into the same invoice → PaymentIntent → PaymentRecord lifecycle
   - Provider-confirmed payments are system-recorded without requiring a human actor ID
   - Receipts, refunds and reconciliation remain separate slices
-- [ ] Receipts
+- [x] **Receipts**
+  - A trusted `PaymentRecord` can be presented as a school-scoped receipt
+  - Receipt access requires `FINANCE.VIEW` and an enabled Finance module
+  - Receipt data is derived from the payment, invoice, student and school records
+  - Receipt shows student, fee, amount, date, reference and balance after payment
+  - Printable receipt view is provided without creating a second financial ledger
+  - Refunds and reconciliation remain separate slices
 - [ ] Balances and reconciliation
 - [ ] Finance audit trail
 
