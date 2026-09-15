@@ -46,7 +46,7 @@ export default function PaymentWorkspace({ schoolId }: { schoolId: string }) {
     setMessage("");
     setOnlineLoading(provider);
     try {
-      const path = provider === "PAYSTACK" ? "paystack" : provider === "FLUTTERWAVE" ? "flutterwave" : null;
+      const path = provider === "PAYSTACK" ? "paystack" : provider === "FLUTTERWAVE" ? "flutterwave" : provider === "MONNIFY" ? "monnify" : null;
       if (!path) { setMessage(`${provider} checkout is not implemented yet.`); return; }
       const response = await fetch(`/api/schools/${schoolId}/finance/payments/${path}/initialize`, {
         method: "POST", headers: { "Content-Type": "application/json" },
