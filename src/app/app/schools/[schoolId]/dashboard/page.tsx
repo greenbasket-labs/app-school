@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CAPABILITIES } from "@/domain/auth/capabilities";
 import { currentSession } from "@/domain/auth/session-cookie";
+import { isSchoolModuleEnabled } from "@/domain/modules/service";
 import { getOperationalSummary } from "@/domain/reports/operational-summary";
 import { db } from "@/lib/db";
 
@@ -15,7 +16,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ scho
   });
   if (!membership) redirect("/app");
   const canViewReports = membership.capabilities.some(({ capability }) => capability.code === CAPABILITIES.VIEW_ATTENDANCE);
-  if (!canViewReports) redirect(`/app/schools/${schoolId}`);
+  if (!canViewReports || !(await isSchoolModuleEnabled(schoolId, "REPORTS"))) redirect(`/app/schools/${schoolId}`);
   const summary = await getOperationalSummary(schoolId);
 
   return (
