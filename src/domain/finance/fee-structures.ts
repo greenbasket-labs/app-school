@@ -11,22 +11,6 @@ export type FeeStructureInput = {
   dueDate?: string;
 };
 
-export type FeeStructureRecord = {
-  id: string;
-  schoolId: string;
-  academicSessionId: string;
-  academicTermId: string;
-  sessionName: string;
-  termName: string;
-  name: string;
-  amount: number;
-  description: string | null;
-  dueDate: string | null;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
 export class FeeStructureValidationError extends Error {
   constructor(message: string) {
     super(message);
@@ -43,55 +27,44 @@ export class FeeStructureConflictError extends Error {
 
 async function validateContext(input: FeeStructureInput) {
   const [session, term] = await Promise.all([
-    db.academicSession.findFirst({
-      where: { id: input.academicSessionId, schoolId: input.schoolId },
-      select: { id: true },
-    }),
-    db.academicTerm.findFirst({
-      where: { id: input.academicTermId, academicSessionId: input.academicSessionId },
-      select: { id: true },
-    }),
+    db.academicSession.findFirst({ where: { id: input.academicSessionId, schoolId: input.schoolId }, select: { id: true } }),
+    db.academicTerm.findFirst({ where: { id: input.academicTermId, academicSessionId: input.academicSessionId }, select: { id: true } }),
   ]);
-
   if (!session) throw new FeeStructureValidationError("Academic session does not belong to this school.");
   if (!term) throw new FeeStructureValidationError("Academic term must belong to the selected academic session.");
 }
 
-export async function listFeeStructures(schoolId: string): Promise<FeeStructureRecord[]> {
-  const rows = await db.$queryRaw<Array<Omit<FeeStructureRecord, "amount"> & { amount: string }>>(Prisma.sql`
-    SELECT
-      f."id",
-      f."schoolId",
-      f."academicSessionId",
-      f."academicTermId",
-      s."name" AS "sessionName",
-      t."name" AS "termName",
-      f."name",
-      f."amount"::text AS "amount",
-      f."description",
-      TO_CHAR(f."dueDate", 'YYYY-MM-DD') AS "dueDate",
-      f."isActive",
-      f."createdAt",
-      f."updatedAt"
-    FROM "FeeStructure" f
-    INNER JOIN "AcademicSession" s ON s."id" = f."academicSessionId" AND s."schoolId" = f."schoolId"
-    INNER JOIN "AcademicTerm" t ON t."id" = f."academicTermId" AND t."academicSessionId" = f."academicSessionId"
-    WHERE f."schoolId" = ${schoolId}::uuid
-    ORDER BY s."startsAt" DESC, t."order" ASC, f."name" ASC
-  `);
+export async function listFeeStructures(schoolId: string) {
+  const records = await db.feeStructure.findMany({
+    where: { schoolId },
+    include: {
+      academicSession: { select: { id: true, name: true } },
+      academicTerm: { select: { id: true, name: true, order: true } },
+    },
+    orderBy: [{ academicSession: { startsAt: "desc" } }, { academicTerm: { order: "asc" } }, { name: "asc" }],
+  });
 
-  return rows.map((row) => ({ ...row, amount: Number(row.amount) }));
+  return records.map((record) => ({
+    id: record.id,
+    schoolId: record.schoolId,
+    academicSessionId: record.academicSessionId,
+    academicTermId: record.academicTermId,
+    sessionName: record.academicSession.name,
+    termName: record.academicTerm.name,
+    name: record.name,
+    amount: record.amount.toNumber(),
+    description: record.description,
+    dueDate: record.dueDate ? record.dueDate.toISOString().slice(0, 10) : null,
+    isActive: record.isActive,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+  }));
 }
 
 export async function getFeeStructureOptions(schoolId: string) {
   return db.academicSession.findMany({
     where: { schoolId },
-    select: {
-      id: true,
-      name: true,
-      status: true,
-      terms: { select: { id: true, name: true, order: true }, orderBy: { order: "asc" } },
-    },
+    select: { id: true, name: true, status: true, terms: { select: { id: true, name: true, order: true }, orderBy: { order: "asc" } } },
     orderBy: { startsAt: "desc" },
   });
 }
@@ -109,52 +82,34 @@ export async function createFeeStructure(input: FeeStructureInput, actorUserId: 
     throw new FeeStructureValidationError("Due date must use YYYY-MM-DD format.");
   }
 
-  await validateContext({ ...input, name, description: description ?? undefined });
-
-  const id = crypto.randomUUID();
+  await validateContext(input);
 
   try {
     return await db.$transaction(async (tx) => {
-      const duplicate = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
-        SELECT "id"
-        FROM "FeeStructure"
-        WHERE "schoolId" = ${input.schoolId}::uuid
-          AND "academicTermId" = ${input.academicTermId}::uuid
-          AND LOWER("name") = LOWER(${name})
-        LIMIT 1
-      `);
-      if (duplicate.length) {
-        throw new FeeStructureConflictError("A fee with this name already exists for this term.");
-      }
+      const fee = await tx.feeStructure.create({
+        data: {
+          schoolId: input.schoolId,
+          academicSessionId: input.academicSessionId,
+          academicTermId: input.academicTermId,
+          name,
+          amount: new Prisma.Decimal(input.amount),
+          description,
+          dueDate: input.dueDate ? new Date(`${input.dueDate}T00:00:00.000Z`) : null,
+          isActive: true,
+        },
+        include: {
+          academicSession: { select: { id: true, name: true } },
+          academicTerm: { select: { id: true, name: true, order: true } },
+        },
+      });
 
-      const rows = await tx.$queryRaw<Array<Omit<FeeStructureRecord, "amount"> & { amount: string }>>(Prisma.sql`
-        INSERT INTO "FeeStructure" (
-          "id", "schoolId", "academicSessionId", "academicTermId", "name", "amount", "description", "dueDate", "isActive", "createdAt", "updatedAt"
-        ) VALUES (
-          ${id}::uuid,
-          ${input.schoolId}::uuid,
-          ${input.academicSessionId}::uuid,
-          ${input.academicTermId}::uuid,
-          ${name},
-          ${input.amount},
-          ${description},
-          ${input.dueDate ? input.dueDate : null}::date,
-          true,
-          CURRENT_TIMESTAMP,
-          CURRENT_TIMESTAMP
-        )
-        RETURNING "id", "schoolId", "academicSessionId", "academicTermId", "name", "amount"::text AS "amount", "description", TO_CHAR("dueDate", 'YYYY-MM-DD') AS "dueDate", "isActive", "createdAt", "updatedAt"
-      `);
-
-      const created = rows[0];
       await tx.auditEvent.create({
         data: {
           schoolId: input.schoolId,
           actorUserId,
           action: "finance.fee_structure_created",
           entityType: "FeeStructure",
-          entityId: id,
-          previousState: null,
+          entityId: fee.id,
           currentState: {
             name,
             amount: input.amount,
@@ -165,10 +120,23 @@ export async function createFeeStructure(input: FeeStructureInput, actorUserId: 
         },
       });
 
-      return { ...created, amount: Number(created.amount) };
+      return {
+        id: fee.id,
+        schoolId: fee.schoolId,
+        academicSessionId: fee.academicSessionId,
+        academicTermId: fee.academicTermId,
+        sessionName: fee.academicSession.name,
+        termName: fee.academicTerm.name,
+        name: fee.name,
+        amount: fee.amount.toNumber(),
+        description: fee.description,
+        dueDate: fee.dueDate ? fee.dueDate.toISOString().slice(0, 10) : null,
+        isActive: fee.isActive,
+        createdAt: fee.createdAt,
+        updatedAt: fee.updatedAt,
+      };
     });
   } catch (error) {
-    if (error instanceof FeeStructureConflictError) throw error;
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       throw new FeeStructureConflictError("A fee with this name already exists for this term.");
     }
