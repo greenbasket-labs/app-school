@@ -48,7 +48,7 @@ export async function registerSchoolOwner(raw: RegisterSchoolOwnerInput) {
 
       await tx.auditEvent.create({ data: { schoolId: school.id, actorUserId: user.id, action: "school.identity.created", entityType: "School", entityId: school.id, currentState: { organizationId: organization.id, schoolId: school.id, schoolName: school.name, schoolCreatedAt: school.createdAt.toISOString(), cacIdentityBound: true, ownerMembershipId: membership.id } } });
       return { user, organization, school, membership };
-    });
+    }, { maxWait: 10000, timeout: 15000 });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       const target = Array.isArray(error.meta?.target) ? error.meta.target.join(",") : String(error.meta?.target ?? "");
