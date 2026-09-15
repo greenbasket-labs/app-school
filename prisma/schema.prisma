@@ -70,6 +70,7 @@ model School {
   students Student[]
   guardians Guardian[]
   attendanceRecords AttendanceRecord[]
+  assessments AssessmentDefinition[]
   auditEvents AuditEvent[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
@@ -111,19 +112,21 @@ model AcademicSession {
   classSubjects ClassSubject[]
   enrollments Enrollment[]
   attendanceRecords AttendanceRecord[]
+  assessments AssessmentDefinition[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([schoolId, name])
   @@index([schoolId, startsAt])
 }
 model AcademicTerm {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid())
   name String
   order Int
   startsAt DateTime @db.Timestamptz(6)
   endsAt DateTime @db.Timestamptz(6)
   academicSessionId String @db.Uuid
   academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Restrict)
+  assessments AssessmentDefinition[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([academicSessionId, order])
@@ -151,6 +154,7 @@ model ClassArm {
   subjects ClassSubject[]
   enrollments Enrollment[]
   attendanceRecords AttendanceRecord[]
+  assessments AssessmentDefinition[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([classLevelId, name])
@@ -163,6 +167,7 @@ model Subject {
   code String?
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   classSubjects ClassSubject[]
+  assessments AssessmentDefinition[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([schoolId, name])
@@ -177,10 +182,30 @@ model ClassSubject {
   academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Restrict)
   classArm ClassArm @relation(fields: [classArmId], references: [id], onDelete: Restrict)
   subject Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdAt DateTime @default(now())
   @@unique([academicSessionId, classArmId, subjectId])
   @@index([academicSessionId, classArmId])
   @@index([academicSessionId, subjectId])
+}
+model AssessmentDefinition {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  academicSessionId String @db.Uuid
+  academicTermId String @db.Uuid
+  classArmId String @db.Uuid
+  subjectId String @db.Uuid
+  name String
+  maxScore Decimal @db.Decimal(10, 2)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Restrict)
+  academicTerm AcademicTerm @relation(fields: [academicTermId], references: [id], onDelete: Restrict)
+  classArm ClassArm @relation(fields: [classArmId], references: [id], onDelete: Restrict)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  @@unique([schoolId, academicTermId, classArmId, subjectId, name])
+  @@index([schoolId, academicSessionId, academicTermId])
+  @@index([schoolId, classArmId, subjectId])
 }
 model Student {
   id String @id @default(uuid()) @db.Uuid
