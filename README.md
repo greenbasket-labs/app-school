@@ -12,6 +12,7 @@ The product is intentionally built as a configurable school operating platform r
 
 - One App-School product for every school.
 - Each school configures its own academic structure, people, workflows and enabled modules.
+- **Settings is the control surface for school configuration and module updates.**
 - Future capabilities are delivered as modules.
 - **Only the school owner can enable or disable modules.**
 - Disabling a module hides/stops its operational surface; it does not delete historical records.
@@ -28,6 +29,7 @@ The product is intentionally built as a configurable school operating platform r
 6. **Attendance** — school-scoped daily attendance roster, quick marking and bulk save/correction.
 7. **School setup** — owner/manager workflow for configuring the academic foundation.
 8. **Module configuration foundation** — school module catalog plus owner-only enable/disable settings with audit history.
+9. **Module enforcement** — enabled module state is checked by the backend before student, enrollment and attendance operations are allowed; capabilities still apply separately.
 
 ## Module model
 
@@ -57,6 +59,7 @@ This catalog will grow as new product modules are implemented. A module can be a
 - Every enable/disable action creates an audit event.
 - Disabling is reversible; records are preserved.
 - Module enablement and staff capability are separate concerns.
+- Operational APIs must enforce both module state and capability authorization.
 
 ## Roadmap
 
@@ -80,6 +83,7 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [x] Subject-to-class assignment
 - [x] School setup workspace
 - [x] Owner-only module settings foundation
+- [x] Backend module enforcement for implemented modules
 - [ ] Academic terms configuration UI
 - [ ] Session lifecycle: draft → active → closed
 - [ ] Formal setup readiness calculation
@@ -156,12 +160,14 @@ This catalog will grow as new product modules are implemented. A module can be a
 2. **Multi-tenant by construction:** every school-owned resource must be provably connected to its school before read/write access is allowed.
 3. **Organization ≠ School ≠ User:** identities remain separate even when one person owns one school.
 4. **Capability-based authorization:** permissions are explicit capabilities, not assumptions based on role names.
-5. **Owner-only module control:** module enable/disable is a school configuration action reserved for the owner.
-6. **Configuration does not delete truth:** disabling a module must preserve its historical records.
-7. **Capture once, derive many:** one real-world event should be recorded once and downstream consequences derived from it.
-8. **Do not automate garbage:** capture → validate → automate.
-9. **AI is above the record layer:** AI can explain, summarize and assist, but trusted school records remain authoritative.
-10. **Audit meaningful changes:** important state changes record actor, school, action and relevant state.
+5. **Settings as control plane:** school configuration and module changes belong in Settings rather than scattered through operational screens.
+6. **Owner-only module control:** module enable/disable is a school configuration action reserved for the owner.
+7. **Configuration does not delete truth:** disabling a module must preserve its historical records.
+8. **Capture once, derive many:** one real-world event should be recorded once and downstream consequences derived from it.
+9. **Do not automate garbage:** capture → validate → automate.
+10. **AI is above the record layer:** AI can explain, summarize and assist, but trusted school records remain authoritative.
+11. **Keep the product lean:** do not build future modules before their configuration boundary and real operational need are clear.
+12. **Audit meaningful changes:** important state changes record actor, school, action and relevant state.
 
 ## Local foundation test
 
@@ -206,6 +212,6 @@ Run the same request again with a different email but the same CAC. Expected res
 
 ## Important current boundary
 
-This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, students, enrollment, attendance, and the first module-configuration foundation. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
+This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, students, enrollment, attendance, and the first module-configuration/enforcement foundation. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
 
 See `ARCHITECTURE.md` for frozen architectural decisions.
