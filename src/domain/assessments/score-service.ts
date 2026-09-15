@@ -105,12 +105,21 @@ export async function saveAssessmentScore(input: AssessmentScoreInput) {
 export async function getAssessmentScoreRoster(schoolId: string, assessmentId: string) {
   const assessment = await db.assessmentDefinition.findFirst({
     where: { id: assessmentId, schoolId },
-    select: { id: true, academicSessionId: true, classArmId: true, maxScore: true, name: true },
+    select: {
+      id: true,
+      academicSessionId: true,
+      maxScore: true,
+      name: true,
+      academicSession: { select: { id: true, name: true } },
+      academicTerm: { select: { id: true, name: true, order: true } },
+      classArm: { select: { id: true, name: true, classLevel: { select: { name: true } } } },
+      subject: { select: { id: true, name: true, code: true } },
+    },
   });
   if (!assessment) throw new AssessmentScoreValidationError("Assessment does not belong to this school.");
 
   const students = await db.enrollment.findMany({
-    where: { academicSessionId: assessment.academicSessionId, classArmId: assessment.classArmId, status: "ACTIVE", student: { schoolId } },
+    where: { academicSessionId: assessment.academicSessionId, classArmId: assessment.classArm.id, status: "ACTIVE", student: { schoolId } },
     select: {
       id: true,
       student: {
