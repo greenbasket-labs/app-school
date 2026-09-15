@@ -33,6 +33,7 @@ The product is intentionally built as a configurable school operating platform r
 10. **Academic session lifecycle** — sessions move forward from draft → active → closed with validation and audit history.
 11. **Staff & access foundation** — owner-managed staff accounts, school memberships and explicit capability assignment with audit history.
 12. **Setup readiness** — live checklist verifies the minimum academic foundation required before a school is considered ready.
+13. **School profile configuration** — owner-managed school name and basic contact details with audited changes.
 
 ## Module model
 
@@ -63,6 +64,15 @@ This catalog will grow as new product modules are implemented. A module can be a
 - Disabling is reversible; records are preserved.
 - Module enablement and staff capability are separate concerns.
 - Operational APIs must enforce both module state and capability authorization.
+
+### School profile rules
+
+- Profile data belongs to the `School` tenant, not the platform `User` or `Organization` identity.
+- Current profile fields are school name, address, phone and email.
+- Only the active school owner can change profile data in this first slice.
+- School name changes also update the normalized school name used for tenant-safe lookup behavior.
+- Profile changes create an audit event containing the previous and current state.
+- Profile data is configuration/identity context; it does not replace the organization's CAC identity.
 
 ### Staff & access rules
 
@@ -109,7 +119,7 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [x] Backend module enforcement for implemented modules
 - [x] Session lifecycle: draft → active → closed
 - [x] Formal setup readiness calculation
-- [ ] School profile/configuration settings
+- [x] School profile/configuration settings — first slice
 
 ### Phase 2 — Core daily operations
 - [x] Student records
@@ -234,6 +244,6 @@ Run the same request again with a different email but the same CAC. Expected res
 
 ## Important current boundary
 
-This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, setup readiness, students, enrollment, attendance, module configuration/enforcement, academic session lifecycle, and an initial staff/access management slice. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
+This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, setup readiness, school profile, students, enrollment, attendance, module configuration/enforcement, academic session lifecycle, and an initial staff/access management slice. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
 
 See `ARCHITECTURE.md` for frozen architectural decisions.
