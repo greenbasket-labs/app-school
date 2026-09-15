@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { notifyParentsOfAbsence } from "@/domain/communication/student-alerts";
 import { db } from "@/lib/db";
 
 export type AttendanceInput = {
@@ -23,7 +24,11 @@ export async function recordAttendance(input: AttendanceInput) {
   });
   if (!enrollment) throw new Error("Active enrollment for this student, class and session is required.");
   try {
-    return await db.attendanceRecord.create({ data: input });
+    const record = await db.attendanceRecord.create({ data: input });
+    if (input.status === "ABSENT") {
+      await notifyParentsOfAbsence(input.schoolId, input.studentId, input.recordedByUserId, input.attendanceDate);
+    }
+    return record;
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") throw new AttendanceConflictError("Attendance has already been recorded for this student and date.");
     throw error;
