@@ -1,0 +1,1 @@
+Result submission completes the score-entry workflow and hands the result to the separate approval workflow.
