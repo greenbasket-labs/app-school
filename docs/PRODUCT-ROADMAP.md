@@ -84,64 +84,14 @@ Choose the next pain
 ### Phase 3 — Academic engine
 The academic engine is intentionally built as dependent slices, not one large feature.
 
-- [x] **Assessment definitions**
-  - School-scoped assessment definitions
-  - Bound to academic session, term, class arm and subject
-  - Maximum score stored as a decimal value
-  - Subject/class assignment validated before creation
-  - Duplicate assessment names prevented within the same term/class/subject
-  - Assessment creation audited
-  - Assessments module and capability boundaries enforced
-- [x] **Score capture**
-  - One school-scoped score per student per assessment
-  - Active enrollment roster derived from the assessment's session/class context
-  - Score constrained to `0 <= score <= maxScore`
-  - Existing score corrections update the authoritative score record
-  - Creation and correction audited with previous/current score state
-  - Assessment module and existing `ASSESSMENT.CREATE` capability enforced
-- [x] **Score validation**
-  - Complete active enrollment roster checked
-  - Missing scores identified
-  - Stored scores defensively checked against `0..maxScore`
-  - Assessment school ownership verified
-  - Validation result exposes completion counts and affected student IDs
-  - Assessment module and existing `ASSESSMENT.CREATE` capability enforced
-- [x] **Result submission**
-  - Submission requires a complete valid score set
-  - Existing `SUBMIT_RESULTS` capability and Assessments module enforced
-  - Submission is audited with the acting user and assessment context
-  - Duplicate submission is rejected
-  - Ordinary score edits are locked after submission
-  - Approval remains a separate workflow
-- [x] **Result approval**
-  - Requires an existing submitted result
-  - Existing `RESULT.APPROVE` capability and Assessments module enforced
-  - Submitter cannot approve the same result
-  - Duplicate approval is rejected
-  - Approval is audited with actor and state transition
-  - Publication remains a separate workflow
-- [x] **Result publication**
-  - Requires an existing approved result
-  - Existing `RESULT.APPROVE` capability and Assessments module enforced
-  - Duplicate publication is rejected
-  - Publication is audited with actor and state transition
-  - Publication remains separate from approval
-- [x] **Report cards**
-  - School- and student-scoped report card view
-  - Selected academic session and term must belong to the school
-  - Student must have enrollment in the selected session
-  - Only published assessments contribute to the report card
-  - Subject, assessment, score, maximum score and percentage are exposed
-  - Earned/possible totals and overall percentage are calculated from published assessments
-  - Existing `STUDENTS.VIEW` capability and Assessments module enforced
-  - Grading, ranking, comments, PDF generation and parent delivery intentionally deferred
-- [x] **Academic history**
-  - School- and student-scoped history view
-  - Only published assessment results are included
-  - Results span academic sessions and terms
-  - Session, term, subject, assessment, score, maximum score and percentage are retained in the read model
-  - Existing `STUDENTS.VIEW` capability and Assessments module enforced
-  - No separate history table or speculative grading/ranking model introduced
+- [x] Assessment definitions
+- [x] Score capture
+- [x] Score validation
+- [x] Result submission
+- [x] Result approval
+- [x] Result publication
+- [x] Report cards
+- [x] Academic history
 
 ### Phase 4 — Finance
 - [x] **Fee structures**
@@ -152,7 +102,14 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Creation audited with actor and resulting fee definition
   - Finance module and existing `FINANCE.MANAGE` capability enforced
   - Student obligations and payments intentionally deferred
-- [ ] Student fee assignments
+- [x] **Student fee assignments**
+  - Existing school fee definitions can be assigned to specific active students
+  - Student must belong to the school and have active enrollment in the fee's academic session
+  - Assignment amount is snapshotted so later fee-definition changes do not silently rewrite an existing assignment
+  - Duplicate student/fee assignments are rejected
+  - Assignment is audited with actor, student, fee, amount and academic context
+  - Finance module and existing `FINANCE.MANAGE` capability enforced
+  - Invoices, payments, receipts and balances intentionally deferred
 - [ ] Invoices / obligations
 - [ ] Payment recording
 - [ ] Payment provider integration
