@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { notifyParentsOfPublishedResult } from "@/domain/communication/result-alerts";
 
 export class ResultPublicationValidationError extends Error {
   constructor(message: string) { super(message); this.name = "ResultPublicationValidationError"; }
@@ -24,7 +25,7 @@ export async function publishAssessmentResult(schoolId: string, assessmentId: st
   });
   if (existing) throw new ResultPublicationValidationError("This assessment result has already been published.");
 
-  return db.auditEvent.create({
+  const event = await db.auditEvent.create({
     data: {
       schoolId,
       actorUserId: publishedByUserId,
@@ -35,4 +36,7 @@ export async function publishAssessmentResult(schoolId: string, assessmentId: st
       currentState: { status: "PUBLISHED", assessmentName: assessment.name },
     },
   });
+
+  await notifyParentsOfPublishedResult(schoolId, assessmentId, assessment.name, publishedByUserId);
+  return event;
 }
