@@ -1,0 +1,1 @@
+The result submission boundary preserves auditability and separates submission from approval. No publication or grading behavior is introduced here.
