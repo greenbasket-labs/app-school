@@ -1,0 +1,1 @@
+The onboarding registration flow initializes shared platform catalog rows before opening the tenant transaction. The tenant transaction then creates the user, organization, school, owner membership, capability assignments, module assignments, and audit record.
