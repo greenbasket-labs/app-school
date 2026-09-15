@@ -110,7 +110,15 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Assignment is audited with actor, student, fee, amount and academic context
   - Finance module and existing `FINANCE.MANAGE` capability enforced
   - Invoices, payments, receipts and balances intentionally deferred
-- [ ] Invoices / obligations
+- [x] **Invoices / obligations**
+  - An assignment can produce one student-specific invoice/obligation
+  - Invoice snapshots the assigned amount and fee name
+  - Fee due date is carried into the obligation when present
+  - New obligations start in `OPEN` state
+  - Duplicate invoices for the same assignment are rejected
+  - Invoice creation is audited
+  - Finance module and existing `FINANCE.MANAGE` capability enforced
+  - Payment, receipts and reconciliation remain separate slices
 - [ ] Payment recording
 - [ ] Payment provider integration
 - [ ] Receipts
