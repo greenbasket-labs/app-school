@@ -55,6 +55,9 @@ model School {
   organizationId String @db.Uuid
   name String
   normalizedName String
+  address String?
+  phone String?
+  email String?
   status SchoolStatus @default(SETUP)
   setupStatus SetupStatus @default(NOT_STARTED)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
@@ -212,7 +215,7 @@ model Enrollment {
   @@index([studentId, status])
 }
 model AttendanceRecord {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
   academicSessionId String @db.Uuid
   classArmId String @db.Uuid
@@ -254,7 +257,7 @@ model Capability {
   code String @unique
   description String?
   memberships MembershipCapability[]
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdAt DateTime @default(now())
 }
 model MembershipCapability {
   membershipId String @db.Uuid
