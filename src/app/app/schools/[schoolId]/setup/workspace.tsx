@@ -59,8 +59,8 @@ export default function SetupWorkspace({ schoolId, schoolName, setupStatus }: { 
 
   return <main style={{ minHeight: "100vh", padding: 24 }}><div style={{ maxWidth: 1050, margin: "0 auto" }}>
     <a href={`/app/schools/${schoolId}`} style={{ color: "#53615a" }}>← School workspace</a>
-    <h1 style={{ margin: "18px 0 6px", fontSize: 34 }}>Set up {schoolName}</h1>
-    <p style={{ color: "#53615a", lineHeight: 1.6 }}>Configure the school structure once. These records become the foundation for students, attendance, results and other operations.</p>
+    <h1 style={{ margin: "18px 0 6px", fontSize: 34 }}>Set up your school</h1>
+<p style={{ color: "#53615a", lineHeight: 1.6 }}>Configure your school structure once. These records become the foundation for students, attendance, results and other operations.</p>
     <div style={{ padding: 14, background: "#f3f7f4", borderRadius: 12, margin: "18px 0" }}><strong>Setup status:</strong> {setupStatus.replaceAll("_", " ").toLowerCase()}</div>
 
     {readiness && <section style={{ ...card, marginBottom: 14 }}>
