@@ -92,7 +92,6 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Duplicate assessment names prevented within the same term/class/subject
   - Assessment creation audited
   - Assessments module and capability boundaries enforced
-  - Score capture intentionally deferred
 - [x] **Score capture**
   - One school-scoped score per student per assessment
   - Active enrollment roster derived from the assessment's session/class context
@@ -100,7 +99,6 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Existing score corrections update the authoritative score record
   - Creation and correction audited with previous/current score state
   - Assessment module and existing `ASSESSMENT.CREATE` capability enforced
-  - Result validation, submission and approval intentionally deferred
 - [x] **Score validation**
   - Complete active enrollment roster checked
   - Missing scores identified
@@ -108,8 +106,13 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Assessment school ownership verified
   - Validation result exposes completion counts and affected student IDs
   - Assessment module and existing `ASSESSMENT.CREATE` capability enforced
-  - Result submission and approval intentionally deferred
-- [ ] Result submission
+- [x] **Result submission**
+  - Submission requires a complete valid score set
+  - Existing `SUBMIT_RESULTS` capability and Assessments module enforced
+  - Submission is audited with the acting user and assessment context
+  - Duplicate submission is rejected
+  - Ordinary score edits are locked after submission
+  - Approval remains a separate workflow
 - [ ] Result approval
 - [ ] Result publication
 - [ ] Report cards
