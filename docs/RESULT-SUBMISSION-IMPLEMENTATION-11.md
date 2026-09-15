@@ -1,0 +1,1 @@
+Validated results are submitted once and locked pending approval.
