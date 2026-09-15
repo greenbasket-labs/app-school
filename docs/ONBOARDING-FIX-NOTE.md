@@ -1,0 +1,1 @@
+Onboarding now initializes shared platform catalogs before the tenant transaction, so registration does not spend transaction time on global catalog upserts.
