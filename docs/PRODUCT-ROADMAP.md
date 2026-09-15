@@ -144,7 +144,14 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - No separate history table or speculative grading/ranking model introduced
 
 ### Phase 4 — Finance
-- [ ] Fee structures
+- [x] **Fee structures**
+  - School-scoped fee definitions bound to an academic session and term
+  - Name, amount, optional description and optional due date
+  - Duplicate fee names prevented within a school and term
+  - Session/term ownership and relationship validated
+  - Creation audited with actor and resulting fee definition
+  - Finance module and existing `FINANCE.MANAGE` capability enforced
+  - Student obligations and payments intentionally deferred
 - [ ] Student fee assignments
 - [ ] Invoices / obligations
 - [ ] Payment recording
@@ -224,6 +231,6 @@ If these questions cannot be answered, do not start building a large feature set
 
 ## Handoff rule
 
-A new human developer or AI agent should be able to enter the repository, read the documentation, inspect the current code, identify the next unchecked slice, understand why it exists, and continue development without needing the original conversation.
+A new human developer or AI coding agent should be able to enter the repository, read the documentation, inspect the current code, identify the next unchecked slice, understand why it exists, and continue development without needing the original conversation.
 
 The roadmap is therefore part of the product's continuity mechanism, not merely a task list.
