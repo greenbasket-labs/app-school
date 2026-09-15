@@ -2,6 +2,7 @@ import { hash } from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { CAPABILITIES } from "@/domain/auth/capabilities";
 import { MODULE_CATALOG } from "@/domain/modules/catalog";
 import {
   normalizeCacNumber,
@@ -31,6 +32,13 @@ export async function registerSchoolOwner(raw: RegisterSchoolOwnerInput) {
       const organization = await tx.organization.create({ data: { name: input.organizationName.trim(), normalizedName: normalizeOrganizationName(input.organizationName), identity: { create: { cacNumber: input.cacNumber.trim(), normalizedCacNumber } } }, select: { id: true, createdAt: true } });
       const school = await tx.school.create({ data: { organizationId: organization.id, name: input.schoolName.trim(), normalizedName: normalizeSchoolName(input.schoolName), setupStatus: "IDENTITY_READY" }, select: { id: true, name: true, createdAt: true } });
       const membership = await tx.membership.create({ data: { userId: user.id, organizationId: organization.id, schoolId: school.id, isOwner: true }, select: { id: true } });
+
+      const ownerCapabilityIds: string[] = [];
+      for (const [code, value] of Object.entries(CAPABILITIES)) {
+        const capability = await tx.capability.upsert({ where: { code: value }, update: {}, create: { code: value, description: `Allows ${code.toLowerCase().replaceAll("_", " ")} actions.` }, select: { id: true } });
+        ownerCapabilityIds.push(capability.id);
+      }
+      await tx.membershipCapability.createMany({ data: ownerCapabilityIds.map((capabilityId) => ({ membershipId: membership.id, capabilityId, schoolId: school.id })) });
 
       for (const moduleDefinition of MODULE_CATALOG) {
         const module = await tx.module.upsert({ where: { code: moduleDefinition.code }, update: { name: moduleDefinition.name, description: moduleDefinition.description, category: moduleDefinition.category, sortOrder: moduleDefinition.sortOrder }, create: moduleDefinition, select: { id: true, code: true } });
