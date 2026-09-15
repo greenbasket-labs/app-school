@@ -52,11 +52,17 @@ export async function createNotification(schoolId: string, actorUserId: string, 
     const notificationId = notification[0].id;
     await tx.$executeRaw`
       INSERT INTO "NotificationRecipient" ("notificationId", "membershipId")
-      SELECT ${notificationId}::uuid, m."id" FROM "Membership" m
+      SELECT ${notificationId}::uuid, m."id"
+      FROM "Membership" m
+      LEFT JOIN "NotificationPreference" p ON p."membershipId" = m."id"
       WHERE m."id" IN (${Prisma.join(uniqueIds.map((id) => Prisma.sql`${id}::uuid`))})
+        AND COALESCE(p."inAppEnabled", true) = true
+    `;
+    const delivered = await tx.$queryRaw<Array<{ count: bigint }>>`
+      SELECT COUNT(*) AS count FROM "NotificationRecipient" WHERE "notificationId" = ${notificationId}::uuid
     `;
     await tx.auditEvent.create({
-      data: { schoolId, actorUserId, action: "communication.notification_created", entityType: "Notification", entityId: notificationId, currentState: { title: cleanTitle, recipientCount: recipients.length } },
+      data: { schoolId, actorUserId, action: "communication.notification_created", entityType: "Notification", entityId: notificationId, currentState: { title: cleanTitle, selectedRecipientCount: recipients.length, inAppRecipientCount: Number(delivered[0]?.count ?? 0) } },
     });
     return notificationId;
   });
