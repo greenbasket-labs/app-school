@@ -10,9 +10,9 @@ export class ResultSubmissionValidationError extends Error {
 
 export async function submitAssessmentResult(schoolId: string, assessmentId: string, submittedByUserId: string) {
   const validation = await validateAssessmentScores(schoolId, assessmentId);
-  if (!validation.isComplete) {
+  if (!validation.valid) {
     throw new ResultSubmissionValidationError(
-      `Assessment cannot be submitted until all ${validation.totalStudents} active students have valid scores.`,
+      `Assessment cannot be submitted: ${validation.missingCount} missing and ${validation.invalidCount} invalid scores remain across ${validation.rosterCount} active students.`,
     );
   }
 
