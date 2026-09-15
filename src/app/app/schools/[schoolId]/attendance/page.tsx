@@ -31,10 +31,13 @@ export default async function AttendancePage({ params }: { params: Promise<{ sch
     <main style={{ minHeight: "100vh", padding: 24 }}>
       <div style={{ maxWidth: 1000, margin: "0 auto" }}>
         <Link href={`/app/schools/${schoolId}`} style={{ color: "#53615a" }}>← School workspace</Link>
-        <div style={{ marginTop: 20 }}>
-          <p style={{ margin: 0, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", fontSize: 13 }}>Daily attendance</p>
-          <h1 style={{ margin: "8px 0 6px", fontSize: 34 }}>{membership.school.name}</h1>
-          <p style={{ margin: 0, color: "#53615a" }}>Load one class, mark the whole roster, and save once.</p>
+        <div style={{ marginTop: 20, display: "flex", justifyContent: "space-between", gap: 16, alignItems: "end", flexWrap: "wrap" }}>
+          <div>
+            <p style={{ margin: 0, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", fontSize: 13 }}>Daily attendance</p>
+            <h1 style={{ margin: "8px 0 6px", fontSize: 34 }}>{membership.school.name}</h1>
+            <p style={{ margin: 0, color: "#53615a" }}>Load one class, mark the whole roster, and save once.</p>
+          </div>
+          <Link href={`/app/schools/${schoolId}/attendance/history`} style={{ borderRadius: 10, background: "white", padding: "10px 14px", color: "#173d2c", fontWeight: 800, textDecoration: "none", boxShadow: "0 4px 16px rgba(0,0,0,.05)" }}>Attendance history →</Link>
         </div>
         {activeSession ? (
           <AttendanceRoster schoolId={schoolId} canRecord={capabilities.has(CAPABILITIES.RECORD_ATTENDANCE)} initialSessionId={activeSession.id} sessions={sessions.map((item) => ({ id: item.id, name: item.name, status: item.status, classArms: item.classArms }))} />
