@@ -4,13 +4,18 @@ import { db } from "@/lib/db";
 
 export class PaymentValidationError extends Error {}
 
+function makeReceiptNumber() {
+  const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+  return `GBG-${date}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+}
+
 export async function listPayments(schoolId: string) {
   return db.$queryRaw<Array<{
-    id: string; invoiceId: string; studentId: string; amount: string;
+    id: string; receiptNumber: string | null; invoiceId: string; studentId: string; amount: string;
     paidAt: string; reference: string | null; note: string | null;
     admissionNumber: string; firstName: string; lastName: string; feeName: string;
   }>>(Prisma.sql`
-    SELECT p."id", p."invoiceId", p."studentId", p."amount"::text AS "amount",
+    SELECT p."id", p."receiptNumber", p."invoiceId", p."studentId", p."amount"::text AS "amount",
            p."paidAt"::text AS "paidAt", p."reference", p."note",
            st."admissionNumber", st."firstName", st."lastName", i."feeName"
     FROM "PaymentRecord" p
@@ -47,6 +52,7 @@ export async function recordPayment(
   if (!Number.isFinite(amount) || amount <= 0) throw new PaymentValidationError("Payment amount must be greater than zero.");
 
   const id = crypto.randomUUID();
+  const receiptNumber = makeReceiptNumber();
   const result = await db.$transaction(async (tx) => {
     const invoices = await tx.$queryRaw<Array<{ studentId: string; invoiceAmount: string; status: string; feeName: string }>>(Prisma.sql`
       SELECT "studentId", "amount"::text AS "invoiceAmount", "status", "feeName"
@@ -70,19 +76,19 @@ export async function recordPayment(
     if (amount > outstanding) throw new PaymentValidationError(`Payment exceeds the outstanding balance of ${outstanding.toFixed(2)}.`);
 
     await tx.$executeRaw(Prisma.sql`
-      INSERT INTO "PaymentRecord" ("id", "schoolId", "studentId", "invoiceId", "amount", "paidAt", "reference", "note", "recordedByUserId", "createdAt", "updatedAt")
-      VALUES (${id}::uuid, ${schoolId}::uuid, ${invoice.studentId}::uuid, ${invoiceId}::uuid, ${amount}, CURRENT_TIMESTAMP, ${reference ?? null}, ${note ?? null}, ${actorUserId}::uuid, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO "PaymentRecord" ("id", "schoolId", "studentId", "invoiceId", "amount", "paidAt", "reference", "note", "recordedByUserId", "receiptNumber", "createdAt", "updatedAt")
+      VALUES (${id}::uuid, ${schoolId}::uuid, ${invoice.studentId}::uuid, ${invoiceId}::uuid, ${amount}, CURRENT_TIMESTAMP, ${reference ?? null}, ${note ?? null}, ${actorUserId}::uuid, ${receiptNumber}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `);
 
     await tx.auditEvent.create({
       data: {
         schoolId, actorUserId, action: "finance.payment_recorded", entityType: "PaymentRecord", entityId: id,
-        currentState: { invoiceId, studentId: invoice.studentId, amount, reference: reference ?? null, feeName: invoice.feeName },
+        currentState: { invoiceId, studentId: invoice.studentId, amount, reference: reference ?? null, feeName: invoice.feeName, receiptNumber },
       },
     });
 
     const newPaid = alreadyPaid + amount;
-    return { id, invoiceId, studentId: invoice.studentId, amount, paidAmount: newPaid, outstanding: invoiceAmount - newPaid, feeName: invoice.feeName };
+    return { id, receiptNumber, invoiceId, studentId: invoice.studentId, amount, paidAmount: newPaid, outstanding: invoiceAmount - newPaid, feeName: invoice.feeName };
   });
 
   try {
