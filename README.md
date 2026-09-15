@@ -30,6 +30,7 @@ The product is intentionally built as a configurable school operating platform r
 7. **School setup** — owner/manager workflow for configuring the academic foundation.
 8. **Module configuration foundation** — school module catalog plus owner-only enable/disable settings with audit history.
 9. **Module enforcement** — enabled module state is checked by the backend before student, enrollment and attendance operations are allowed; capabilities still apply separately.
+10. **Academic session lifecycle** — sessions move forward from draft → active → closed with validation and audit history.
 
 ## Module model
 
@@ -85,7 +86,7 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [x] School setup workspace
 - [x] Owner-only module settings foundation
 - [x] Backend module enforcement for implemented modules
-- [ ] Session lifecycle: draft → active → closed
+- [x] Session lifecycle: draft → active → closed
 - [ ] Formal setup readiness calculation
 - [ ] School profile/configuration settings
 
@@ -212,6 +213,6 @@ Run the same request again with a different email but the same CAC. Expected res
 
 ## Important current boundary
 
-This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, students, enrollment, attendance, and the first module-configuration/enforcement foundation. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
+This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, students, enrollment, attendance, module configuration/enforcement, and academic session lifecycle. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
 
 See `ARCHITECTURE.md` for frozen architectural decisions.
