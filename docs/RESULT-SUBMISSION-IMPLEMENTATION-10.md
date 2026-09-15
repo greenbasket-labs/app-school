@@ -1,0 +1,1 @@
+Assessment result submission is complete. The next academic boundary is result approval.
