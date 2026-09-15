@@ -120,7 +120,12 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Duplicate approval is rejected
   - Approval is audited with actor and state transition
   - Publication remains a separate workflow
-- [ ] Result publication
+- [x] **Result publication**
+  - Requires an existing approved result
+  - Existing `RESULT.APPROVE` capability and Assessments module enforced
+  - Duplicate publication is rejected
+  - Publication is audited with actor and state transition
+  - Publication remains separate from approval
 - [ ] Report cards
 - [ ] Academic history
 
