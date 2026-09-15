@@ -1,0 +1,132 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+
+type Assessment = {
+  id: string;
+  name: string;
+  maxScore: number;
+  academicSession: { id: string; name: string };
+  academicTerm: { id: string; name: string; order: number };
+  classArm: { id: string; name: string; classLevel: { name: string } };
+  subject: { id: string; name: string; code: string | null };
+};
+
+type RosterStudent = {
+  studentId: string;
+  admissionNumber: string;
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
+  score: number | null;
+};
+
+type RosterResponse = {
+  assessment: { id: string; name: string; maxScore: number };
+  students: RosterStudent[];
+};
+
+export default function ScoreCaptureWorkspace({ schoolId, assessments, initialAssessmentId }: { schoolId: string; assessments: Assessment[]; initialAssessmentId: string }) {
+  const [assessmentId, setAssessmentId] = useState(initialAssessmentId);
+  const [students, setStudents] = useState<RosterStudent[]>([]);
+  const [maxScore, setMaxScore] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [savingStudentId, setSavingStudentId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+
+  const selectedAssessment = useMemo(() => assessments.find((assessment) => assessment.id === assessmentId), [assessments, assessmentId]);
+
+  useEffect(() => {
+    if (!assessmentId) return;
+    let cancelled = false;
+    setLoading(true);
+    setMessage("");
+    fetch(`/api/schools/${schoolId}/assessments/scores?assessmentId=${encodeURIComponent(assessmentId)}`)
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message ?? "Could not load the class roster.");
+        return data as RosterResponse;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setStudents(data.students);
+        setMaxScore(data.assessment.maxScore);
+        setDrafts(Object.fromEntries(data.students.map((student) => [student.studentId, student.score == null ? "" : String(student.score)])));
+      })
+      .catch((error) => {
+        if (!cancelled) setMessage(error instanceof Error ? error.message : "Could not load the class roster.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [assessmentId, schoolId]);
+
+  async function saveScore(studentId: string) {
+    setSavingStudentId(studentId);
+    setMessage("");
+    const raw = drafts[studentId]?.trim() ?? "";
+    if (!raw) {
+      setMessage("Enter a score before saving.");
+      setSavingStudentId(null);
+      return;
+    }
+    const score = Number(raw);
+    if (!Number.isFinite(score) || score < 0 || score > maxScore) {
+      setMessage(`Score must be between 0 and ${maxScore}.`);
+      setSavingStudentId(null);
+      return;
+    }
+    try {
+      const response = await fetch(`/api/schools/${schoolId}/assessments/scores`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assessmentId, studentId, score }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message ?? "Could not save score.");
+      setStudents((current) => current.map((student) => student.studentId === studentId ? { ...student, score: data.score.score } : student));
+      setMessage("Score saved and audited.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not save score.");
+    } finally {
+      setSavingStudentId(null);
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 24, display: "grid", gap: 20 }}>
+      <section style={{ border: "1px solid #dce3df", borderRadius: 16, padding: 20 }}>
+        <h2 style={{ margin: 0, fontSize: 20 }}>Capture scores</h2>
+        <p style={{ color: "#53615a", marginTop: 6 }}>Scores are recorded against active students in the assessment&apos;s class and academic session.</p>
+        <label>Assessment<select value={assessmentId} onChange={(event) => setAssessmentId(event.target.value)} style={inputStyle}>
+          <option value="">Select assessment</option>
+          {assessments.map((assessment) => <option key={assessment.id} value={assessment.id}>{assessment.name} · {assessment.classArm.classLevel.name} {assessment.classArm.name} · {assessment.subject.name} · Max {assessment.maxScore}</option>)}
+        </select></label>
+        {selectedAssessment ? <p style={{ color: "#53615a", fontSize: 13 }}>{selectedAssessment.academicSession.name} · {selectedAssessment.academicTerm.name} · Maximum {maxScore}</p> : null}
+      </section>
+
+      <section style={{ border: "1px solid #dce3df", borderRadius: 16, padding: 20 }}>
+        {loading ? <p>Loading class roster…</p> : students.length === 0 ? <p style={{ color: "#53615a" }}>No active enrolled students found for this assessment.</p> : (
+          <div style={{ display: "grid", gap: 10 }}>
+            {students.map((student, index) => (
+              <div key={student.studentId} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 120px auto", gap: 10, alignItems: "end", borderBottom: index === students.length - 1 ? 0 : "1px solid #edf0ee", paddingBottom: index === students.length - 1 ? 0 : 10 }}>
+                <div>
+                  <strong>{student.lastName} {student.firstName} {student.middleName ?? ""}</strong>
+                  <div style={{ color: "#53615a", fontSize: 12 }}>{student.admissionNumber}</div>
+                </div>
+                <input value={drafts[student.studentId] ?? ""} onChange={(event) => setDrafts((current) => ({ ...current, [student.studentId]: event.target.value }))} inputMode="decimal" type="number" min="0" max={maxScore} step="0.01" placeholder={`0–${maxScore}`} style={inputStyle} aria-label={`Score for ${student.firstName} ${student.lastName}`} />
+                <button onClick={() => saveScore(student.studentId)} disabled={savingStudentId === student.studentId} style={buttonStyle}>{savingStudentId === student.studentId ? "Saving…" : "Save"}</button>
+              </div>
+            ))}
+          </div>
+        )}
+        {message ? <p style={{ marginBottom: 0, color: message.includes("saved") ? "#23633d" : "#8a3d2f" }}>{message}</p> : null}
+      </section>
+    </div>
+  );
+}
+
+const inputStyle: React.CSSProperties = { display: "block", width: "100%", marginTop: 6, padding: "10px 12px", border: "1px solid #ccd5d0", borderRadius: 10, background: "white", boxSizing: "border-box" };
+const buttonStyle: React.CSSProperties = { padding: "10px 14px", border: 0, borderRadius: 10, background: "#183c2a", color: "white", fontWeight: 700, cursor: "pointer" };
