@@ -68,6 +68,7 @@ model School {
   classLevels ClassLevel[]
   subjects Subject[]
   students Student[]
+  guardians Guardian[]
   attendanceRecords AttendanceRecord[]
   auditEvents AuditEvent[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
@@ -193,10 +194,38 @@ model Student {
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   enrollments Enrollment[]
   attendanceRecords AttendanceRecord[]
+  studentGuardians StudentGuardian[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([schoolId, admissionNumber])
   @@index([schoolId, lastName, firstName])
+}
+model Guardian {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  fullName String
+  phone String?
+  email String?
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  studentGuardians StudentGuardian[]
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  @@index([schoolId, fullName])
+  @@index([schoolId, phone])
+}
+model StudentGuardian {
+  studentId String @db.Uuid
+  guardianId String @db.Uuid
+  schoolId String @db.Uuid
+  relationship String?
+  isPrimary Boolean @default(false)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  guardian Guardian @relation(fields: [guardianId], references: [id], onDelete: Restrict)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  @@id([studentId, guardianId])
+  @@index([schoolId, guardianId])
+  @@index([schoolId, studentId])
 }
 model Enrollment {
   id String @id @default(uuid()) @db.Uuid
@@ -204,7 +233,7 @@ model Enrollment {
   academicSessionId String @db.Uuid
   classArmId String @db.Uuid
   status EnrollmentStatus @default(ACTIVE)
-  enrolledAt DateTime @default(now()) @db.Timestamptz(6)
+  enrolledAt DateTime @default(now())
   endedAt DateTime? @db.Timestamptz(6)
   student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
   academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Restrict)
