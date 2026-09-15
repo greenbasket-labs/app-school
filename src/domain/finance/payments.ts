@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { notifyParentsOfPayment } from "@/domain/communication/payment-alerts";
 import { db } from "@/lib/db";
 
 export class PaymentValidationError extends Error {}
@@ -46,7 +47,7 @@ export async function recordPayment(
   if (!Number.isFinite(amount) || amount <= 0) throw new PaymentValidationError("Payment amount must be greater than zero.");
 
   const id = crypto.randomUUID();
-  return db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx) => {
     const invoices = await tx.$queryRaw<Array<{ studentId: string; invoiceAmount: string; status: string; feeName: string }>>(Prisma.sql`
       SELECT "studentId", "amount"::text AS "invoiceAmount", "status", "feeName"
       FROM "StudentFeeInvoice"
@@ -81,6 +82,14 @@ export async function recordPayment(
     });
 
     const newPaid = alreadyPaid + amount;
-    return { id, invoiceId, studentId: invoice.studentId, amount, paidAmount: newPaid, outstanding: invoiceAmount - newPaid };
+    return { id, invoiceId, studentId: invoice.studentId, amount, paidAmount: newPaid, outstanding: invoiceAmount - newPaid, feeName: invoice.feeName };
   });
+
+  try {
+    await notifyParentsOfPayment(schoolId, result.studentId, actorUserId, result.amount, result.feeName, reference);
+  } catch {
+    // Payment is durable even if the optional notification path is unavailable.
+  }
+
+  return result;
 }
