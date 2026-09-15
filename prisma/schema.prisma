@@ -7,16 +7,72 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserStatus { ACTIVE LOCKED DISABLED }
-enum OrganizationStatus { SETUP ACTIVE SUSPENDED CLOSED }
-enum SchoolStatus { SETUP ACTIVE SUSPENDED CLOSED }
-enum SetupStatus { NOT_STARTED ORGANIZATION_CREATED SCHOOL_INFORMATION_REQUIRED CAC_REQUIRED IDENTITY_READY COMPLETED }
-enum MembershipStatus { ACTIVE SUSPENDED ENDED }
-enum IdentityVerificationStatus { SUPPLIED VERIFIED REJECTED REVIEW_REQUIRED }
-enum AcademicSessionStatus { DRAFT ACTIVE CLOSED }
-enum StudentStatus { ACTIVE INACTIVE WITHDRAWN }
-enum EnrollmentStatus { ACTIVE COMPLETED WITHDRAWN }
-enum AttendanceStatus { PRESENT ABSENT LATE EXCUSED }
+enum UserStatus {
+  ACTIVE
+  LOCKED
+  DISABLED
+}
+
+enum OrganizationStatus {
+  SETUP
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum SchoolStatus {
+  SETUP
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum SetupStatus {
+  NOT_STARTED
+  ORGANIZATION_CREATED
+  SCHOOL_INFORMATION_REQUIRED
+  CAC_REQUIRED
+  IDENTITY_READY
+  COMPLETED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  SUSPENDED
+  ENDED
+}
+
+enum IdentityVerificationStatus {
+  SUPPLIED
+  VERIFIED
+  REJECTED
+  REVIEW_REQUIRED
+}
+
+enum AcademicSessionStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  WITHDRAWN
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  WITHDRAWN
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
 
 model User {
   id String @id @default(uuid()) @db.Uuid
@@ -216,8 +272,7 @@ model AssessmentDefinition {
   @@index([schoolId, classArmId, subjectId])
 }
 model Student {
-  id String @id @default(uuid()) @db.Uuid
-  schoolId String @db.Uuid
+  id String @id @default(uuid()) @default(uuid()) @db.Uuid
   admissionNumber String
   firstName String
   middleName String?
