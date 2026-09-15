@@ -272,7 +272,8 @@ model AssessmentDefinition {
   @@index([schoolId, classArmId, subjectId])
 }
 model Student {
-  id String @id @default(uuid()) @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
   admissionNumber String
   firstName String
   middleName String?
@@ -311,7 +312,7 @@ model StudentGuardian {
   student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
   guardian Guardian @relation(fields: [guardianId], references: [id], onDelete: Restrict)
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @default(now())
   @@id([studentId, guardianId])
   @@index([schoolId, guardianId])
   @@index([schoolId, studentId])
