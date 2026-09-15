@@ -9,7 +9,7 @@ This roadmap is the execution guide for future human developers and AI coding ag
 
 App-School is **problem-first, not feature-first**.
 
-The benchmark is not how many modules we can list. The benchmark is how much real pain we remove for Nigerian schools, while keeping the platform affordable and simple.
+The benchmark is not how many modules we can list. The benchmark is how much real pain we remove from Nigerian schools, while keeping the platform affordable and simple.
 
 The economic insight behind the product is important: many schools cannot afford to independently assemble a developer, domain, hosting, database, backups, security, maintenance and software. Green Basket therefore provides shared technology through one reusable platform rather than rebuilding technology for every school.
 
@@ -113,7 +113,13 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Duplicate submission is rejected
   - Ordinary score edits are locked after submission
   - Approval remains a separate workflow
-- [ ] Result approval
+- [x] **Result approval**
+  - Requires an existing submitted result
+  - Existing `RESULT.APPROVE` capability and Assessments module enforced
+  - Submitter cannot approve the same result
+  - Duplicate approval is rejected
+  - Approval is audited with actor and state transition
+  - Publication remains a separate workflow
 - [ ] Result publication
 - [ ] Report cards
 - [ ] Academic history
