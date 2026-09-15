@@ -31,35 +31,54 @@ export async function createAcademicSession(input: CreateAcademicSessionInput) {
       include: { terms: { orderBy: { order: "asc" } } },
     });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      throw new AcademicSessionConflictError("An academic session with this name already exists for this school.");
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      throw new AcademicSessionConflictError(
+        "An academic session with this name already exists for this school.",
+      );
     }
+
     throw error;
   }
 }
 
 export async function getAcademicSessions(schoolId: string) {
-  return db.academicSession.findMany({
-    where: { schoolId },
-    export async function getAcademicSessions(schoolId: string) {
-  return db.academicSession.findMany({
+  const sessions = await db.academicSession.findMany({
     where: { schoolId },
     include: {
       terms: { orderBy: { order: "asc" } },
-      classArms: {
+      classSubjects: {
         include: {
-          classLevel: true,
-        },
-        orderBy: {
-          classLevel: {
-            order: "asc",
+          classArm: {
+            include: {
+              classLevel: true,
+            },
           },
         },
       },
     },
     orderBy: { startsAt: "desc" },
   });
-}
-    orderBy: { startsAt: "desc" },
+
+  return sessions.map((session) => {
+    const classArms = Array.from(
+      new Map(
+        session.classSubjects.map((item) => [
+          item.classArm.id,
+          item.classArm,
+        ]),
+      ).values(),
+    ).sort(
+      (a, b) =>
+        a.classLevel.order - b.classLevel.order ||
+        a.name.localeCompare(b.name),
+    );
+
+    return {
+      ...session,
+      classArms,
+    };
   });
 }
