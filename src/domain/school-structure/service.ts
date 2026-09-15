@@ -55,7 +55,18 @@ export async function assignSubjectToClass(input: { schoolId: string; academicSe
   ]);
   if (!session || !arm || !subject) throw new Error("Class, subject, and academic session must belong to this school.");
   try {
-    return await db.classSubject.create({ data: input, include: { classArm: { include: { classLevel: true } }, subject: true, academicSession: true } });
+    return await db.classSubject.create({
+  data: {
+    academicSessionId: input.academicSessionId,
+    classArmId: input.classArmId,
+    subjectId: input.subjectId,
+  },
+  include: {
+    classArm: { include: { classLevel: true } },
+    subject: true,
+    academicSession: true,
+  },
+});
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") throw new SchoolStructureConflictError("This subject is already assigned to this class for the academic session.");
     throw error;
