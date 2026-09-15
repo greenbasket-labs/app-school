@@ -84,7 +84,15 @@ Choose the next pain
 ### Phase 3 — Academic engine
 The academic engine is intentionally built as dependent slices, not one large feature.
 
-- [ ] **Assessment definitions — NEXT**
+- [x] **Assessment definitions**
+  - School-scoped assessment definitions
+  - Bound to academic session, term, class arm and subject
+  - Maximum score stored as a decimal value
+  - Subject/class assignment validated before creation
+  - Duplicate assessment names prevented within the same term/class/subject
+  - Assessment creation audited
+  - Assessments module and capability boundaries enforced
+  - Score capture intentionally deferred
 - [ ] Score capture
 - [ ] Score validation
 - [ ] Result submission
