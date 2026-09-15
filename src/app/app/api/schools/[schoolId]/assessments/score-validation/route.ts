@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { z, ZodError } from "zod";
+import { z } from "zod";
 import { AuthorizationError, requireCapability } from "@/domain/auth/authorize";
 import { CAPABILITIES } from "@/domain/auth/capabilities";
 import { currentSession } from "@/domain/auth/session-cookie";
@@ -40,9 +40,6 @@ export async function GET(
     const validation = await validateAssessmentScores(schoolId, parsed.data);
     return NextResponse.json({ ok: true, validation });
   } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json({ ok: false, error: "INVALID_REQUEST" }, { status: 400 });
-    }
     if (error instanceof AuthorizationError || error instanceof ModuleDisabledError) {
       return NextResponse.json(
         { ok: false, error: "FORBIDDEN", message: error.message },
