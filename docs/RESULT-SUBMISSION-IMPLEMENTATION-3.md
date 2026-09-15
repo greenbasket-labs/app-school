@@ -1,0 +1,1 @@
+Submission is not approval. It confirms a complete validated assessment has entered the approval workflow and prevents ordinary score edits.
