@@ -125,6 +125,7 @@ model School {
   subjects Subject[]
   students Student[]
   guardians Guardian[]
+  studentGuardians StudentGuardian[]
   attendanceRecords AttendanceRecord[]
   assessments AssessmentDefinition[]
   assessmentScores AssessmentScore[]
