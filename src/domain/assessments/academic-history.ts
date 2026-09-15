@@ -21,8 +21,8 @@ export async function getAcademicHistory(schoolId: string, studentId: string) {
       action: "assessment.result_published",
       entityId: { not: null },
     },
-    orderBy: { createdAt: "asc" },
-    select: { entityId: true, createdAt: true },
+    orderBy: { occurredAt: "asc" },
+    select: { entityId: true, occurredAt: true },
   });
 
   const assessmentIds = publishedEvents.flatMap((event) => event.entityId ? [event.entityId] : []);
