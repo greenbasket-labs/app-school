@@ -1,0 +1,1 @@
+Registration uses a short tenant-scoped transaction after shared catalogs are ensured.
