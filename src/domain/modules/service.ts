@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { MODULE_CATALOG, ModuleCode } from "./catalog";
 
