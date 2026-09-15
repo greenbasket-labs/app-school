@@ -1,23 +1,22 @@
 # Assessment Result Submission
 
-## Problem
+A result can move forward only after score validation succeeds.
 
-A result should not move forward merely because somebody clicked a button. The system must first establish that the assessment has a complete, valid score set, then record that the result was submitted.
+## Delivered
 
-## Slice delivered
+- Validates the active enrollment roster before submission.
+- Blocks missing or invalid scores.
+- Requires the existing `SUBMIT_RESULTS` capability and the Assessments module.
+- Records the submission in school audit history with the acting user and assessment context.
+- Rejects a second submission.
+- Locks ordinary score edits after submission.
 
-- Submission validates the assessment's active enrollment roster before accepting the result.
-- Missing scores block submission.
-- Stored scores outside the assessment maximum block submission.
-- Submission is school-scoped and requires the existing `SUBMIT_RESULTS` capability plus the Assessments module.
-- Submission creates an audit event recording the actor, assessment and submitted state.
-- Once submitted, score capture is locked so ordinary score edits cannot silently change the submitted result.
-- A second submission attempt is rejected.
+## Boundary
 
-## State boundary
+Submission is not approval. A submitted result remains pending the separate approval workflow.
 
-The current slice represents the submitted state through the authoritative audit event. Approval remains a separate workflow and is intentionally not implied by submission.
+The current slice uses the existing audit history as the submitted-state marker. A dedicated workflow-state field can be introduced later if approval/reopen requirements justify it.
 
-## Intentionally deferred
+## Deferred
 
-This slice does not implement result approval, publication, grading rules, ranking, report cards, or reopening/correction after submission. Those require explicit workflow decisions rather than accidental permissions.
+Approval, publication, grading, ranking, report cards and reopening/correction after submission are intentionally separate slices.
