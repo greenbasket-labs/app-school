@@ -32,7 +32,7 @@ FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE RESTRICT ON UPDAT
 
 ALTER TABLE "PaymentRecord"
 ADD CONSTRAINT "PaymentRecord_invoiceId_fkey"
-FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+FOREIGN KEY ("invoiceId") REFERENCES "StudentFeeInvoice"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE "PaymentRecord"
 ADD CONSTRAINT "PaymentRecord_recordedByUserId_fkey"
