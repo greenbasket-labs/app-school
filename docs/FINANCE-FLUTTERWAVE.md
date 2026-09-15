@@ -24,7 +24,7 @@ Invoice/reference/amount/currency validation
 PaymentRecord
 ```
 
-Flutterwave's current Standard API accepts `subaccounts` for split settlement and its webhook documentation recommends signature validation plus server-side transaction verification before giving value. citeturn0search2turn0search0turn1search1
+Flutterwave's current Standard API accepts `subaccounts` for split settlement and its webhook documentation recommends signature validation plus server-side transaction verification before giving value.
 
 ## Server configuration
 
@@ -34,17 +34,9 @@ FLW_SECRET_HASH=...
 APP_BASE_URL=https://your-app-domain.example
 ```
 
-The webhook endpoint is:
+The webhook endpoint is `POST /api/payments/flutterwave/webhook`.
 
-```text
-POST /api/payments/flutterwave/webhook
-```
-
-The browser callback is navigation only:
-
-```text
-GET /api/schools/[schoolId]/finance/payments/flutterwave/callback
-```
+The browser callback is navigation only: `GET /api/schools/[schoolId]/finance/payments/flutterwave/callback`.
 
 ## Important rules
 
