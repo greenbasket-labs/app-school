@@ -35,6 +35,7 @@ The product is intentionally built as a configurable school operating platform r
 12. **Setup readiness** — live checklist verifies the minimum academic foundation required before a school is considered ready.
 13. **School profile configuration** — owner-managed school name and basic contact details with audited changes.
 14. **Attendance history & correction** — historical attendance search plus capability-controlled corrections with previous/current state audit evidence.
+15. **Parent/guardian records** — school-scoped guardian records plus many-to-many student relationships, with relationship metadata and audited link/unlink actions.
 
 ## Module model
 
@@ -103,6 +104,17 @@ This catalog will grow as new product modules are implemented. A module can be a
 - Bulk attendance saves also produce per-record correction audit events when an existing status or note changes.
 - Attendance module state is enforced before history or correction operations.
 
+### Parent/guardian rules
+
+- Guardian records belong to the `School` tenant.
+- A student can have multiple guardians, and a guardian can be linked to multiple students.
+- The relationship is stored explicitly through `StudentGuardian`, including optional relationship text and primary-contact flag.
+- Guardian and student IDs are validated against the same `schoolId` before a relationship is created.
+- Guardian operations use the existing `STUDENTS.VIEW` / `STUDENTS.MANAGE` capability boundary; no new capability is introduced.
+- The Students module must be enabled before guardian operations are available.
+- Creating a guardian and linking/unlinking a guardian are audited; relationships are not silently deleted from historical audit evidence.
+- No parent portal, messaging, payments or notifications are included in this slice.
+
 ## Roadmap
 
 ### Phase 0 — Foundation & trust
@@ -138,7 +150,7 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [x] Attendance history and correction workflow
 - [x] Staff accounts and school membership management — initial owner-managed slice
 - [x] Capability assignment UI — initial owner-managed slice
-- [ ] Parent/guardian records
+- [x] Parent/guardian records and student relationships — initial slice
 - [ ] Student status lifecycle
 
 ### Phase 3 — Academic engine
@@ -254,6 +266,6 @@ Run the same request again with a different email but the same CAC. Expected res
 
 ## Important current boundary
 
-This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, setup readiness, school profile, students, enrollment, attendance, attendance history/correction, module configuration/enforcement, academic session lifecycle, and an initial staff/access management slice. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
+This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, setup readiness, school profile, students, enrollment, attendance, attendance history/correction, parent/guardian records, module configuration/enforcement, academic session lifecycle, and an initial staff/access management slice. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
 
 See `ARCHITECTURE.md` for frozen architectural decisions.
