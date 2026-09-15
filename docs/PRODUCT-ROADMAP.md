@@ -148,7 +148,12 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Receipt shows student, fee, amount, date, reference and balance after payment
   - Printable receipt view is provided without creating a second financial ledger
   - Refunds and reconciliation remain separate slices
-- [ ] Balances and reconciliation
+- [x] **Balances and reconciliation**
+  - Invoice balances are derived from trusted invoices and payment records
+  - School-level totals show invoiced, paid and outstanding amounts
+  - Student/invoice balances are school-scoped
+  - No second mutable balance ledger is introduced
+  - Bank/provider settlement reconciliation and refunds remain deferred
 - [ ] Finance audit trail
 
 ### Phase 5 — Communication
