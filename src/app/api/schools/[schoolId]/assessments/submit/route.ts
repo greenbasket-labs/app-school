@@ -17,7 +17,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sch
     await requireSchoolModule(membership.schoolId, "ASSESSMENTS");
     const input = schema.parse(await request.json());
     const event = await submitAssessmentResult(schoolId, input.assessmentId, session.user.id);
-    return NextResponse.json({ ok: true, submission: { id: event.id, assessmentId: input.assessmentId, submittedAt: event.createdAt } }, { status: 201 });
+    return NextResponse.json({ ok: true, submission: { id: event.id, assessmentId: input.assessmentId, submittedAt: event.occurredAt } }, { status: 201 });
   } catch (error) {
     if (error instanceof ZodError) return NextResponse.json({ ok: false, error: "INVALID_REQUEST", issues: error.issues }, { status: 400 });
     if (error instanceof AuthorizationError || error instanceof ModuleDisabledError) return NextResponse.json({ ok: false, error: "FORBIDDEN", message: error.message }, { status: 403 });
