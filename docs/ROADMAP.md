@@ -7,6 +7,7 @@
 - [x] Parent/guardian authenticated recipients — owner can create a one-time parent access link for an existing guardian with an email; the guardian creates a password, becomes a school member and can use the same in-app inbox.
 - [x] Attendance absence alert — when a student is marked absent, the same notification mechanism can alert linked parent accounts in-app when Communication is enabled.
 - [x] Payment confirmation alert — when a payment is recorded, linked parent accounts can receive an in-app confirmation when Communication is enabled.
+- [x] Result publication alert — when an approved assessment result is published, linked parent accounts for students with scores can receive an in-app notice that the result is available.
 - [ ] Staff communication expansion — broaden beyond the first selected-member notice flow only when a real workflow requires it.
 - [ ] Delivery/status history for external channels.
 - [ ] WhatsApp/SMS/email integrations where justified.
