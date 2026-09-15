@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { currentSession } from "@/domain/auth/session-cookie";
 import { requireSchoolModule } from "@/domain/modules/guard";
-import { requireCapability } from "@/domain/auth/authorize";
-import { CAPABILITIES } from "@/domain/auth/capabilities";
 import { markNotificationRead } from "@/domain/communication/notifications";
+import { db } from "@/lib/db";
 
 const schema = z.object({ notificationId: z.string().uuid() });
 
@@ -14,7 +13,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ sch
   const { schoolId } = await params;
   try {
     await requireSchoolModule(schoolId, "COMMUNICATION");
-    const membership = await requireCapability(session.user.id, schoolId, CAPABILITIES.VIEW_STUDENTS);
+    const membership = await db.membership.findFirst({ where: { userId: session.user.id, schoolId, status: "ACTIVE" }, select: { id: true } });
+    if (!membership) return NextResponse.json({ error: "SCHOOL_MEMBERSHIP_REQUIRED" }, { status: 403 });
     const input = schema.parse(await request.json());
     const updated = await markNotificationRead(schoolId, membership.id, input.notificationId);
     if (!updated) return NextResponse.json({ error: "NOTIFICATION_NOT_FOUND" }, { status: 404 });
