@@ -127,7 +127,16 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Payment record and audit event are written atomically
   - Finance module and existing `FINANCE.MANAGE` capability enforced
   - Provider integration, receipts, refunds and reconciliation remain separate slices
-- [ ] Payment provider integration
+- [x] **Payment provider integration — Paystack foundation**
+  - Existing open invoices can initialize an NGN Paystack checkout for the current outstanding balance
+  - Provider reference is stored in a school-scoped `PaymentIntent`
+  - Paystack webhook signature is verified before processing
+  - Successful provider events are matched to the stored intent and invoice
+  - Provider amount/currency are revalidated before creating `PaymentRecord`
+  - Repeated successful webhooks are idempotent
+  - Browser callback is treated as navigation only, not payment proof
+  - Secret key remains server-side
+  - Settlement model, receipts, refunds and reconciliation intentionally deferred
 - [ ] Receipts
 - [ ] Balances and reconciliation
 - [ ] Finance audit trail
