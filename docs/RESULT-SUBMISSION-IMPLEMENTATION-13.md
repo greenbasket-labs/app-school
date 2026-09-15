@@ -1,0 +1,1 @@
+Result approval is the next separate workflow after submission.
