@@ -38,13 +38,13 @@
 
 ## Phase 3 — Academic engine
 - [x] Assessment definitions
-- [x] Score capture
-- [x] Score validation
-- [x] Result submission
-- [x] Result approval
-- [x] Result publication
-- [x] Report cards
-- [x] Academic history
+- [x] Score capture — initial roster + per-student save slice
+- [x] Score validation — school/class/session/enrollment/max-score validation
+- [ ] Result submission
+- [ ] Result approval
+- [ ] Result publication
+- [ ] Report cards
+- [ ] Academic history
 
 ## Phase 4 — Finance
 - [x] Fee structures
@@ -71,21 +71,21 @@
 - [x] Attendance report — date-range summary with school-scoped student totals
 - [x] Academic report — published assessment performance by session, term and optional class
 - [x] Finance report — recorded invoices, payments and outstanding obligations
-- [ ] Operational dashboards
-- [ ] Management summaries
-- [ ] Export workflows
+- [x] Operational dashboards — initial V1 slice
+- [x] Management summaries — initial V1 slice
+- [x] Export workflows — authenticated management CSV export
 
 ## Phase 7 — Platform intelligence
-- [ ] Rules/configuration engine
-- [ ] Background jobs
-- [ ] Reliable notification processing
-- [ ] Offline-first workflows where useful
-- [ ] Idempotent sync actions
-- [ ] Anomaly/delay detection
-- [ ] AI assistance above trusted records, never as the source of truth
+- [x] Rules/configuration engine — owner-controlled rule foundation
+- [x] Background jobs — durable queue record and claim primitive
+- [x] Reliable notification processing — idempotent queue foundation
+- [x] Offline-first workflows where useful — stable sync identity contract
+- [x] Idempotent sync actions — school-scoped idempotency foundation
+- [x] Anomaly/delay detection — deterministic operational anomaly checks
+- [x] AI assistance above trusted records, never as the source of truth — deterministic AI-ready management context boundary
 
 ## Phase 8 — Production platform
-- [ ] PostgreSQL migration/deployment process
+- [ ] PostgreSQL migration/deployment process — migration baseline exists; production verification remains
 - [ ] Object/file storage
 - [ ] Backups and recovery procedures
 - [ ] Observability and operational alerts
@@ -94,8 +94,22 @@
 - [ ] Render production deployment
 - [ ] Tenant-safe onboarding and support operations
 
+## Current V1 sequence
+
+1. **Assessment definitions** — complete and tested against Greenfield Heritage Academy.
+2. **Score capture + validation** — current slice: assessment roster loads from active enrollment and individual scores are validated and saved with audit evidence.
+3. **Result submission** — next.
+4. **Result approval** — after submission.
+5. **Result publication** — after approval.
+6. **Report cards** — derive from trusted published academic records.
+7. **Academic history** — preserve and present results across sessions.
+
 ## V1 completion rule
+
 Finish the remaining roadmap items before expanding the product beyond V1. Work forward from the current phase; do not reopen completed phases unless verification exposes a real defect. Keep each slice small, production-oriented and tied to an actual school workflow.
 
+Every completed slice must preserve the existing platform boundaries: school-scoped ownership, capability authorization, module enforcement, validation of important invariants, audit evidence for meaningful changes, and historical truth.
+
 ## Rule
+
 Do not build reports merely because other school systems have them. Each report must turn trusted school records into a decision or action the school actually needs. Keep reports school-scoped, capability-controlled, module-controlled and derived from authoritative records.

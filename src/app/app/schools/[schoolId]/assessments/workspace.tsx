@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 type Assessment = {
@@ -32,10 +33,8 @@ export default function AssessmentWorkspace({ schoolId, initialAssessments, opti
 
   const selectedSession = options.sessions.find((session) => session.id === sessionId);
   const terms = selectedSession?.terms ?? [];
-
   const selectedClassArm = options.classArms.find((arm) => arm.id === classArmId);
   const selectedSubject = options.subjects.find((subject) => subject.id === subjectId);
-
   const visibleAssessments = useMemo(() => assessments, [assessments]);
 
   function changeSession(value: string) {
@@ -92,9 +91,12 @@ export default function AssessmentWorkspace({ schoolId, initialAssessments, opti
         {visibleAssessments.length === 0 ? <p style={{ color: "#53615a" }}>No assessment definitions yet.</p> : (
           <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
             {visibleAssessments.map((assessment) => (
-              <div key={assessment.id} style={{ border: "1px solid #e5e9e7", borderRadius: 12, padding: 14 }}>
-                <strong>{assessment.name}</strong>
-                <div style={{ color: "#53615a", marginTop: 4 }}>{assessment.academicSession.name} · {assessment.academicTerm.name} · {assessment.classArm.classLevel.name} {assessment.classArm.name} · {assessment.subject.name} · Max {assessment.maxScore}</div>
+              <div key={assessment.id} style={{ border: "1px solid #e5e9e7", borderRadius: 12, padding: 14, display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+                <div>
+                  <strong>{assessment.name}</strong>
+                  <div style={{ color: "#53615a", marginTop: 4 }}>{assessment.academicSession.name} · {assessment.academicTerm.name} · {assessment.classArm.classLevel.name} {assessment.classArm.name} · {assessment.subject.name} · Max {assessment.maxScore}</div>
+                </div>
+                <Link href={`/app/schools/${schoolId}/assessments/${assessment.id}`} style={{ ...buttonStyle, textDecoration: "none", marginTop: 0 }}>Enter scores</Link>
               </div>
             ))}
           </div>
