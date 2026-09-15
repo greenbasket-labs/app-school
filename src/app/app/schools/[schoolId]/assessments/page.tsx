@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "next/link";
 import { redirect } from "next/navigation";
 import { CAPABILITIES } from "@/domain/auth/capabilities";
 import { currentSession } from "@/domain/auth/session-cookie";
@@ -25,7 +25,7 @@ export default async function AssessmentsPage({ params }: { params: Promise<{ sc
   try {
     await requireSchoolModule(schoolId, "ASSESSMENTS");
   } catch {
-    redirect(`/app/schools/${schoolId}/settings/modules`);
+    redirect(`/app/schools/${schoolId}/settings`);
   }
 
   const [assessments, options] = await Promise.all([
@@ -40,7 +40,7 @@ export default async function AssessmentsPage({ params }: { params: Promise<{ sc
         <div style={{ marginTop: 20 }}>
           <p style={{ margin: 0, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", fontSize: 13 }}>Assessments</p>
           <h1 style={{ margin: "8px 0 6px", fontSize: 34 }}>{membership.school.name}</h1>
-          <p style={{ margin: 0, color: "#53615a" }}>Define the assessment structure first. Score capture and results come later.</p>
+          <p style={{ margin: 0, color: "#53615a" }}>Define the assessment structure, capture scores, then submit and approve results.</p>
         </div>
         <AssessmentWorkspace schoolId={schoolId} initialAssessments={assessments} options={options} />
       </div>
