@@ -61,11 +61,7 @@ export async function upsertSchoolPaymentProvider(
           action: "finance.payment_provider_updated",
           entityType: "SchoolPaymentProvider",
           entityId: existing[0].id,
-          previousState: {
-            provider,
-            settlementAccountReference: existing[0].settlementAccountReference,
-            enabled: existing[0].enabled,
-          },
+          previousState: { provider, settlementAccountReference: existing[0].settlementAccountReference, enabled: existing[0].enabled },
           currentState: { provider, settlementAccountReference: reference, enabled },
         },
       });
@@ -93,10 +89,7 @@ export async function upsertSchoolPaymentProvider(
 }
 
 export async function getEnabledSchoolPaymentProvider(schoolId: string, provider: PaymentProvider) {
-  return db.$queryRaw<Array<{
-    id: string;
-    settlementAccountReference: string;
-  }>>(Prisma.sql`
+  return db.$queryRaw<Array<{ id: string; settlementAccountReference: string }>>(Prisma.sql`
     SELECT "id", "settlementAccountReference"
     FROM "SchoolPaymentProvider"
     WHERE "schoolId" = ${schoolId}::uuid AND "provider" = ${provider} AND "enabled" = true
