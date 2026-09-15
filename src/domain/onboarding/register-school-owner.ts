@@ -31,33 +31,20 @@ export async function registerSchoolOwner(raw: RegisterSchoolOwnerInput) {
   const email = normalizeEmail(input.email);
   const normalizedCacNumber = normalizeCacNumber(input.cacNumber);
 
-  if (!normalizedCacNumber) {
-    throw new Error("CAC number is required.");
-  }
-
+  if (!normalizedCacNumber) throw new Error("CAC number is required.");
   const passwordHash = await hash(input.password, 12);
 
   try {
     return await db.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: { email, passwordHash },
-        select: { id: true, email: true, createdAt: true },
-      });
-
+      const user = await tx.user.create({ data: { email, passwordHash }, select: { id: true, email: true, createdAt: true } });
       const organization = await tx.organization.create({
         data: {
           name: input.organizationName.trim(),
           normalizedName: normalizeOrganizationName(input.organizationName),
-          identity: {
-            create: {
-              cacNumber: input.cacNumber.trim(),
-              normalizedCacNumber,
-            },
-          },
+          identity: { create: { cacNumber: input.cacNumber.trim(), normalizedCacNumber } },
         },
         select: { id: true, createdAt: true },
       });
-
       const school = await tx.school.create({
         data: {
           organizationId: organization.id,
@@ -67,13 +54,8 @@ export async function registerSchoolOwner(raw: RegisterSchoolOwnerInput) {
         },
         select: { id: true, name: true, createdAt: true },
       });
-
       const membership = await tx.membership.create({
-        data: {
-          userId: user.id,
-          organizationId: organization.id,
-          schoolId: school.id,
-        },
+        data: { userId: user.id, organizationId: organization.id, schoolId: school.id, isOwner: true },
         select: { id: true },
       });
 
@@ -94,26 +76,14 @@ export async function registerSchoolOwner(raw: RegisterSchoolOwnerInput) {
           },
         },
       });
-
       return { user, organization, school, membership };
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      const target = Array.isArray(error.meta?.target)
-        ? error.meta.target.join(",")
-        : String(error.meta?.target ?? "");
-
-      if (target.includes("normalizedCacNumber")) {
-        throw new RegistrationConflictError(
-          "This CAC identity is already registered with Green Basket Global.",
-        );
-      }
-
-      if (target.includes("email")) {
-        throw new RegistrationConflictError("An account already exists for this email.");
-      }
+      const target = Array.isArray(error.meta?.target) ? error.meta.target.join(",") : String(error.meta?.target ?? "");
+      if (target.includes("normalizedCacNumber")) throw new RegistrationConflictError("This CAC identity is already registered with Green Basket Global.");
+      if (target.includes("email")) throw new RegistrationConflictError("An account already exists for this email.");
     }
-
     throw error;
   }
 }
