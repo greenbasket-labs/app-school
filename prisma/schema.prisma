@@ -119,7 +119,7 @@ model AcademicSession {
   @@index([schoolId, startsAt])
 }
 model AcademicTerm {
-  id String @id @default(uuid())
+  id String @id @default(uuid()) @db.Uuid
   name String
   order Int
   startsAt DateTime @db.Timestamptz(6)
