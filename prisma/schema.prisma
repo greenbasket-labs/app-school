@@ -60,6 +60,7 @@ model School {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   memberships Membership[]
   membershipCapabilities MembershipCapability[]
+  modules SchoolModule[]
   academicSessions AcademicSession[]
   classLevels ClassLevel[]
   subjects Subject[]
@@ -70,6 +71,29 @@ model School {
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@index([organizationId])
   @@index([normalizedName])
+}
+model Module {
+  id String @id @default(uuid()) @db.Uuid
+  code String @unique
+  name String
+  description String?
+  category String
+  sortOrder Int @default(0)
+  schoolModules SchoolModule[]
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+}
+model SchoolModule {
+  schoolId String @db.Uuid
+  moduleId String @db.Uuid
+  enabled Boolean @default(false)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Restrict)
+  enabledAt DateTime? @db.Timestamptz(6)
+  disabledAt DateTime? @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  @@id([schoolId, moduleId])
+  @@index([schoolId, enabled])
 }
 model AcademicSession {
   id String @id @default(uuid()) @db.Uuid
@@ -213,6 +237,7 @@ model Membership {
   userId String @db.Uuid
   organizationId String @db.Uuid
   schoolId String @db.Uuid
+  isOwner Boolean @default(false)
   status MembershipStatus @default(ACTIVE)
   user User @relation(fields: [userId], references: [id], onDelete: Restrict)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
@@ -222,6 +247,7 @@ model Membership {
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([userId, schoolId])
   @@index([organizationId, schoolId])
+  @@index([schoolId, isOwner])
 }
 model Capability {
   id String @id @default(uuid()) @db.Uuid
