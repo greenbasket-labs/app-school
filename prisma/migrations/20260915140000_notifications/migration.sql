@@ -35,3 +35,10 @@ CREATE INDEX "NotificationRecipient_membershipId_readAt_idx" ON "NotificationRec
 INSERT INTO "Capability" ("id", "code", "description")
 VALUES (gen_random_uuid(), 'COMMUNICATION.SEND', 'Allows sending school communication.')
 ON CONFLICT ("code") DO NOTHING;
+
+INSERT INTO "MembershipCapability" ("membershipId", "capabilityId", "schoolId")
+SELECT m."id", c."id", m."schoolId"
+FROM "Membership" m
+CROSS JOIN "Capability" c
+WHERE m."isOwner" = true AND m."status" = 'ACTIVE' AND c."code" = 'COMMUNICATION.SEND'
+ON CONFLICT ("membershipId", "capabilityId") DO NOTHING;
