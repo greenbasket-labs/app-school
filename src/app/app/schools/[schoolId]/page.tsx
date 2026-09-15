@@ -30,9 +30,9 @@ export default async function SchoolWorkspacePage({ params }: { params: Promise<
           <div style={{ border: "1px solid #e0e6e2", borderRadius: 12, padding: 16 }}><strong>Setup status</strong><div style={{ marginTop: 6 }}>{membership.school.setupStatus.replaceAll("_", " ").toLowerCase()}</div></div>
           <div style={{ border: "1px solid #e0e6e2", borderRadius: 12, padding: 16 }}><strong>School management</strong><div style={{ marginTop: 6 }}>{canManageSchool ? "Allowed" : "Not allowed"}</div></div>
         </div>
+        {canManageSchool && membership.school.setupStatus !== "COMPLETED" && <Link href={`/app/schools/${schoolId}/setup`} style={cardLink}><strong>School setup →</strong><p style={sub}>Configure academic sessions, classes, arms, subjects and subject assignments.</p></Link>}
         {canViewStudents && <Link href={`/app/schools/${schoolId}/students`} style={cardLink}><strong>Students →</strong><p style={sub}>Create student records, enroll students into a session/class, and keep the roster connected to attendance.</p></Link>}
         {canViewAttendance && <Link href={`/app/schools/${schoolId}/attendance`} style={cardLink}><strong>Daily attendance →</strong><p style={sub}>Load a class roster, mark attendance quickly, and save the day in one action.</p></Link>}
-        {canManageSchool && membership.school.setupStatus !== "COMPLETED" && <div style={{ marginTop: 16, padding: 20, borderRadius: 14, background: "#f8faf9" }}><strong>Next: school setup</strong><p style={{ marginBottom: 0, color: "#53615a" }}>Capture the minimum operational configuration needed to make the school usable.</p></div>}
       </div>
     </div></main>
   );
