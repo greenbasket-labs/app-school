@@ -1,0 +1,1 @@
+Shared capability and module catalogs are initialized before school registration. Registration keeps tenant-owned writes atomic.
