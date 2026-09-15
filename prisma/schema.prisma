@@ -72,6 +72,7 @@ model School {
   attendanceRecords AttendanceRecord[]
   assessments AssessmentDefinition[]
   assessmentScores AssessmentScore[]
+  feeStructures FeeStructure[]
   auditEvents AuditEvent[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
@@ -115,6 +116,7 @@ model AcademicSession {
   attendanceRecords AttendanceRecord[]
   assessments AssessmentDefinition[]
   assessmentScores AssessmentScore[]
+  feeStructures FeeStructure[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([schoolId, name])
@@ -129,6 +131,7 @@ model AcademicTerm {
   academicSessionId String @db.Uuid
   academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Restrict)
   assessments AssessmentDefinition[]
+  feeStructures FeeStructure[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([academicSessionId, order])
@@ -381,4 +384,23 @@ model AuditEvent {
   @@index([schoolId, occurredAt])
   @@index([actorUserId, occurredAt])
   @@index([entityType, entityId])
+}
+model FeeStructure {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  academicSessionId String @db.Uuid
+  academicTermId String @db.Uuid
+  name String
+  amount Decimal @db.Decimal(12, 2)
+  description String?
+  dueDate DateTime? @db.Date
+  isActive Boolean @default(true)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Restrict)
+  academicTerm AcademicTerm @relation(fields: [academicTermId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  @@unique([schoolId, academicTermId, name])
+  @@index([schoolId, academicSessionId, academicTermId])
+  @@index([schoolId, isActive])
 }
