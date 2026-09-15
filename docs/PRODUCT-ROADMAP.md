@@ -94,67 +94,20 @@ The academic engine is intentionally built as dependent slices, not one large fe
 - [x] Academic history
 
 ### Phase 4 — Finance
-- [x] **Fee structures**
-  - School-scoped fee definitions bound to an academic session and term
-  - Name, amount, optional description and optional due date
-  - Duplicate fee names prevented within a school and term
-  - Session/term ownership and relationship validated
-  - Creation audited with actor and resulting fee definition
-  - Finance module and existing `FINANCE.MANAGE` capability enforced
-  - Student obligations and payments intentionally deferred
-- [x] **Student fee assignments**
-  - Existing school fee definitions can be assigned to specific active students
-  - Student must belong to the school and have active enrollment in the fee's academic session
-  - Assignment amount is snapshotted so later fee-definition changes do not silently rewrite an existing assignment
-  - Duplicate student/fee assignments are rejected
-  - Assignment is audited with actor, student, fee, amount and academic context
-  - Finance module and existing `FINANCE.MANAGE` capability enforced
-  - Invoices, payments, receipts and balances intentionally deferred
-- [x] **Invoices / obligations**
-  - An assignment can produce one student-specific invoice/obligation
-  - Invoice snapshots the assigned amount and fee name
-  - Fee due date is carried into the obligation when present
-  - New obligations start in `OPEN` state
-  - Duplicate invoices for the same assignment are rejected
-  - Invoice creation is audited
-  - Finance module and existing `FINANCE.MANAGE` capability enforced
-  - Payment, receipts and reconciliation remain separate slices
-- [x] **Payment recording**
-  - Payment must target an existing invoice in the same school
-  - Amount must be greater than zero and cannot exceed the current outstanding amount
-  - Outstanding balance is derived from invoice amount minus trusted payment records
-  - Optional payment reference and note are preserved
-  - Payment record and audit event are written atomically
-  - Finance module and existing `FINANCE.MANAGE` capability enforced
-  - Provider integration, receipts, refunds and reconciliation remain separate slices
-- [x] **Payment provider integration — school settlement foundation**
-  - Payment provider configuration belongs to the individual school
-  - Supported provider catalog includes Paystack, Flutterwave and Monnify
-  - A school stores its provider-specific settlement/subaccount reference
-  - Only the school owner can configure or update provider settlement settings
-  - Provider credentials remain server-side and are not stored in browser code
-  - `PaymentIntent` stores the provider and transaction context for each checkout
-  - Paystack uses the school's configured subaccount when initializing checkout
-  - Flutterwave uses the school's configured subaccount when initializing checkout
-  - Monnify uses the school's configured settlement/subaccount reference when initializing checkout
-  - Monnify webhook notifications are signature-checked and server-verified before recording payment
-  - Provider-specific adapters map into the same invoice → PaymentIntent → PaymentRecord lifecycle
-  - Provider-confirmed payments are system-recorded without requiring a human actor ID
-  - Receipts, refunds and reconciliation remain separate slices
-- [x] **Receipts**
-  - A trusted `PaymentRecord` can be presented as a school-scoped receipt
-  - Receipt access requires `FINANCE.VIEW` and an enabled Finance module
-  - Receipt data is derived from the payment, invoice, student and school records
-  - Receipt shows student, fee, amount, date, reference and balance after payment
-  - Printable receipt view is provided without creating a second financial ledger
-  - Refunds and reconciliation remain separate slices
-- [x] **Balances and reconciliation**
-  - Invoice balances are derived from trusted invoices and payment records
-  - School-level totals show invoiced, paid and outstanding amounts
-  - Student/invoice balances are school-scoped
-  - No second mutable balance ledger is introduced
-  - Bank/provider settlement reconciliation and refunds remain deferred
-- [ ] Finance audit trail
+- [x] Fee structures
+- [x] Student fee assignments
+- [x] Invoices / obligations
+- [x] Payment recording
+- [x] Payment provider integration — school settlement foundation
+- [x] Receipts
+- [x] Balances and reconciliation
+- [x] **Finance audit trail**
+  - School-scoped view of meaningful `finance.*` audit events
+  - Actor is shown when a human performed the action; provider/system actions remain identifiable as system actions
+  - Access requires `FINANCE.VIEW` and an enabled Finance module
+  - Existing audit events remain the source of history; no duplicate finance ledger is created
+  - Latest finance history is available from the Finance workspace
+  - Detailed accounting reconciliation, refunds, write-offs and settlement matching remain deferred
 
 ### Phase 5 — Communication
 - [ ] Parent/guardian communication
