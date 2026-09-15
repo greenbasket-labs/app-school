@@ -41,7 +41,25 @@ export async function createAcademicSession(input: CreateAcademicSessionInput) {
 export async function getAcademicSessions(schoolId: string) {
   return db.academicSession.findMany({
     where: { schoolId },
-    include: { terms: { orderBy: { order: "asc" } } },
+    export async function getAcademicSessions(schoolId: string) {
+  return db.academicSession.findMany({
+    where: { schoolId },
+    include: {
+      terms: { orderBy: { order: "asc" } },
+      classArms: {
+        include: {
+          classLevel: true,
+        },
+        orderBy: {
+          classLevel: {
+            order: "asc",
+          },
+        },
+      },
+    },
+    orderBy: { startsAt: "desc" },
+  });
+}
     orderBy: { startsAt: "desc" },
   });
 }
