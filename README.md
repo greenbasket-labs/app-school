@@ -6,6 +6,53 @@
 
 Fresh production implementation. No inherited application code.
 
+## Founding problem — why App-School exists
+
+The starting point is not "build another school-management system." The starting point is the economic problem around technology access.
+
+Many private schools operate in an environment where the technology they need already exists, but the school cannot reasonably afford to assemble and maintain all of it independently. A school may otherwise need to pay separately for:
+
+- a developer or technical staff
+- domain registration
+- hosting/server infrastructure
+- database and backups
+- software development and updates
+- security and maintenance
+- student, teacher, parent and school records
+- attendance and academic workflows
+- communication and reports
+- ongoing technical support
+
+The fundamental question is:
+
+> **If the technology already exists, why should every individual school have to pay separately to build and maintain its own technology?**
+
+App-School is the answer to that problem. GREEN BASKET GLOBAL LIMITED builds and maintains the shared platform once, then makes that technology accessible to many schools through one school service rather than requiring every school to build its own stack.
+
+The intended customer experience is simple:
+
+```text
+School
+  ↓
+One App-School service
+  ↓
+Software + shared infrastructure + updates + backups + security + support
+  ↓
+School configures and operates its own environment
+```
+
+The platform should connect the school as a whole:
+
+```text
+Owner        → visibility, control, configuration
+Teachers     → daily teaching, attendance, academic records
+Students     → identity, enrollment, academic and school records
+Parents      → information, communication and school visibility
+School data  → organized, persistent and auditable
+```
+
+This is especially important in an economically constrained environment: **the goal is not to make schools buy more technology; it is to make existing technology economically accessible through shared infrastructure and reusable software.**
+
 ## Product direction
 
 The product is intentionally built as a configurable school operating platform rather than a collection of separate school apps.
@@ -18,6 +65,36 @@ The product is intentionally built as a configurable school operating platform r
 - Disabling a module hides/stops its operational surface; it does not delete historical records.
 - Staff access is controlled separately through capabilities. Enabling a module does not automatically give every staff member access.
 - The database remains the source of truth. Settings control product behavior, not ownership of the underlying records.
+
+## Product development philosophy
+
+App-School is **problem-first, not feature-first**.
+
+Do not copy another school application and rename its features. Start from the real school problem, understand the people and workflow involved, identify what the software should prevent/detect/remember/calculate/connect/communicate, then design the smallest reliable mechanism that solves it.
+
+The development loop is:
+
+```text
+Real problem
+   ↓
+Understand the workflow
+   ↓
+Identify rules, states and ownership
+   ↓
+Design the smallest useful slice
+   ↓
+Implement
+   ↓
+Validate security + data boundaries
+   ↓
+Test
+   ↓
+Record the decision
+   ↓
+Next slice
+```
+
+The goal is not the largest feature list. The goal is a strong platform that can safely absorb new modules over time.
 
 ## Current vertical slices
 
@@ -221,6 +298,90 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [ ] Render production deployment
 - [ ] Tenant-safe onboarding and support operations
 
+## Developer / AI continuation contract
+
+**A new developer, coding agent, or AI must be able to take this repository and continue from the current state without needing the original conversation.**
+
+Before changing code:
+
+1. Read `README.md` completely.
+2. Read `docs/PRODUCT-DECISION-HISTORY.md` to understand why the product exists and which decisions are intentional.
+3. Read `ARCHITECTURE.md` before changing shared architecture, identity, authorization, tenancy, persistence or module boundaries.
+4. Inspect the current implementation before assuming a model, service, route, capability or UI exists.
+5. Check the current roadmap and choose the smallest next coherent vertical slice.
+6. Preserve existing tenant, capability, audit and module boundaries.
+7. Do not invent a second architecture for a new module.
+
+### Required approach for every new module
+
+```text
+Understand the school problem
+        ↓
+Identify the real actors and ownership
+        ↓
+Define the school-scoped data
+        ↓
+Define lifecycle/state transitions
+        ↓
+Define validation rules
+        ↓
+Define who can view/change/approve
+        ↓
+Decide whether the module belongs in Settings
+        ↓
+Add/reuse capability boundaries
+        ↓
+Add module catalog/configuration if needed
+        ↓
+Implement service first
+        ↓
+Implement school-scoped API
+        ↓
+Implement the smallest useful UI
+        ↓
+Audit meaningful state changes
+        ↓
+Test tenant isolation and authorization
+        ↓
+Update README + roadmap in the same change
+```
+
+### Non-negotiable rules for new development
+
+- **One product:** never fork App-School for an individual school unless an explicit platform decision says otherwise.
+- **One tenant boundary:** every school-owned read/write must be tied to the correct `schoolId`.
+- **Four identity boundaries:** `userId`, `organizationId`, `schoolId`, `membershipId` remain distinct.
+- **Settings is the control plane:** school configuration and module controls belong there.
+- **Owner-only module control:** only the school owner can enable/disable a module.
+- **Module ≠ permission:** a module being enabled does not grant staff access; capability authorization remains separate.
+- **Historical truth survives configuration:** disabling a module must not delete its records.
+- **Capture → validate → automate:** do not build automation on untrusted data.
+- **Audit meaningful changes:** preserve actor, school, action and relevant previous/current state.
+- **No role-name shortcuts:** use capabilities for authorization decisions.
+- **No speculative features:** do not build a large module before its problem, boundary and workflow are understood.
+- **No copied feature lists:** another product can provide research context, but its feature list is not the product specification.
+- **AI is an assistant, not the record authority:** AI may explain, summarize and assist above trusted records.
+- **Small vertical slices:** prefer a complete, understandable slice over many partially implemented screens.
+- **Update documentation:** a meaningful architectural/product change is incomplete until the README and relevant decision documentation explain it.
+
+### Handoff standard
+
+Every completed development slice should leave the repository in a state where another human or AI can answer:
+
+- What problem was solved?
+- Which school owns the data?
+- Which records were added or changed?
+- What are the valid states and transitions?
+- Which capability controls each operation?
+- Which module controls availability?
+- Who can configure it?
+- What is audited?
+- What historical data must remain preserved?
+- What is intentionally **not** implemented yet?
+- What is the next smallest logical slice?
+
+If those answers cannot be found from the code and repository documentation, the slice is not fully handed off.
+
 ## Architectural rules
 
 1. **Fresh implementation:** old school-management repositories are reference material only, not application code to extend or copy.
@@ -281,4 +442,4 @@ Run the same request again with a different email but the same CAC. Expected res
 
 This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, setup readiness, school profile, students, enrollment, attendance, attendance history/correction, parent/guardian records, student status lifecycle, module configuration/enforcement, academic session lifecycle, and an initial staff/access management slice. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
 
-See `ARCHITECTURE.md` for frozen architectural decisions.
+See `docs/PRODUCT-DECISION-HISTORY.md` for the product reasoning and durable decisions. See `ARCHITECTURE.md` for frozen technical architecture.
