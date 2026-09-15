@@ -12,7 +12,7 @@ The product is intentionally built as a configurable school operating platform r
 
 - One App-School product for every school.
 - Each school configures its own academic structure, people, workflows and enabled modules.
-- **Settings is the control surface for school configuration and module updates.**
+- **Settings is the control surface for school configuration, access and module updates.**
 - Future capabilities are delivered as modules.
 - **Only the school owner can enable or disable modules.**
 - Disabling a module hides/stops its operational surface; it does not delete historical records.
@@ -31,6 +31,7 @@ The product is intentionally built as a configurable school operating platform r
 8. **Module configuration foundation** — school module catalog plus owner-only enable/disable settings with audit history.
 9. **Module enforcement** — enabled module state is checked by the backend before student, enrollment and attendance operations are allowed; capabilities still apply separately.
 10. **Academic session lifecycle** — sessions move forward from draft → active → closed with validation and audit history.
+11. **Staff & access foundation** — owner-managed staff accounts, school memberships and explicit capability assignment with audit history.
 
 ## Module model
 
@@ -61,6 +62,17 @@ This catalog will grow as new product modules are implemented. A module can be a
 - Disabling is reversible; records are preserved.
 - Module enablement and staff capability are separate concerns.
 - Operational APIs must enforce both module state and capability authorization.
+
+### Staff & access rules
+
+- Staff accounts are created inside the school's Settings control surface.
+- Each staff account receives a school membership; the account itself remains a platform `User` identity.
+- Staff access is granted through explicit capabilities, not role-name assumptions.
+- Only the active school owner can create staff accounts or change staff capabilities in this first access-management slice.
+- The owner membership cannot be edited as ordinary staff access.
+- Staff passwords are hashed; plaintext passwords are never stored.
+- Staff creation and capability changes create audit events.
+- Staff access administration is separate from module enablement.
 
 ## Roadmap
 
@@ -95,8 +107,8 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [x] Student enrollment
 - [x] Daily attendance
 - [ ] Attendance history and correction workflow
-- [ ] Staff accounts and school membership management
-- [ ] Capability assignment UI
+- [x] Staff accounts and school membership management — initial owner-managed slice
+- [x] Capability assignment UI — initial owner-managed slice
 - [ ] Parent/guardian records
 - [ ] Student status lifecycle
 
@@ -161,7 +173,7 @@ This catalog will grow as new product modules are implemented. A module can be a
 2. **Multi-tenant by construction:** every school-owned resource must be provably connected to its school before read/write access is allowed.
 3. **Organization ≠ School ≠ User:** identities remain separate even when one person owns one school.
 4. **Capability-based authorization:** permissions are explicit capabilities, not assumptions based on role names.
-5. **Settings as control plane:** school configuration and module changes belong in Settings rather than scattered through operational screens.
+5. **Settings as control plane:** school configuration, access administration and module changes belong in Settings rather than scattered through operational screens.
 6. **Owner-only module control:** module enable/disable is a school configuration action reserved for the owner.
 7. **Configuration does not delete truth:** disabling a module must preserve its historical records.
 8. **Capture once, derive many:** one real-world event should be recorded once and downstream consequences derived from it.
@@ -213,6 +225,6 @@ Run the same request again with a different email but the same CAC. Expected res
 
 ## Important current boundary
 
-This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, students, enrollment, attendance, module configuration/enforcement, and academic session lifecycle. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
+This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, students, enrollment, attendance, module configuration/enforcement, academic session lifecycle, and an initial staff/access management slice. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
 
 See `ARCHITECTURE.md` for frozen architectural decisions.
