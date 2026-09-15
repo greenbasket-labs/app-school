@@ -15,13 +15,7 @@ export async function getPublishedReportCard(
 ) {
   const student = await db.student.findFirst({
     where: { id: studentId, schoolId },
-    select: {
-      id: true,
-      admissionNumber: true,
-      firstName: true,
-      middleName: true,
-      lastName: true,
-    },
+    select: { id: true, admissionNumber: true, firstName: true, middleName: true, lastName: true },
   });
   if (!student) throw new ReportCardValidationError("Student does not belong to this school.");
 
@@ -44,30 +38,17 @@ export async function getPublishedReportCard(
       action: "assessment.result_published",
       entityId: { not: null },
     },
-    orderBy: { createdAt: "asc" },
-    select: { entityId: true, createdAt: true },
+    orderBy: { occurredAt: "asc" },
+    select: { entityId: true, occurredAt: true },
   });
 
   const assessmentIds = published.flatMap((event) => event.entityId ? [event.entityId] : []);
   if (!assessmentIds.length) {
-    return {
-      student,
-      session: { id: academicSessionId },
-      term,
-      classArmId: enrollment.classArmId,
-      assessments: [],
-      totals: { earned: 0, possible: 0, percentage: null },
-    };
+    return { student, session: { id: academicSessionId }, term, classArmId: enrollment.classArmId, assessments: [], totals: { earned: 0, possible: 0, percentage: null } };
   }
 
   const assessments = await db.assessmentDefinition.findMany({
-    where: {
-      id: { in: assessmentIds },
-      schoolId,
-      academicSessionId,
-      academicTermId,
-      classArmId: enrollment.classArmId,
-    },
+    where: { id: { in: assessmentIds }, schoolId, academicSessionId, academicTermId, classArmId: enrollment.classArmId },
     select: {
       id: true,
       name: true,
@@ -82,29 +63,11 @@ export async function getPublishedReportCard(
   const rows = assessments.filter((assessment) => publishedSet.has(assessment.id)).map((assessment) => {
     const score = assessment.scores[0]?.score.toNumber() ?? null;
     const maxScore = assessment.maxScore.toNumber();
-    return {
-      assessmentId: assessment.id,
-      subject: assessment.subject,
-      assessmentName: assessment.name,
-      score,
-      maxScore,
-      percentage: score === null || maxScore === 0 ? null : Number(((score / maxScore) * 100).toFixed(2)),
-    };
+    return { assessmentId: assessment.id, subject: assessment.subject, assessmentName: assessment.name, score, maxScore, percentage: score === null || maxScore === 0 ? null : Number(((score / maxScore) * 100).toFixed(2)) };
   });
 
   const earned = rows.reduce((sum, row) => sum + (row.score ?? 0), 0);
   const possible = rows.reduce((sum, row) => sum + row.maxScore, 0);
 
-  return {
-    student,
-    session: { id: academicSessionId },
-    term,
-    classArmId: enrollment.classArmId,
-    assessments: rows,
-    totals: {
-      earned,
-      possible,
-      percentage: possible === 0 ? null : Number(((earned / possible) * 100).toFixed(2)),
-    },
-  };
+  return { student, session: { id: academicSessionId }, term, classArmId: enrollment.classArmId, assessments: rows, totals: { earned, possible, percentage: possible === 0 ? null : Number(((earned / possible) * 100).toFixed(2)) } };
 }
