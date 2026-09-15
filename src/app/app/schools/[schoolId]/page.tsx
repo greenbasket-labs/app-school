@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CAPABILITIES } from "@/domain/auth/capabilities";
 import { currentSession } from "@/domain/auth/session-cookie";
-import { isSchoolModuleEnabled } from "@/domain/modules/service";
+import { getSchoolModules } from "@/domain/modules/service";
 import { db } from "@/lib/db";
 
 export default async function SchoolWorkspacePage({ params }: { params: Promise<{ schoolId: string }> }) {
@@ -11,13 +11,26 @@ export default async function SchoolWorkspacePage({ params }: { params: Promise<
   const { schoolId } = await params;
   const membership = await db.membership.findFirst({ where: { userId: session.user.id, schoolId, status: "ACTIVE" }, select: { id: true, isOwner: true, school: { select: { id: true, name: true, status: true, setupStatus: true } }, capabilities: { select: { capability: { select: { code: true } } } } } });
   if (!membership) redirect("/app");
+
   const capabilitySet = new Set(membership.capabilities.map(({ capability }) => capability.code));
   const canManageSchool = capabilitySet.has(CAPABILITIES.MANAGE_SCHOOL);
   const canViewAttendance = capabilitySet.has(CAPABILITIES.VIEW_ATTENDANCE);
   const canViewStudents = capabilitySet.has(CAPABILITIES.VIEW_STUDENTS);
   const canViewAssessments = capabilitySet.has(CAPABILITIES.CREATE_ASSESSMENT);
   const canManageFinance = capabilitySet.has(CAPABILITIES.MANAGE_FINANCE);
-  const reportsEnabled = canViewAttendance && await isSchoolModuleEnabled(schoolId, "REPORTS");
+  const canSendCommunication = capabilitySet.has(CAPABILITIES.SEND_COMMUNICATION);
+
+  const modules = await getSchoolModules(schoolId);
+  const enabledModules = new Set(modules.filter((module) => module.enabled).map((module) => module.code));
+
+  const showAcademics = enabledModules.has("ACADEMICS");
+  const showStudents = enabledModules.has("STUDENTS") && canViewStudents;
+  const showAttendance = enabledModules.has("ATTENDANCE") && canViewAttendance;
+  const showAssessments = enabledModules.has("ASSESSMENTS") && canViewAssessments;
+  const showFinance = enabledModules.has("FINANCE") && canManageFinance;
+  const showCommunication = enabledModules.has("COMMUNICATION") && (canViewStudents || canSendCommunication);
+  const showReports = enabledModules.has("REPORTS") && canViewAttendance;
+  const showDashboard = showReports;
 
   return (
     <main style={{ minHeight: "100vh", padding: 32 }}><div style={{ maxWidth: 1000, margin: "0 auto" }}>
@@ -31,18 +44,22 @@ export default async function SchoolWorkspacePage({ params }: { params: Promise<
           <div style={{ border: "1px solid #e0e6e2", borderRadius: 12, padding: 16 }}><strong>Setup status</strong><div style={{ marginTop: 6 }}>{membership.school.setupStatus.replaceAll("_", " ").toLowerCase()}</div></div>
           <div style={{ border: "1px solid #e0e6e2", borderRadius: 12, padding: 16 }}><strong>School management</strong><div style={{ marginTop: 6 }}>{canManageSchool ? "Allowed" : "Not allowed"}</div></div>
         </div>
-        {reportsEnabled && <Link href={`/app/schools/${schoolId}/dashboard`} style={cardLink}><strong>Operational dashboard →</strong><p style={sub}>See the current school operating picture at a glance.</p></Link>}
+
+        {showDashboard && <Link href={`/app/schools/${schoolId}/dashboard`} style={cardLink}><strong>Operational dashboard →</strong><p style={sub}>See the current school operating picture at a glance.</p></Link>}
         {canManageSchool && membership.school.setupStatus !== "COMPLETED" && <Link href={`/app/schools/${schoolId}/setup`} style={cardLink}><strong>School setup →</strong><p style={sub}>Configure academic sessions, classes, arms, subjects and subject assignments.</p></Link>}
         {membership.isOwner && <Link href={`/app/schools/${schoolId}/settings`} style={cardLink}><strong>Settings & modules →</strong><p style={sub}>The school owner controls which product modules are enabled for this school.</p></Link>}
-        {canViewStudents && <Link href={`/app/schools/${schoolId}/students`} style={cardLink}><strong>Students →</strong><p style={sub}>Create student records, enroll students into a session/class, and keep the roster connected to attendance.</p></Link>}
-        {canViewAttendance && <Link href={`/app/schools/${schoolId}/attendance`} style={cardLink}><strong>Daily attendance →</strong><p style={sub}>Load a class roster, mark attendance quickly, and save the day in one action.</p></Link>}
-        {canViewAssessments && <Link href={`/app/schools/${schoolId}/assessments`} style={cardLink}><strong>Assessment definitions →</strong><p style={sub}>Define assessments by session, term, class and subject.</p></Link>}
-        {canManageFinance && <Link href={`/app/schools/${schoolId}/finance`} style={cardLink}><strong>Fees & Finance →</strong><p style={sub}>Define what the school charges for each academic term. Student obligations and payments come later.</p></Link>}
-        {reportsEnabled && <Link href={`/app/schools/${schoolId}/reports`} style={cardLink}><strong>Reports →</strong><p style={sub}>Turn recorded attendance into a simple management view for a selected period.</p></Link>}
-        <Link href={`/app/schools/${schoolId}/communication`} style={cardLink}><strong>Communication →</strong><p style={sub}>Open your in-app inbox and notification channel settings. Sending requires communication permission.</p></Link>
+
+        {showAcademics && <Link href={`/app/schools/${schoolId}/setup`} style={cardLink}><strong>Academics →</strong><p style={sub}>Configure sessions, terms, classes, arms, subjects and academic structure.</p></Link>}
+        {showStudents && <Link href={`/app/schools/${schoolId}/students`} style={cardLink}><strong>Students →</strong><p style={sub}>Create student records, enroll students into a session/class, and keep the roster connected to attendance.</p></Link>}
+        {showAttendance && <Link href={`/app/schools/${schoolId}/attendance`} style={cardLink}><strong>Daily attendance →</strong><p style={sub}>Load a class roster, mark attendance quickly, and save the day in one action.</p></Link>}
+        {showAssessments && <Link href={`/app/schools/${schoolId}/assessments`} style={cardLink}><strong>Assessments & Results →</strong><p style={sub}>Define assessments, capture scores, and move results through the academic workflow.</p></Link>}
+        {showFinance && <Link href={`/app/schools/${schoolId}/finance`} style={cardLink}><strong>Fees & Finance →</strong><p style={sub}>Define fees, manage student obligations and record financial activity.</p></Link>}
+        {showCommunication && <Link href={`/app/schools/${schoolId}/communication`} style={cardLink}><strong>Communication →</strong><p style={sub}>Open school communication and notification workflows available to your access level.</p></Link>}
+        {showReports && <Link href={`/app/schools/${schoolId}/reports`} style={cardLink}><strong>Reports →</strong><p style={sub}>Turn trusted school records into operational and management views.</p></Link>}
       </div>
     </div></main>
   );
 }
+
 const cardLink = { display: "block", marginTop: 16, padding: 20, borderRadius: 14, background: "#f3f7f4", color: "inherit", textDecoration: "none" };
 const sub = { margin: "6px 0 0", color: "#53615a" };
