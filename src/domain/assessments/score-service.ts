@@ -22,6 +22,14 @@ export class AssessmentScoreConflictError extends Error {
   }
 }
 
+async function ensureAssessmentEditable(schoolId: string, assessmentId: string) {
+  const submitted = await db.auditEvent.findFirst({
+    where: { schoolId, entityType: "AssessmentDefinition", entityId: assessmentId, action: "assessment.result_submitted" },
+    select: { id: true },
+  });
+  if (submitted) throw new AssessmentScoreValidationError("This assessment result has been submitted and can no longer be edited.");
+}
+
 export async function saveAssessmentScore(input: AssessmentScoreInput) {
   if (!Number.isFinite(input.score) || input.score < 0) {
     throw new AssessmentScoreValidationError("Score must be a finite number greater than or equal to 0.");
@@ -41,6 +49,7 @@ export async function saveAssessmentScore(input: AssessmentScoreInput) {
     },
   });
   if (!assessment) throw new AssessmentScoreValidationError("Assessment does not belong to this school.");
+  await ensureAssessmentEditable(input.schoolId, assessment.id);
 
   const maxScore = assessment.maxScore.toNumber();
   if (input.score > maxScore) {
@@ -63,12 +72,7 @@ export async function saveAssessmentScore(input: AssessmentScoreInput) {
 
   try {
     return await db.assessmentScore.upsert({
-      where: {
-        assessmentId_studentId: {
-          assessmentId: assessment.id,
-          studentId: enrollment.studentId,
-        },
-      },
+      where: { assessmentId_studentId: { assessmentId: assessment.id, studentId: enrollment.studentId } },
       create: {
         schoolId: input.schoolId,
         academicSessionId: assessment.academicSessionId,
@@ -106,12 +110,7 @@ export async function getAssessmentScoreRoster(schoolId: string, assessmentId: s
   if (!assessment) throw new AssessmentScoreValidationError("Assessment does not belong to this school.");
 
   const students = await db.enrollment.findMany({
-    where: {
-      academicSessionId: assessment.academicSessionId,
-      classArmId: assessment.classArmId,
-      status: "ACTIVE",
-      student: { schoolId },
-    },
+    where: { academicSessionId: assessment.academicSessionId, classArmId: assessment.classArmId, status: "ACTIVE", student: { schoolId } },
     select: {
       id: true,
       student: {
@@ -121,10 +120,7 @@ export async function getAssessmentScoreRoster(schoolId: string, assessmentId: s
           firstName: true,
           middleName: true,
           lastName: true,
-          assessmentScores: {
-            where: { assessmentId: assessment.id },
-            select: { id: true, score: true, updatedAt: true },
-          },
+          assessmentScores: { where: { assessmentId: assessment.id }, select: { id: true, score: true, updatedAt: true } },
         },
       },
     },
