@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { isSchoolModuleEnabled } from "@/domain/modules/service";
 import { createNotification } from "@/domain/communication/notifications";
