@@ -1,4 +1,2 @@
-ALTER TABLE "School"
-ADD COLUMN "address" TEXT,
-ADD COLUMN "phone" TEXT,
-ADD COLUMN "email" TEXT;
+-- School profile columns are part of the initial Prisma baseline.
+-- Kept as a no-op migration so historical migration ordering remains intact.
