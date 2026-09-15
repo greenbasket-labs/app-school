@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CAPABILITIES } from "@/domain/auth/capabilities";
 import { currentSession } from "@/domain/auth/session-cookie";
+import { isSchoolModuleEnabled } from "@/domain/modules/service";
 import { db } from "@/lib/db";
 
 export default async function SchoolWorkspacePage({ params }: { params: Promise<{ schoolId: string }> }) {
@@ -16,6 +17,7 @@ export default async function SchoolWorkspacePage({ params }: { params: Promise<
   const canViewStudents = capabilitySet.has(CAPABILITIES.VIEW_STUDENTS);
   const canViewAssessments = capabilitySet.has(CAPABILITIES.CREATE_ASSESSMENT);
   const canManageFinance = capabilitySet.has(CAPABILITIES.MANAGE_FINANCE);
+  const reportsEnabled = canViewAttendance && await isSchoolModuleEnabled(schoolId, "REPORTS");
 
   return (
     <main style={{ minHeight: "100vh", padding: 32 }}><div style={{ maxWidth: 1000, margin: "0 auto" }}>
@@ -35,6 +37,7 @@ export default async function SchoolWorkspacePage({ params }: { params: Promise<
         {canViewAttendance && <Link href={`/app/schools/${schoolId}/attendance`} style={cardLink}><strong>Daily attendance →</strong><p style={sub}>Load a class roster, mark attendance quickly, and save the day in one action.</p></Link>}
         {canViewAssessments && <Link href={`/app/schools/${schoolId}/assessments`} style={cardLink}><strong>Assessment definitions →</strong><p style={sub}>Define assessments by session, term, class and subject.</p></Link>}
         {canManageFinance && <Link href={`/app/schools/${schoolId}/finance`} style={cardLink}><strong>Fees & Finance →</strong><p style={sub}>Define what the school charges for each academic term. Student obligations and payments come later.</p></Link>}
+        {reportsEnabled && <Link href={`/app/schools/${schoolId}/reports`} style={cardLink}><strong>Reports →</strong><p style={sub}>Turn recorded attendance into a simple management view for a selected period.</p></Link>}
         <Link href={`/app/schools/${schoolId}/communication`} style={cardLink}><strong>Communication →</strong><p style={sub}>Open your in-app inbox and notification channel settings. Sending requires communication permission.</p></Link>
       </div>
     </div></main>
