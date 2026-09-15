@@ -2,72 +2,104 @@
 
 ## Problem
 
-Manual payment recording proves that money was received, but it still requires a school staff member to receive the money and enter it. The next useful mechanism is to let an existing student invoice produce a trusted online checkout.
+Manual payment recording proves that money was received, but it still requires a school staff member to receive the money and enter it. Online collection should remove that manual step without turning Green Basket into the silent owner of school funds.
 
-## Current slice
+## Settlement principle
 
-App-School now has a small Paystack boundary for Nigerian NGN payments:
+**Each school has its own provider settlement configuration.**
 
-1. An authenticated finance user selects an existing open invoice.
-2. The server calculates the invoice's current outstanding balance.
-3. The server initializes a Paystack transaction using that exact outstanding amount.
-4. A `PaymentIntent` stores the school, invoice, provider, reference, amount and checkout URL.
-5. Paystack redirects through the callback endpoint, but the callback is not treated as proof of payment.
-6. Paystack's `charge.success` webhook is accepted only after `x-paystack-signature` validation.
-7. The global webhook matches the provider reference to the stored payment intent; the reference itself carries the school context through the stored intent.
-8. Amount/currency and invoice ownership/state are checked again.
-9. A successful provider payment creates the existing `PaymentRecord` and marks the payment intent successful in one database transaction.
-10. Repeated successful webhooks are idempotent because a successful intent is not fulfilled again.
+App-School is the shared technology platform. The school's payment provider account/subaccount is the settlement destination for that school's collections.
 
-Paystack recommends webhooks for final payment confirmation, and its webhook signature is an HMAC SHA512 of the raw event payload. The integration follows that model. urlPaystack webhook documentationhttps://paystack.com/docs/payments/webhooks/
+The payment record remains school-scoped inside App-School, while the provider handles the external money movement.
 
-Paystack transaction initialization uses the server-side secret key and accepts the amount in the currency subunit. App-School therefore converts NGN naira to kobo only at the provider boundary. urlPaystack transaction API documentationhttps://paystack.com/docs/api/transaction/
+This is intentionally different from using one Green Basket settlement account for every school.
 
-## Endpoints
+## Provider architecture
 
-- `POST /api/schools/[schoolId]/finance/payments/paystack/initialize`
-  - Requires authenticated membership, `FINANCE.MANAGE`, and the Finance module.
-  - Body: `{ invoiceId, payerEmail }`.
-  - Returns a Paystack checkout URL and provider reference.
+The application has a provider catalog rather than making Paystack the finance model:
 
-- `GET /api/schools/[schoolId]/finance/payments/paystack/callback`
-  - Handles the browser return from Paystack and redirects back to the finance payment page.
-  - The redirect itself does **not** create a payment record.
+- `PAYSTACK`
+- `FLUTTERWAVE`
+- `MONNIFY`
 
-- `POST /api/payments/paystack/webhook`
-  - One global webhook URL is used for the Green Basket Paystack integration.
-  - Validates the Paystack signature.
-  - Processes `charge.success` only.
-  - Rejects unknown references, mismatched amounts/currency and non-payable invoices.
+Each school can configure the provider settlement/subaccount reference it owns or has been assigned.
 
-## Configuration
+Paystack supports subaccounts and transaction splitting, including passing a school subaccount code during transaction initialization. urlPaystack split payments documentationhttps://paystack.com/docs/payments/split-payments/
 
-The server requires:
+Flutterwave supports subaccounts and split payments, where a subaccount identifier is used to route settlement to the configured account. urlFlutterwave split payments documentationhttps://developer.flutterwave.com/docs/split-payments
+
+Monnify supports transaction splitting through subaccounts and an `incomeSplitConfig` on payment requests. urlMonnify transaction splitting documentationhttps://developers.monnify.com/docs/collections/manage-payments/transaction-splitting
+
+## Current implementation
+
+The current slice establishes the school-settlement boundary and uses it for Paystack:
+
+1. The school owner opens Settings → Payment providers.
+2. The owner configures a provider and its settlement/subaccount reference.
+3. The provider reference is stored against that school, not globally.
+4. An online payment for an invoice resolves the configured provider account for that school.
+5. A `PaymentIntent` snapshots the settlement reference used for that transaction so later configuration changes do not rewrite the transaction's historical context.
+6. Paystack initialization passes the school's configured subaccount.
+7. Paystack's webhook remains the proof of successful payment.
+8. A verified successful provider event creates the existing school-scoped `PaymentRecord`.
+
+Provider credentials remain server-side. The school setting stores the provider's settlement reference, not a browser-accessible secret key.
+
+## School settings
+
+Payment provider configuration is part of the school's Settings control surface.
+
+Only the active school owner can configure or update it. Configuration changes are audited.
+
+A provider may be enabled or disabled without deleting its configuration history or payment records.
+
+## Payment lifecycle
 
 ```text
-PAYSTACK_SECRET_KEY=...
-APP_BASE_URL=https://your-app-domain.example
+School invoice
+      ↓
+PaymentIntent
+      ↓
+Provider adapter
+      ↓
+Provider checkout
+      ↓
+Provider webhook
+      ↓
+Signature / event verification
+      ↓
+Invoice + amount + school validation
+      ↓
+PaymentRecord
 ```
 
-Never expose `PAYSTACK_SECRET_KEY` to browser code or commit it to Git. Paystack's API authentication documentation explicitly requires secret keys to remain server-side. urlPaystack authentication documentationhttps://paystack.com/docs/api/authentication/
+The browser return/callback is navigation only. It is not proof that money was received.
 
-Configure this single webhook URL in Paystack after deployment:
+## Paystack-specific boundary
+
+Paystack currently uses:
 
 ```text
-https://your-app-domain.example/api/payments/paystack/webhook
+POST /transaction/initialize
+subaccount = school's configured Paystack subaccount code
 ```
 
-The webhook URL must be publicly reachable in the deployed environment.
+The App-School server keeps the Paystack secret key private. Paystack's API authentication documentation requires secret keys to remain server-side. urlPaystack authentication documentationhttps://paystack.com/docs/api/authentication/
+
+The webhook validates Paystack's `x-paystack-signature` HMAC SHA512 signature before processing `charge.success`.
 
 ## Deliberately deferred
 
-- Parent-facing authentication/portal for starting the payment.
-- Paystack customer records.
-- School-specific Paystack subaccounts or split settlement.
-- Payment receipts.
-- Refunds and reversals.
-- Reconciliation reports.
-- Multiple payment providers.
-- Automated retries/background jobs.
+- Flutterwave adapter
+- Monnify adapter
+- Provider account/subaccount creation automation
+- Provider OAuth/merchant credential management
+- Parent-facing authentication/portal for starting payments
+- Receipts
+- Refunds and reversals
+- Reconciliation reports
+- Provider settlement reconciliation
+- Green Basket platform commission rules
+- Background retry processing
 
-The current integration uses the Green Basket Paystack account boundary. Before live school collections, the settlement model must be decided: Green Basket account collection versus school-specific settlement/subaccounts. That is a business/financial decision, not something to silently assume in the code.
+The settlement architecture is now school-specific, but the commercial settlement model still needs to be decided before live collections: whether Green Basket charges a platform/service fee, whether that fee is split by the provider, and who bears provider transaction fees. Those are financial/business decisions, not assumptions to hide in the code.
