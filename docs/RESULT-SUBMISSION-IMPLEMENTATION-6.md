@@ -1,0 +1,1 @@
+Submission is the handoff from score entry to approval. It does not publish the result.
