@@ -20,14 +20,16 @@ export default async function StudentsPage({ params }: { params: Promise<{ schoo
   const capabilities = new Set(membership.capabilities.map(({ capability }) => capability.code));
   if (!capabilities.has(CAPABILITIES.VIEW_STUDENTS)) redirect(`/app/schools/${schoolId}`);
 
-  const [students, sessions] = await Promise.all([
+  const [students, sessions, classArms] = await Promise.all([
     db.student.findMany({
       where: { schoolId },
       select: { id: true, admissionNumber: true, firstName: true, middleName: true, lastName: true, status: true, enrollments: { select: { id: true, status: true, academicSession: { select: { id: true, name: true } }, classArm: { select: { id: true, name: true, classLevel: { select: { name: true } } } } }, orderBy: { enrolledAt: "desc" } } },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     }),
-    db.academicSession.findMany({ where: { schoolId }, select: { id: true, name: true, status: true, classArms: { select: { id: true, name: true, classLevel: { select: { name: true } } }, orderBy: [{ classLevel: { order: "asc" } }, { name: "asc" }] } }, orderBy: { startsAt: "desc" } }),
+    db.academicSession.findMany({ where: { schoolId }, select: { id: true, name: true, status: true }, orderBy: { startsAt: "desc" } }),
+    db.classArm.findMany({ where: { classLevel: { schoolId } }, select: { id: true, name: true, classLevel: { select: { name: true } } }, orderBy: [{ classLevel: { order: "asc" } }, { name: "asc" }] }),
   ]);
+  const sessionOptions = sessions.map((item) => ({ ...item, classArms }));
 
   return (
     <main style={{ minHeight: "100vh", padding: 24 }}>
@@ -38,7 +40,7 @@ export default async function StudentsPage({ params }: { params: Promise<{ schoo
           <h1 style={{ margin: "8px 0 6px", fontSize: 34 }}>{membership.school.name}</h1>
           <p style={{ margin: 0, color: "#53615a" }}>One student record. Enrollment connects that student to a session and class.</p>
         </div>
-        <StudentWorkspace schoolId={schoolId} canManage={capabilities.has(CAPABILITIES.MANAGE_STUDENTS)} initialStudents={students} sessions={sessions} />
+        <StudentWorkspace schoolId={schoolId} canManage={capabilities.has(CAPABILITIES.MANAGE_STUDENTS)} initialStudents={students} sessions={sessionOptions} />
       </div>
     </main>
   );
