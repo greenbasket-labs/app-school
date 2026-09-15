@@ -20,12 +20,12 @@ export default async function AttendancePage({ params }: { params: Promise<{ sch
   const capabilities = new Set(membership.capabilities.map(({ capability }) => capability.code));
   if (!capabilities.has(CAPABILITIES.VIEW_ATTENDANCE)) redirect(`/app/schools/${schoolId}`);
 
-  const sessions = await db.academicSession.findMany({
-    where: { schoolId },
-    select: { id: true, name: true, status: true, classArms: { select: { id: true, name: true, classLevel: { select: { name: true } } }, orderBy: [{ classLevel: { order: "asc" } }, { name: "asc" }] } },
-    orderBy: { startsAt: "desc" },
-  });
+  const [sessions, classArms] = await Promise.all([
+    db.academicSession.findMany({ where: { schoolId }, select: { id: true, name: true, status: true }, orderBy: { startsAt: "desc" } }),
+    db.classArm.findMany({ where: { classLevel: { schoolId } }, select: { id: true, name: true, classLevel: { select: { name: true } } }, orderBy: [{ classLevel: { order: "asc" } }, { name: "asc" }] }),
+  ]);
   const activeSession = sessions.find((item) => item.status === "ACTIVE") ?? sessions[0];
+  const sessionOptions = sessions.map((item) => ({ ...item, classArms }));
 
   return (
     <main style={{ minHeight: "100vh", padding: 24 }}>
@@ -40,7 +40,7 @@ export default async function AttendancePage({ params }: { params: Promise<{ sch
           <Link href={`/app/schools/${schoolId}/attendance/history`} style={{ borderRadius: 10, background: "white", padding: "10px 14px", color: "#173d2c", fontWeight: 800, textDecoration: "none", boxShadow: "0 4px 16px rgba(0,0,0,.05)" }}>Attendance history →</Link>
         </div>
         {activeSession ? (
-          <AttendanceRoster schoolId={schoolId} canRecord={capabilities.has(CAPABILITIES.RECORD_ATTENDANCE)} initialSessionId={activeSession.id} sessions={sessions.map((item) => ({ id: item.id, name: item.name, status: item.status, classArms: item.classArms }))} />
+          <AttendanceRoster schoolId={schoolId} canRecord={capabilities.has(CAPABILITIES.RECORD_ATTENDANCE)} initialSessionId={activeSession.id} sessions={sessionOptions} />
         ) : (
           <div style={{ marginTop: 24, background: "white", borderRadius: 16, padding: 24 }}>Create an academic session and class before recording attendance.</div>
         )}
