@@ -1,9 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
+import { getEnabledSchoolPaymentProvider } from "@/domain/finance/payment-providers";
 
 const PAYSTACK_API = "https://api.paystack.co";
-const PROVIDER = "PAYSTACK";
+const PROVIDER = "PAYSTACK" as const;
 
 export class PaystackPaymentError extends Error {}
 
@@ -36,6 +37,10 @@ export async function initializePaystackPayment(
   invoiceId: string,
   payerEmail: string,
 ) {
+  const configured = await getEnabledSchoolPaymentProvider(schoolId, PROVIDER);
+  const providerConfig = configured[0];
+  if (!providerConfig) throw new PaystackPaymentError("Paystack is not configured for this school.");
+
   const invoice = await db.$queryRaw<Array<{
     studentId: string;
     amount: string;
@@ -66,9 +71,9 @@ export async function initializePaystackPayment(
 
   await db.$executeRaw(Prisma.sql`
     INSERT INTO "PaymentIntent"
-      ("id", "schoolId", "invoiceId", "provider", "reference", "amount", "currency", "status", "createdAt", "updatedAt")
+      ("id", "schoolId", "invoiceId", "provider", "reference", "amount", "currency", "status", "settlementAccountReference", "createdAt", "updatedAt")
     VALUES
-      (${intentId}::uuid, ${schoolId}::uuid, ${invoiceId}::uuid, ${PROVIDER}, ${transactionReference}, ${amountNaira}, 'NGN', 'INITIALIZED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      (${intentId}::uuid, ${schoolId}::uuid, ${invoiceId}::uuid, ${PROVIDER}, ${transactionReference}, ${amountNaira}, 'NGN', 'INITIALIZED', ${providerConfig.settlementAccountReference}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
   `);
 
   try {
@@ -83,6 +88,7 @@ export async function initializePaystackPayment(
         amount: String(amountKobo),
         currency: "NGN",
         reference: transactionReference,
+        subaccount: providerConfig.settlementAccountReference,
         callback_url: `${baseUrl()}/api/schools/${schoolId}/finance/payments/paystack/callback`,
         metadata: JSON.stringify({
           paymentIntentId: intentId,
@@ -116,6 +122,7 @@ export async function initializePaystackPayment(
       amount: amountNaira,
       currency: "NGN",
       checkoutUrl: data.data.authorization_url,
+      settlementAccountReference: providerConfig.settlementAccountReference,
     };
   } catch (error) {
     await db.$executeRaw(Prisma.sql`
@@ -138,8 +145,9 @@ export async function handlePaystackChargeSuccess(event: {
       invoiceId: string;
       amount: string;
       status: string;
+      settlementAccountReference: string | null;
     }>>(Prisma.sql`
-      SELECT "id", "schoolId", "invoiceId", "amount"::text AS "amount", "status"
+      SELECT "id", "schoolId", "invoiceId", "amount"::text AS "amount", "status", "settlementAccountReference"
       FROM "PaymentIntent"
       WHERE "provider" = ${PROVIDER} AND "reference" = ${event.reference}
       FOR UPDATE
