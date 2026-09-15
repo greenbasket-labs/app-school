@@ -14,6 +14,7 @@ export default async function SchoolWorkspacePage({ params }: { params: Promise<
   const canManageSchool = capabilitySet.has(CAPABILITIES.MANAGE_SCHOOL);
   const canViewAttendance = capabilitySet.has(CAPABILITIES.VIEW_ATTENDANCE);
   const canViewStudents = capabilitySet.has(CAPABILITIES.VIEW_STUDENTS);
+  const canViewAssessments = capabilitySet.has(CAPABILITIES.CREATE_ASSESSMENT);
 
   return (
     <main style={{ minHeight: "100vh", padding: 32 }}><div style={{ maxWidth: 1000, margin: "0 auto" }}>
@@ -31,6 +32,7 @@ export default async function SchoolWorkspacePage({ params }: { params: Promise<
         {membership.isOwner && <Link href={`/app/schools/${schoolId}/settings`} style={cardLink}><strong>Settings & modules →</strong><p style={sub}>The school owner controls which product modules are enabled for this school.</p></Link>}
         {canViewStudents && <Link href={`/app/schools/${schoolId}/students`} style={cardLink}><strong>Students →</strong><p style={sub}>Create student records, enroll students into a session/class, and keep the roster connected to attendance.</p></Link>}
         {canViewAttendance && <Link href={`/app/schools/${schoolId}/attendance`} style={cardLink}><strong>Daily attendance →</strong><p style={sub}>Load a class roster, mark attendance quickly, and save the day in one action.</p></Link>}
+        {canViewAssessments && <Link href={`/app/schools/${schoolId}/assessments`} style={cardLink}><strong>Assessment definitions →</strong><p style={sub}>Define assessments by session, term, class and subject. Score capture comes later.</p></Link>}
       </div>
     </div></main>
   );
