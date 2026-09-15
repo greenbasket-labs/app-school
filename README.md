@@ -36,6 +36,7 @@ The product is intentionally built as a configurable school operating platform r
 13. **School profile configuration** — owner-managed school name and basic contact details with audited changes.
 14. **Attendance history & correction** — historical attendance search plus capability-controlled corrections with previous/current state audit evidence.
 15. **Parent/guardian records** — school-scoped guardian records plus many-to-many student relationships, with relationship metadata and audited link/unlink actions.
+16. **Student status lifecycle** — controlled active/inactive/withdrawn transitions with terminal withdrawal and audit history.
 
 ## Module model
 
@@ -115,6 +116,18 @@ This catalog will grow as new product modules are implemented. A module can be a
 - Creating a guardian and linking/unlinking a guardian are audited; relationships are not silently deleted from historical audit evidence.
 - No parent portal, messaging, payments or notifications are included in this slice.
 
+### Student lifecycle rules
+
+- Student status is authoritative on the `Student` record.
+- Supported statuses are `ACTIVE`, `INACTIVE`, and `WITHDRAWN`.
+- `ACTIVE` can move to `INACTIVE` or `WITHDRAWN`.
+- `INACTIVE` can move to `ACTIVE` or `WITHDRAWN`.
+- `WITHDRAWN` is terminal in this first lifecycle slice and cannot be reactivated through the status API.
+- Status changes require `STUDENTS.MANAGE` and the Students module to be enabled.
+- Every actual status transition records previous and current status in `AuditEvent`.
+- Student records are never deleted as part of lifecycle management.
+- Existing enrollment history remains preserved; inactive/withdrawn students are not offered as new enrollment candidates by the current student workspace.
+
 ## Roadmap
 
 ### Phase 0 — Foundation & trust
@@ -151,7 +164,7 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [x] Staff accounts and school membership management — initial owner-managed slice
 - [x] Capability assignment UI — initial owner-managed slice
 - [x] Parent/guardian records and student relationships — initial slice
-- [ ] Student status lifecycle
+- [x] Student status lifecycle
 
 ### Phase 3 — Academic engine
 - [ ] Assessment definitions
@@ -266,6 +279,6 @@ Run the same request again with a different email but the same CAC. Expected res
 
 ## Important current boundary
 
-This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, setup readiness, school profile, students, enrollment, attendance, attendance history/correction, parent/guardian records, module configuration/enforcement, academic session lifecycle, and an initial staff/access management slice. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
+This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, setup readiness, school profile, students, enrollment, attendance, attendance history/correction, parent/guardian records, student status lifecycle, module configuration/enforcement, academic session lifecycle, and an initial staff/access management slice. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
 
 See `ARCHITECTURE.md` for frozen architectural decisions.
