@@ -126,7 +126,15 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Duplicate publication is rejected
   - Publication is audited with actor and state transition
   - Publication remains separate from approval
-- [ ] Report cards
+- [x] **Report cards**
+  - School- and student-scoped report card view
+  - Selected academic session and term must belong to the school
+  - Student must have enrollment in the selected session
+  - Only published assessments contribute to the report card
+  - Subject, assessment, score, maximum score and percentage are exposed
+  - Earned/possible totals and overall percentage are calculated from published assessments
+  - Existing `STUDENTS.VIEW` capability and Assessments module enforced
+  - Grading, ranking, comments, PDF generation and parent delivery intentionally deferred
 - [ ] Academic history
 
 ### Phase 4 — Finance
