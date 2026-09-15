@@ -14,7 +14,7 @@ App-School now has a small Paystack boundary for Nigerian NGN payments:
 4. A `PaymentIntent` stores the school, invoice, provider, reference, amount and checkout URL.
 5. Paystack redirects through the callback endpoint, but the callback is not treated as proof of payment.
 6. Paystack's `charge.success` webhook is accepted only after `x-paystack-signature` validation.
-7. The webhook matches the provider reference to the stored payment intent.
+7. The global webhook matches the provider reference to the stored payment intent; the reference itself carries the school context through the stored intent.
 8. Amount/currency and invoice ownership/state are checked again.
 9. A successful provider payment creates the existing `PaymentRecord` and marks the payment intent successful in one database transaction.
 10. Repeated successful webhooks are idempotent because a successful intent is not fulfilled again.
@@ -34,7 +34,8 @@ Paystack transaction initialization uses the server-side secret key and accepts 
   - Handles the browser return from Paystack and redirects back to the finance payment page.
   - The redirect itself does **not** create a payment record.
 
-- `POST /api/schools/[schoolId]/finance/payments/paystack/webhook`
+- `POST /api/payments/paystack/webhook`
+  - One global webhook URL is used for the Green Basket Paystack integration.
   - Validates the Paystack signature.
   - Processes `charge.success` only.
   - Rejects unknown references, mismatched amounts/currency and non-payable invoices.
@@ -50,7 +51,13 @@ APP_BASE_URL=https://your-app-domain.example
 
 Never expose `PAYSTACK_SECRET_KEY` to browser code or commit it to Git. Paystack's API authentication documentation explicitly requires secret keys to remain server-side. urlPaystack authentication documentationhttps://paystack.com/docs/api/authentication/
 
-The webhook URL configured in Paystack must be publicly reachable in the deployed environment.
+Configure this single webhook URL in Paystack after deployment:
+
+```text
+https://your-app-domain.example/api/payments/paystack/webhook
+```
+
+The webhook URL must be publicly reachable in the deployed environment.
 
 ## Deliberately deferred
 
