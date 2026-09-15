@@ -101,7 +101,14 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Creation and correction audited with previous/current score state
   - Assessment module and existing `ASSESSMENT.CREATE` capability enforced
   - Result validation, submission and approval intentionally deferred
-- [ ] Score validation
+- [x] **Score validation**
+  - Complete active enrollment roster checked
+  - Missing scores identified
+  - Stored scores defensively checked against `0..maxScore`
+  - Assessment school ownership verified
+  - Validation result exposes completion counts and affected student IDs
+  - Assessment module and existing `ASSESSMENT.CREATE` capability enforced
+  - Result submission and approval intentionally deferred
 - [ ] Result submission
 - [ ] Result approval
 - [ ] Result publication
