@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 export default function PaymentWorkspace({ schoolId }: { schoolId: string }) {
   const [data, setData] = useState<any>({ payments: [], options: [] });
+  const [providers, setProviders] = useState<string[]>([]);
   const [invoiceId, setInvoiceId] = useState("");
   const [amount, setAmount] = useState("");
   const [reference, setReference] = useState("");
@@ -11,14 +12,19 @@ export default function PaymentWorkspace({ schoolId }: { schoolId: string }) {
   const [payerEmail, setPayerEmail] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [onlineLoading, setOnlineLoading] = useState(false);
+  const [onlineLoading, setOnlineLoading] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
-    const response = await fetch(`/api/schools/${schoolId}/finance/payments`, { cache: "no-store" });
-    const json = await response.json();
-    if (response.ok) setData(json);
-    else setMessage(json.message ?? "Unable to load payments.");
+    const [paymentsResponse, providersResponse] = await Promise.all([
+      fetch(`/api/schools/${schoolId}/finance/payments`, { cache: "no-store" }),
+      fetch(`/api/schools/${schoolId}/finance/payments/providers`, { cache: "no-store" }),
+    ]);
+    const paymentsJson = await paymentsResponse.json();
+    const providersJson = await providersResponse.json();
+    if (paymentsResponse.ok) setData(paymentsJson);
+    else setMessage(paymentsJson.message ?? "Unable to load payments.");
+    if (providersResponse.ok) setProviders(providersJson.providers ?? []);
     setLoading(false);
   }
 
@@ -36,12 +42,13 @@ export default function PaymentWorkspace({ schoolId }: { schoolId: string }) {
     setMessage("Payment recorded."); setAmount(""); setReference(""); setNote(""); await load();
   }
 
-  async function startOnlinePayment(event: React.FormEvent) {
-    event.preventDefault();
+  async function startOnlinePayment(provider: string) {
     setMessage("");
-    setOnlineLoading(true);
+    setOnlineLoading(provider);
     try {
-      const response = await fetch(`/api/schools/${schoolId}/finance/payments/paystack/initialize`, {
+      const path = provider === "PAYSTACK" ? "paystack" : provider === "FLUTTERWAVE" ? "flutterwave" : null;
+      if (!path) { setMessage(`${provider} checkout is not implemented yet.`); return; }
+      const response = await fetch(`/api/schools/${schoolId}/finance/payments/${path}/initialize`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoiceId, payerEmail }),
       });
@@ -49,7 +56,7 @@ export default function PaymentWorkspace({ schoolId }: { schoolId: string }) {
       if (!response.ok) { setMessage(json.message ?? "Online payment could not be initialized."); return; }
       window.location.assign(json.payment.checkoutUrl);
     } finally {
-      setOnlineLoading(false);
+      setOnlineLoading(null);
     }
   }
 
@@ -70,12 +77,16 @@ export default function PaymentWorkspace({ schoolId }: { schoolId: string }) {
         <button type="submit" disabled={!invoiceId || !amount} style={{ padding: 11, borderRadius: 9, border: 0, background: "#183c2a", color: "white", fontWeight: 700 }}>Record payment</button>
       </form>
 
-      <form onSubmit={startOnlinePayment} style={{ display: "grid", gap: 10, maxWidth: 620, marginTop: 18, padding: 18, border: "1px solid #d9e0db", borderRadius: 14 }}>
+      <div style={{ display: "grid", gap: 10, maxWidth: 620, marginTop: 18, padding: 18, border: "1px solid #d9e0db", borderRadius: 14 }}>
         <h2 style={{ margin: 0 }}>Start online payment</h2>
-        <p style={{ margin: 0, color: "#53615a" }}>Paystack will open checkout for the invoice&apos;s current outstanding balance. Final payment confirmation comes from the provider webhook.</p>
+        <p style={{ margin: 0, color: "#53615a" }}>Choose a provider configured by the school owner. The checkout uses the invoice&apos;s current outstanding balance.</p>
         <input type="email" placeholder="Payer email" value={payerEmail} onChange={(e) => setPayerEmail(e.target.value)} required style={{ padding: 11 }} />
-        <button type="submit" disabled={!invoiceId || !payerEmail || onlineLoading} style={{ padding: 11, borderRadius: 9, border: 0, background: "#315f45", color: "white", fontWeight: 700 }}>{onlineLoading ? "Opening checkout…" : "Pay online with Paystack"}</button>
-      </form>
+        {providers.length === 0 ? <p style={{ margin: 0 }}>No online payment provider is configured for this school.</p> : providers.map((provider) => (
+          <button key={provider} type="button" onClick={() => startOnlinePayment(provider)} disabled={!invoiceId || !payerEmail || onlineLoading !== null} style={{ padding: 11, borderRadius: 9, border: 0, background: "#315f45", color: "white", fontWeight: 700 }}>
+            {onlineLoading === provider ? "Opening checkout…" : `Pay online with ${provider}`}
+          </button>
+        ))}
+      </div>
 
       {message && <p style={{ marginTop: 12 }}>{message}</p>}
 
