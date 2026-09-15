@@ -1,0 +1,1 @@
+Result submission is implemented as a small workflow boundary. Validation must succeed first; submission is audited; duplicate submission is rejected; ordinary score edits are blocked after submission. Approval and publication remain separate workflows.
