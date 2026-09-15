@@ -8,8 +8,10 @@ export default function PaymentWorkspace({ schoolId }: { schoolId: string }) {
   const [amount, setAmount] = useState("");
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
+  const [payerEmail, setPayerEmail] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [onlineLoading, setOnlineLoading] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -34,6 +36,23 @@ export default function PaymentWorkspace({ schoolId }: { schoolId: string }) {
     setMessage("Payment recorded."); setAmount(""); setReference(""); setNote(""); await load();
   }
 
+  async function startOnlinePayment(event: React.FormEvent) {
+    event.preventDefault();
+    setMessage("");
+    setOnlineLoading(true);
+    try {
+      const response = await fetch(`/api/schools/${schoolId}/finance/payments/paystack/initialize`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceId, payerEmail }),
+      });
+      const json = await response.json();
+      if (!response.ok) { setMessage(json.message ?? "Online payment could not be initialized."); return; }
+      window.location.assign(json.payment.checkoutUrl);
+    } finally {
+      setOnlineLoading(false);
+    }
+  }
+
   return (
     <section style={{ marginTop: 24 }}>
       <form onSubmit={submit} style={{ display: "grid", gap: 10, maxWidth: 620, padding: 18, border: "1px solid #d9e0db", borderRadius: 14 }}>
@@ -49,8 +68,16 @@ export default function PaymentWorkspace({ schoolId }: { schoolId: string }) {
         <input placeholder="Payment reference (optional)" value={reference} onChange={(e) => setReference(e.target.value)} style={{ padding: 11 }} />
         <input placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} style={{ padding: 11 }} />
         <button type="submit" disabled={!invoiceId || !amount} style={{ padding: 11, borderRadius: 9, border: 0, background: "#183c2a", color: "white", fontWeight: 700 }}>Record payment</button>
-        {message && <p style={{ margin: 0 }}>{message}</p>}
       </form>
+
+      <form onSubmit={startOnlinePayment} style={{ display: "grid", gap: 10, maxWidth: 620, marginTop: 18, padding: 18, border: "1px solid #d9e0db", borderRadius: 14 }}>
+        <h2 style={{ margin: 0 }}>Start online payment</h2>
+        <p style={{ margin: 0, color: "#53615a" }}>Paystack will open checkout for the invoice&apos;s current outstanding balance. Final payment confirmation comes from the provider webhook.</p>
+        <input type="email" placeholder="Payer email" value={payerEmail} onChange={(e) => setPayerEmail(e.target.value)} required style={{ padding: 11 }} />
+        <button type="submit" disabled={!invoiceId || !payerEmail || onlineLoading} style={{ padding: 11, borderRadius: 9, border: 0, background: "#315f45", color: "white", fontWeight: 700 }}>{onlineLoading ? "Opening checkout…" : "Pay online with Paystack"}</button>
+      </form>
+
+      {message && <p style={{ marginTop: 12 }}>{message}</p>}
 
       <div style={{ marginTop: 28 }}>
         <h2>Recent payments</h2>
