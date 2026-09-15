@@ -14,10 +14,9 @@ enum SetupStatus { NOT_STARTED ORGANIZATION_CREATED SCHOOL_INFORMATION_REQUIRED 
 enum MembershipStatus { ACTIVE SUSPENDED ENDED }
 enum IdentityVerificationStatus { SUPPLIED VERIFIED REJECTED REVIEW_REQUIRED }
 enum AcademicSessionStatus { DRAFT ACTIVE CLOSED }
-
 enum StudentStatus { ACTIVE INACTIVE WITHDRAWN }
-
 enum EnrollmentStatus { ACTIVE COMPLETED WITHDRAWN }
+enum AttendanceStatus { PRESENT ABSENT LATE EXCUSED }
 
 model User {
   id String @id @default(uuid()) @db.Uuid
@@ -30,7 +29,6 @@ model User {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
-
 model Organization {
   id String @id @default(uuid()) @db.Uuid
   name String
@@ -42,7 +40,6 @@ model Organization {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
-
 model OrganizationIdentity {
   id String @id @default(uuid()) @db.Uuid
   organizationId String @unique @db.Uuid
@@ -53,7 +50,6 @@ model OrganizationIdentity {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
-
 model School {
   id String @id @default(uuid()) @db.Uuid
   organizationId String @db.Uuid
@@ -68,13 +64,13 @@ model School {
   classLevels ClassLevel[]
   subjects Subject[]
   students Student[]
+  attendanceRecords AttendanceRecord[]
   auditEvents AuditEvent[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@index([organizationId])
   @@index([normalizedName])
 }
-
 model AcademicSession {
   id String @id @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
@@ -86,12 +82,12 @@ model AcademicSession {
   terms AcademicTerm[]
   classSubjects ClassSubject[]
   enrollments Enrollment[]
+  attendanceRecords AttendanceRecord[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([schoolId, name])
   @@index([schoolId, startsAt])
 }
-
 model AcademicTerm {
   id String @id @default(uuid()) @db.Uuid
   academicSessionId String @db.Uuid
@@ -106,7 +102,6 @@ model AcademicTerm {
   @@unique([academicSessionId, name])
   @@index([academicSessionId, startsAt])
 }
-
 model ClassLevel {
   id String @id @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
@@ -120,7 +115,6 @@ model ClassLevel {
   @@unique([schoolId, order])
   @@index([schoolId, order])
 }
-
 model ClassArm {
   id String @id @default(uuid()) @db.Uuid
   classLevelId String @db.Uuid
@@ -128,12 +122,12 @@ model ClassArm {
   classLevel ClassLevel @relation(fields: [classLevelId], references: [id], onDelete: Restrict)
   subjects ClassSubject[]
   enrollments Enrollment[]
+  attendanceRecords AttendanceRecord[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([classLevelId, name])
   @@index([classLevelId])
 }
-
 model Subject {
   id String @id @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
@@ -147,7 +141,6 @@ model Subject {
   @@unique([schoolId, code])
   @@index([schoolId, name])
 }
-
 model ClassSubject {
   id String @id @default(uuid()) @db.Uuid
   academicSessionId String @db.Uuid
@@ -161,7 +154,6 @@ model ClassSubject {
   @@index([academicSessionId, classArmId])
   @@index([academicSessionId, subjectId])
 }
-
 model Student {
   id String @id @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
@@ -173,12 +165,12 @@ model Student {
   status StudentStatus @default(ACTIVE)
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   enrollments Enrollment[]
+  attendanceRecords AttendanceRecord[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([schoolId, admissionNumber])
   @@index([schoolId, lastName, firstName])
 }
-
 model Enrollment {
   id String @id @default(uuid()) @db.Uuid
   studentId String @db.Uuid
@@ -190,11 +182,32 @@ model Enrollment {
   student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
   academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Restrict)
   classArm ClassArm @relation(fields: [classArmId], references: [id], onDelete: Restrict)
+  attendanceRecords AttendanceRecord[]
   @@unique([studentId, academicSessionId])
   @@index([academicSessionId, classArmId, status])
   @@index([studentId, status])
 }
-
+model AttendanceRecord {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  academicSessionId String @db.Uuid
+  classArmId String @db.Uuid
+  studentId String @db.Uuid
+  enrollmentId String @db.Uuid
+  attendanceDate DateTime @db.Date
+  status AttendanceStatus
+  note String?
+  recordedByUserId String @db.Uuid
+  recordedAt DateTime @default(now()) @db.Timestamptz(6)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Restrict)
+  classArm ClassArm @relation(fields: [classArmId], references: [id], onDelete: Restrict)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+  @@unique([studentId, attendanceDate])
+  @@index([schoolId, attendanceDate, classArmId])
+  @@index([academicSessionId, attendanceDate])
+}
 model Membership {
   id String @id @default(uuid()) @db.Uuid
   userId String @db.Uuid
@@ -210,7 +223,6 @@ model Membership {
   @@unique([userId, schoolId])
   @@index([organizationId, schoolId])
 }
-
 model Capability {
   id String @id @default(uuid()) @db.Uuid
   code String @unique
@@ -218,7 +230,6 @@ model Capability {
   memberships MembershipCapability[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
 }
-
 model MembershipCapability {
   membershipId String @db.Uuid
   capabilityId String @db.Uuid
@@ -230,7 +241,6 @@ model MembershipCapability {
   @@id([membershipId, capabilityId])
   @@index([schoolId, capabilityId])
 }
-
 model UserSession {
   id String @id @default(uuid()) @db.Uuid
   userId String @db.Uuid
@@ -242,7 +252,6 @@ model UserSession {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   @@index([userId, expiresAt])
 }
-
 model AuditEvent {
   id String @id @default(uuid()) @db.Uuid
   schoolId String? @db.Uuid
