@@ -1,0 +1,1 @@
+Result submission is a small workflow boundary: validation first, audited submission second, score edits locked afterward. Approval and publication remain separate.
