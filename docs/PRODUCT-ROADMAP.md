@@ -135,7 +135,13 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Earned/possible totals and overall percentage are calculated from published assessments
   - Existing `STUDENTS.VIEW` capability and Assessments module enforced
   - Grading, ranking, comments, PDF generation and parent delivery intentionally deferred
-- [ ] Academic history
+- [x] **Academic history**
+  - School- and student-scoped history view
+  - Only published assessment results are included
+  - Results span academic sessions and terms
+  - Session, term, subject, assessment, score, maximum score and percentage are retained in the read model
+  - Existing `STUDENTS.VIEW` capability and Assessments module enforced
+  - No separate history table or speculative grading/ranking model introduced
 
 ### Phase 4 — Finance
 - [ ] Fee structures
