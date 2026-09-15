@@ -32,6 +32,7 @@ The product is intentionally built as a configurable school operating platform r
 9. **Module enforcement** — enabled module state is checked by the backend before student, enrollment and attendance operations are allowed; capabilities still apply separately.
 10. **Academic session lifecycle** — sessions move forward from draft → active → closed with validation and audit history.
 11. **Staff & access foundation** — owner-managed staff accounts, school memberships and explicit capability assignment with audit history.
+12. **Setup readiness** — live checklist verifies the minimum academic foundation required before a school is considered ready.
 
 ## Module model
 
@@ -74,6 +75,14 @@ This catalog will grow as new product modules are implemented. A module can be a
 - Staff creation and capability changes create audit events.
 - Staff access administration is separate from module enablement.
 
+### Setup readiness rules
+
+- Readiness is calculated from the school's actual records; it is not a manually entered flag.
+- The minimum foundation checks are: academic session, academic term, class level, class arm, subject, and subject-to-class assignment.
+- The readiness API is school-scoped and requires the school-management capability.
+- The setup workspace displays the live checklist and missing requirements.
+- Readiness does not delete or mutate configuration records.
+
 ## Roadmap
 
 ### Phase 0 — Foundation & trust
@@ -99,7 +108,7 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [x] Owner-only module settings foundation
 - [x] Backend module enforcement for implemented modules
 - [x] Session lifecycle: draft → active → closed
-- [ ] Formal setup readiness calculation
+- [x] Formal setup readiness calculation
 - [ ] School profile/configuration settings
 
 ### Phase 2 — Core daily operations
@@ -175,7 +184,7 @@ This catalog will grow as new product modules are implemented. A module can be a
 4. **Capability-based authorization:** permissions are explicit capabilities, not assumptions based on role names.
 5. **Settings as control plane:** school configuration, access administration and module changes belong in Settings rather than scattered through operational screens.
 6. **Owner-only module control:** module enable/disable is a school configuration action reserved for the owner.
-7. **Configuration does not delete truth:** disabling a module must preserve its historical records.
+7. **Configuration does not delete truth:** disabling a module must preserve historical records.
 8. **Capture once, derive many:** one real-world event should be recorded once and downstream consequences derived from it.
 9. **Do not automate garbage:** capture → validate → automate.
 10. **AI is above the record layer:** AI can explain, summarize and assist, but trusted school records remain authoritative.
@@ -225,6 +234,6 @@ Run the same request again with a different email but the same CAC. Expected res
 
 ## Important current boundary
 
-This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, students, enrollment, attendance, module configuration/enforcement, academic session lifecycle, and an initial staff/access management slice. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
+This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, setup readiness, students, enrollment, attendance, module configuration/enforcement, academic session lifecycle, and an initial staff/access management slice. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
 
 See `ARCHITECTURE.md` for frozen architectural decisions.
