@@ -93,7 +93,14 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Assessment creation audited
   - Assessments module and capability boundaries enforced
   - Score capture intentionally deferred
-- [ ] Score capture
+- [x] **Score capture**
+  - One school-scoped score per student per assessment
+  - Active enrollment roster derived from the assessment's session/class context
+  - Score constrained to `0 <= score <= maxScore`
+  - Existing score corrections update the authoritative score record
+  - Creation and correction audited with previous/current score state
+  - Assessment module and existing `ASSESSMENT.CREATE` capability enforced
+  - Result validation, submission and approval intentionally deferred
 - [ ] Score validation
 - [ ] Result submission
 - [ ] Result approval
@@ -134,7 +141,7 @@ The academic engine is intentionally built as dependent slices, not one large fe
 - [ ] Offline-first workflows where useful
 - [ ] Idempotent sync actions
 - [ ] Anomaly/delay detection
-- [ ] AI assistance above trusted records, never as the source of truth
+- [ ] AI assistance above trusted records, never the source of truth
 
 ### Phase 8 — Production platform
 - [ ] PostgreSQL migration/deployment process
