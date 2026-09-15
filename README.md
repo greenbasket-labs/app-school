@@ -1,10 +1,167 @@
 # GREEN BASKET GLOBAL LIMITED
 
-## School Platform
+## App-School
+
+**App-School is the school application.** Every school uses the same product, then configures its own school inside the application. The platform is multi-tenant: school data, access, settings and operational records remain isolated by school.
 
 Fresh production implementation. No inherited application code.
 
-The current vertical slice establishes the tenant identity foundation: User -> Organization -> unique CAC identity -> School -> Membership -> capability primitives -> audit history.
+## Product direction
+
+The product is intentionally built as a configurable school operating platform rather than a collection of separate school apps.
+
+- One App-School product for every school.
+- Each school configures its own academic structure, people, workflows and enabled modules.
+- Future capabilities are delivered as modules.
+- **Only the school owner can enable or disable modules.**
+- Disabling a module hides/stops its operational surface; it does not delete historical records.
+- Staff access is controlled separately through capabilities. Enabling a module does not automatically give every staff member access.
+- The database remains the source of truth. Settings control product behavior, not ownership of the underlying records.
+
+## Current vertical slices
+
+1. **Identity foundation** — User → Organization → unique CAC identity → School → Membership → audit history.
+2. **Authentication** — password authentication, database-backed sessions and secure session cookie.
+3. **Capability authorization** — school-scoped capability checks rather than hardcoded role behavior.
+4. **School structure** — academic sessions, class levels, class arms, subjects and subject-to-class assignments.
+5. **Student operations** — student records and session/class enrollment.
+6. **Attendance** — school-scoped daily attendance roster, quick marking and bulk save/correction.
+7. **School setup** — owner/manager workflow for configuring the academic foundation.
+8. **Module configuration foundation** — school module catalog plus owner-only enable/disable settings with audit history.
+
+## Module model
+
+The application has a central module catalog and a school-specific configuration layer.
+
+Current module catalog:
+
+| Module | Purpose | Initial state for a new school |
+|---|---|---|
+| Academics | Sessions, terms, classes, arms and subjects | Enabled |
+| Students | Student records and enrollment | Enabled |
+| Attendance | Daily attendance | Enabled |
+| Assessments & Results | Assessment, scores, approval and results | Disabled |
+| Fees & Finance | Fees, invoices, payments and finance | Disabled |
+| Communication | School/family/internal communication | Disabled |
+| Reports | Operational and management reports | Disabled |
+
+This catalog will grow as new product modules are implemented. A module can be added to the catalog before its full operational workflow is released.
+
+### Configuration rules
+
+- Module definitions are platform-level product definitions.
+- `SchoolModule` stores each school's enabled/disabled state.
+- Module state is scoped by `schoolId` and cannot cross tenant boundaries.
+- The initial school owner is explicitly marked as the owner during onboarding.
+- Only an active owner membership can change module state.
+- Every enable/disable action creates an audit event.
+- Disabling is reversible; records are preserved.
+- Module enablement and staff capability are separate concerns.
+
+## Roadmap
+
+### Phase 0 — Foundation & trust
+- [x] User / organization / school identity
+- [x] CAC identity claim
+- [x] School membership
+- [x] Capability primitives
+- [x] Audit history
+- [x] Password authentication
+- [x] Database-backed sessions
+- [ ] Production migration baseline and verification
+- [ ] Automated typecheck/lint/build CI
+- [ ] Tenant-isolation integration tests
+
+### Phase 1 — School configuration
+- [x] Academic session foundation
+- [x] Class levels
+- [x] Class arms
+- [x] Subjects
+- [x] Subject-to-class assignment
+- [x] School setup workspace
+- [x] Owner-only module settings foundation
+- [ ] Academic terms configuration UI
+- [ ] Session lifecycle: draft → active → closed
+- [ ] Formal setup readiness calculation
+- [ ] School profile/configuration settings
+
+### Phase 2 — Core daily operations
+- [x] Student records
+- [x] Student enrollment
+- [x] Daily attendance
+- [ ] Attendance history and correction workflow
+- [ ] Staff accounts and school membership management
+- [ ] Capability assignment UI
+- [ ] Parent/guardian records
+- [ ] Student status lifecycle
+
+### Phase 3 — Academic engine
+- [ ] Assessment definitions
+- [ ] Score capture
+- [ ] Score validation
+- [ ] Result submission
+- [ ] Result approval
+- [ ] Result publication
+- [ ] Report cards
+- [ ] Academic history
+
+### Phase 4 — Finance
+- [ ] Fee structures
+- [ ] Student fee assignments
+- [ ] Invoices / obligations
+- [ ] Payment recording
+- [ ] Payment provider integration
+- [ ] Receipts
+- [ ] Balances and reconciliation
+- [ ] Finance audit trail
+
+### Phase 5 — Communication
+- [ ] Parent/guardian communication
+- [ ] Staff communication
+- [ ] Announcements
+- [ ] Notifications
+- [ ] Delivery/status history
+- [ ] WhatsApp/SMS/email integrations where justified
+
+### Phase 6 — Reports & management
+- [ ] Operational dashboards
+- [ ] Attendance reports
+- [ ] Academic reports
+- [ ] Finance reports
+- [ ] Management summaries
+- [ ] Export workflows
+
+### Phase 7 — Platform intelligence
+- [ ] Rules/configuration engine
+- [ ] Background jobs
+- [ ] Reliable notification processing
+- [ ] Offline-first workflows where useful
+- [ ] Idempotent sync actions
+- [ ] Anomaly/delay detection
+- [ ] AI assistance above trusted records, never as the source of truth
+
+### Phase 8 — Production platform
+- [ ] PostgreSQL migration/deployment process
+- [ ] Object/file storage
+- [ ] Backups and recovery procedures
+- [ ] Observability and operational alerts
+- [ ] Security hardening
+- [ ] Performance/load testing
+- [ ] Render production deployment
+- [ ] Tenant-safe onboarding and support operations
+
+## Architectural rules
+
+1. **Fresh implementation:** old school-management repositories are reference material only, not application code to extend or copy.
+2. **Multi-tenant by construction:** every school-owned resource must be provably connected to its school before read/write access is allowed.
+3. **Organization ≠ School ≠ User:** identities remain separate even when one person owns one school.
+4. **Capability-based authorization:** permissions are explicit capabilities, not assumptions based on role names.
+5. **Owner-only module control:** module enable/disable is a school configuration action reserved for the owner.
+6. **Configuration does not delete truth:** disabling a module must preserve its historical records.
+7. **Capture once, derive many:** one real-world event should be recorded once and downstream consequences derived from it.
+8. **Do not automate garbage:** capture → validate → automate.
+9. **AI is above the record layer:** AI can explain, summarize and assist, but trusted school records remain authoritative.
+10. **Audit meaningful changes:** important state changes record actor, school, action and relevant state.
 
 ## Local foundation test
 
@@ -49,6 +206,6 @@ Run the same request again with a different email but the same CAC. Expected res
 
 ## Important current boundary
 
-This is foundation code, not a completed school application. Authentication/session issuance, the organization/school setup UI, capability enforcement helpers, and operational school modules will be built as subsequent vertical slices after this foundation is tested.
+This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, students, enrollment, attendance, and the first module-configuration foundation. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
 
 See `ARCHITECTURE.md` for frozen architectural decisions.
