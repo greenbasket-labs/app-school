@@ -37,6 +37,9 @@ export default async function FinancePage({ params }: { params: Promise<{ school
           <h1 style={{ margin: "8px 0 6px", fontSize: 34 }}>{membership.school.name}</h1>
           <p style={{ margin: 0, color: "#53615a" }}>Start by defining what the school charges. Student obligations and payments come later.</p>
         </div>
+        <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Link href={`/app/schools/${schoolId}/finance/student-fee-assignments`} style={{ padding: "10px 14px", borderRadius: 10, background: "#183c2a", color: "white", textDecoration: "none", fontWeight: 700 }}>Student fee assignments →</Link>
+        </div>
         <FeeStructureWorkspace schoolId={schoolId} />
       </div>
     </main>
