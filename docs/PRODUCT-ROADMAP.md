@@ -129,19 +129,18 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Provider integration, receipts, refunds and reconciliation remain separate slices
 - [x] **Payment provider integration — school settlement foundation**
   - Payment provider configuration belongs to the individual school
-  - Supported provider catalog starts with Paystack, Flutterwave and Monnify
+  - Supported provider catalog includes Paystack, Flutterwave and Monnify
   - A school stores its provider-specific settlement/subaccount reference
   - Only the school owner can configure or update provider settlement settings
   - Provider credentials remain server-side and are not stored in browser code
   - `PaymentIntent` stores the provider and transaction context for each checkout
   - Paystack uses the school's configured subaccount when initializing checkout
   - Flutterwave uses the school's configured subaccount when initializing checkout
+  - Monnify uses the school's configured settlement/subaccount reference when initializing checkout
+  - Monnify webhook notifications are signature-checked and server-verified before recording payment
   - Provider-specific adapters map into the same invoice → PaymentIntent → PaymentRecord lifecycle
   - Provider-confirmed payments are system-recorded without requiring a human actor ID
   - Receipts, refunds and reconciliation remain separate slices
-- [ ] **Additional provider adapter**
-  - Monnify checkout + webhook verification
-  - Provider-specific verification mapped into the same payment lifecycle
 - [ ] Receipts
 - [ ] Balances and reconciliation
 - [ ] Finance audit trail
