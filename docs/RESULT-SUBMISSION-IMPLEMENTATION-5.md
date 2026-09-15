@@ -1,0 +1,1 @@
+Submission validates completeness, records the actor and assessment in audit history, rejects repeat submission, and locks ordinary score edits. Approval remains separate.
