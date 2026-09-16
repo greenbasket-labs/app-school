@@ -68,13 +68,6 @@ type PaymentAttemptRow = {
   checkoutUrl: string | null;
 };
 
-/**
- * Persists one logical paid-result attempt.
- *
- * The school-scoped idempotency key is the retry boundary. A repeated request
- * with the same key returns the existing attempt only when its immutable
- * payment context matches. It never creates a second attempt.
- */
 export async function createOrGetResultPaymentAttempt(
   input: ResultPaymentAttemptInput,
 ): Promise<PersistedResultPaymentAttempt> {
@@ -112,6 +105,29 @@ export async function getResultPaymentAttemptById(id: string): Promise<Persisted
   const attempt = await findResultPaymentAttemptById(id);
   if (!attempt) throw new Error("Result payment attempt was not found.");
   return attempt;
+}
+
+export async function getResultPaymentAttemptByProviderReference(
+  provider: ResultPaymentProvider,
+  providerReference: string,
+): Promise<PersistedResultPaymentAttempt> {
+  const reference = providerReference.trim();
+  if (!reference) throw new Error("Provider reference is required.");
+
+  const rows = await db.$queryRaw<PaymentAttemptRow[]>(Prisma.sql`
+    SELECT
+      "id", "schoolId", "studentId", "academicSessionId", "academicTermId",
+      "amount"::text AS "amount", "currency", "provider", "idempotencyKey",
+      "status", "providerReference", "checkoutUrl"
+    FROM "ResultPaymentAttempt"
+    WHERE "provider" = ${provider}
+      AND "providerReference" = ${reference}
+    LIMIT 1
+  `);
+
+  const attempt = rows[0];
+  if (!attempt) throw new Error("Result payment attempt was not found for this provider reference.");
+  return mapAttempt(attempt);
 }
 
 export async function getResultPaymentAttempt(
