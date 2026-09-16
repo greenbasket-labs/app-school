@@ -4,7 +4,9 @@
 
 This document is the implementation contract for application-wide offline-first behavior. It is a design/handoff document, not a claim that the runtime is already implemented.
 
-The repository now contains reusable browser persistence, local-first repository, durable outbox, sync lifecycle, sync-engine, connectivity detection and automatic scheduling foundations. These are still platform foundations; no operational module is considered end-to-end offline-ready until its real repository, authenticated server executor, reconciliation and tests are wired and verified.
+The repository contains reusable browser persistence, local-first repository, durable outbox, sync lifecycle, sync-engine primitive, connectivity/scheduling primitives, an authoritative reconciliation contract, a shared sync-status model, and the first local-first assessment score workflow. Assessment score synchronization includes both push acknowledgement and a browser-side pull/reconciliation step that consumes the authenticated score roster and converges local authoritative records when no pending local edit is present.
+
+These are still platform/reference foundations; no operational module is considered end-to-end offline-ready until visible application sync status, authentication/session behavior and browser persistence/reconnect tests are wired and verified.
 
 ## Handoff principle
 
@@ -38,6 +40,7 @@ UI → local durable data → durable outbox
 
 ONLINE AGAIN
 outbox → sync → authorization/validation → PostgreSQL → audit → acknowledgement
+server pull → local reconciliation → authoritative working copy / conflict
 ```
 
 Offline-first is application-wide. It applies to school setup, students, enrollment, attendance, assessments/results, finance, communication, reports and future modules.
@@ -51,25 +54,86 @@ The browser foundation currently includes:
 - a school-scoped local repository boundary;
 - durable local mutation + outbox persistence in one transaction;
 - explicit local synchronization states;
-- a shared sync-engine loop that reads pending work, marks it `SYNCING`, delegates the server operation to an executor, then records `ACKNOWLEDGED`, `FAILED` or `CONFLICT`;
-- a connectivity state primitive based on browser online/offline events;
-- a scheduler that runs sync when online, on reconnect, and on a guarded periodic interval.
+- a shared sync-engine loop that reads due pending work, marks it `SYNCING`, delegates the server operation to an executor, then records `ACKNOWLEDGED`, `FAILED` or `CONFLICT`;
+- retry classification for transient vs permanent failures;
+- durable retry scheduling through `nextAttemptAt`, with bounded exponential backoff from 30 seconds up to 10 minutes;
+- connectivity detection and a browser scheduler that attempts synchronization when online, on reconnect and on a guarded periodic interval;
+- an authoritative reconciliation contract carrying a school-scoped identity boundary and explicit `APPLY`, `CONFLICT` or `IGNORE` classification;
+- an assessment-score reconciliation client that consumes the existing authenticated score roster endpoint, updates local records from authoritative server values, and surfaces conflicts instead of replacing pending local edits;
+- a shared application sync-status model;
+- an assessment score-capture local-first mutation path using a stable per-attempt operation identity;
+- an assessment score synchronization executor that calls the authenticated server score endpoint with the same idempotency key used by the durable outbox;
+- assessment roster caching as a best-effort local working set.
 
-The server already has school-scoped idempotency primitives. The sync engine deliberately does not invent another server persistence model; it expects the executor/server API to use the existing idempotency identity.
+The server already has school-scoped idempotency primitives, and the assessment score endpoint accepts an `Idempotency-Key` for safe replay of the same logical mutation.
 
 This foundation does **not** yet provide end-to-end offline operation for a module. In particular, the following are still required before a module can claim offline readiness:
 
-- a real module repository using local reads/writes;
-- a server executor/API contract for that module;
-- authenticated server authorization and validation for queued operations;
-- authoritative local update from the server acknowledgement;
-- retry classification/backoff for transient vs permanent errors;
-- pull/reconciliation for server-side changes made elsewhere;
-- conflict rules where concurrent edits matter;
 - browser persistence/reconnect tests;
-- visible sync status in the application UI.
+- application-wide active sync telemetry and final visible status verification;
+- authentication/session behavior that is safe during temporary offline periods;
+- explicit conflict-resolution UI for assessment score conflicts;
+- broader module conversion using the same platform foundation.
 
 Do not mark the roadmap complete because these platform files exist.
+
+## Reference workflow checkpoint — assessment score capture
+
+The assessment score workspace is the first local-first reference slice.
+
+Current behavior:
+
+```text
+user enters score
+      ↓
+client validates local shape/range
+      ↓
+IndexedDB record + durable outbox written atomically
+      ↓
+UI shows local-save/pending state
+      ↓
+online scheduler invokes AssessmentScore executor
+      ↓
+Idempotency-Key → authenticated score API
+      ↓
+transient failure → durable nextAttemptAt/backoff
+      ↓
+server acknowledgement → authoritative local score
+
+online/reconnect pull
+      ↓
+authenticated assessment score roster
+      ↓
+compare local serverVersion with serverVersion
+      ├── same → IGNORE
+      ├── safe changed record → APPLY
+      └── pending/incompatible local edit → CONFLICT
+```
+
+The existing server route remains authoritative for authentication, school capability, module state, score-context validation, persistence and audit. The client now has both push acknowledgement and pull/reconciliation wiring. Result submission/publication remains separate and is not part of this offline conversion.
+
+## Pull/reconciliation checkpoint
+
+The first live pull/reconciliation implementation deliberately uses the existing authenticated assessment score roster endpoint rather than creating a second server protocol. Each returned score is converted into the shared authoritative-record shape and compared with the local `serverVersion`.
+
+A changed server score may update a local record when the local record is not pending synchronization. A pending local edit is never silently overwritten; the score is represented as `CONFLICT`. A local record already at the same server version is ignored. A server score missing from the local browser store is seeded as an authoritative `SYNCED` local record.
+
+The generic cursor contract remains available for later modules, but no universal cursor format has been invented solely to satisfy this first workflow.
+
+## Retry policy
+
+The shared retry policy is platform infrastructure, not a module-specific rule.
+
+- First retry delay: 30 seconds.
+- Each later retry doubles the delay.
+- Maximum retry delay: 10 minutes.
+- Retryable failures retain `PENDING` status and store `nextAttemptAt` in the durable outbox.
+- Permanent validation/authorization failures become `FAILED` and clear `nextAttemptAt`.
+- Conflicts become `CONFLICT` and clear `nextAttemptAt`.
+- Successful acknowledgement becomes `ACKNOWLEDGED` and clears `nextAttemptAt`.
+- Scheduler ticks may happen more often than the retry delay; the durable due-time is authoritative for whether an item is eligible to be attempted.
+
+The current policy intentionally uses deterministic bounded exponential backoff. Jitter can be added later when fleet-scale behavior justifies it.
 
 ## Authority model
 
@@ -77,6 +141,7 @@ Do not mark the roadmap complete because these platform files exist.
 - The device keeps a durable working copy for continuity.
 - A local save means **saved locally**, not **server confirmed**.
 - Server confirmation happens only after the server accepts the operation and applies the relevant authorization, validation, persistence and audit rules.
+- Pull reconciliation may update the local working copy only when the record is already known at the server version or a module policy explicitly allows replacement.
 - Local data and queued operations must remain inside the authorized school context.
 
 ## Shared layers
@@ -91,7 +156,7 @@ The local store should be able to persist:
 - operational records required for offline continuity;
 - local record metadata such as sync state and last server version where needed;
 - pending mutations in the outbox;
-- conflict/failure information required for recovery.
+- retry timing, failure information and conflict state required for recovery.
 
 Schema/version changes must be explicit and migration-safe. A developer must be able to identify the current local schema version and how a user moves from an older version to a newer one.
 
@@ -131,6 +196,7 @@ createdAt         local creation time
 attemptCount      retry count
 status            pending/syncing/failed/conflict/acknowledged
 lastError         recoverable error information
+nextAttemptAt     durable retry eligibility time
 ```
 
 The exact browser persistence shape should follow the actual implementation and existing domain conventions. Do not introduce a second outbox model inside an individual module.
@@ -139,22 +205,22 @@ The exact browser persistence shape should follow the actual implementation and 
 
 The sync engine is shared by all modules.
 
-The current engine can process pending browser outbox records and delegate each operation to a server executor. The executor is responsible for translating the queued mutation into the existing authenticated server API contract.
+The current engine can process due pending browser outbox records and delegate each operation to a server executor. The executor is responsible for translating the queued mutation into the existing authenticated server API contract.
 
 Required behavior:
 
 1. detect or be notified when connectivity is available;
-2. discover pending operations;
+2. discover pending operations that are due;
 3. send operations using stable idempotency identities;
-4. retry transient failures safely;
+4. retry transient failures safely using durable backoff;
 5. process server acknowledgements;
 6. update local records from authoritative server results;
 7. preserve failed/conflicted operations for recovery;
 8. continue processing independently of the current page where practical.
 
-The scheduler foundation now triggers the sync loop on initial online load, browser `online` events, and a guarded periodic interval. It must still be wired into authenticated school application bootstrapping and must use a real module/server executor before it performs production mutations.
-
 Connectivity restoration must not require the user to manually re-save work.
+
+The scheduler is a trigger, not an authority. It must never bypass authentication, capability checks or server validation.
 
 Retry policy must distinguish transient failures from authorization, validation and conflict failures. Never retry a permanent validation/authorization failure forever.
 
@@ -162,11 +228,9 @@ Retry policy must distinguish transient failures from authorization, validation 
 
 Sync is not only push.
 
-When online, the client must also be able to receive authoritative changes made elsewhere so the local working copy converges toward the server state.
+The assessment score workflow now performs a real browser pull against the existing authenticated score roster endpoint and converts each authoritative score into the shared reconciliation model. The local server version is compared with the returned server version. A safe changed record is applied; an incompatible pending local edit becomes `CONFLICT`; a record already at the known server version is ignored.
 
-The exact pull protocol is intentionally open until the first implementation slice establishes the required cursor/version contract.
-
-Do not invent a fake `SYNCED` state from local timestamps alone. A record is synchronized only when the server acknowledgement and authoritative state are known.
+Do not invent a fake `SYNCED` state from local timestamps alone. A record is synchronized only when the server acknowledgement or authoritative pull state is known.
 
 ## State model
 
@@ -198,17 +262,17 @@ A conflict is not equivalent to a network error.
 | Syncing | A worker is currently attempting the server operation. |
 | Synced | The server accepted the operation and the local record reflects the acknowledged authoritative result. |
 | Failed | Synchronization could not complete and the operation remains recoverable. |
-| Conflict | The server cannot safely apply the local mutation without an explicit resolution path. |
+| Conflict | The server cannot safely apply or replace the local mutation without an explicit resolution path. |
 
 ## Idempotency
 
 Retries are expected. Duplicate effects are not.
 
-Every server-bound mutation needs a stable client operation identity/idempotency key that remains unchanged across retries.
+Every server-bound mutation needs a stable client operation identity/idempotency key that remains unchanged across retries. Separate user edits need separate operation identities.
 
 The server must recognize a repeated operation identity and avoid applying the same logical mutation twice.
 
-Reuse the existing school-scoped idempotency foundation rather than creating a second concept. The browser outbox must preserve and resend the same operation identity.
+Reuse the existing school-scoped idempotency foundation rather than creating a second concept. The browser outbox must preserve and resend the same operation identity for the life of that pending edit.
 
 ## Conflict handling
 
@@ -274,14 +338,19 @@ At minimum, test these invariants for the reference workflow:
 
 1. local save survives refresh;
 2. local save survives browser/page restart within the supported device storage boundary;
-3. offline mutation creates exactly one durable pending operation;
+3. offline mutation creates exactly one durable pending operation for that edit;
 4. reconnect sends the operation automatically;
 5. retrying the same operation does not duplicate the server effect;
-6. permanent validation/authorization failures remain recoverable and do not loop forever;
-7. a conflict is represented as conflict rather than silently overwritten;
-8. local data is isolated by school context;
-9. server acknowledgement moves the local record to `SYNCED` with authoritative values;
-10. meaningful server-side completion is audited once according to domain rules.
+6. transient failure stores durable retry timing and does not retry before `nextAttemptAt`;
+7. permanent validation/authorization failures remain recoverable and do not loop forever;
+8. a conflict is represented as conflict rather than silently overwritten;
+9. local data is isolated by school context;
+10. server acknowledgement moves the local record to `SYNCED` with authoritative values;
+11. a pull with a changed authoritative version converges a non-pending local record;
+12. a pull does not overwrite a pending local edit and represents the conflict;
+13. meaningful server-side completion is audited once according to domain rules.
+
+Current automated coverage includes the reconciliation classification and assessment score pull cases. Browser-level persistence/reconnect coverage remains a separate integration/e2e gate.
 
 Use unit tests for state transitions and idempotency behavior, plus integration/e2e tests for browser persistence and reconnect behavior as the tooling is added.
 
@@ -302,32 +371,19 @@ A new operational module is incomplete until it can answer:
 - How is tenant isolation preserved locally?
 - What tests prove those behaviors?
 
-## First implementation sequence
+## Implementation sequence
 
-1. ~~Choose and add the browser durable database layer.~~ **Implemented: versioned IndexedDB foundation.**
-2. ~~Create shared local schema/versioning conventions.~~ **Implemented: explicit database/version/store constants and upgrade path.**
-3. ~~Create repository interfaces for local-first reads/writes.~~ **Implemented: shared local repository boundary.**
-4. ~~Create the durable outbox.~~ **Implemented: durable school-scoped outbox persistence.**
-5. ~~Create the sync state machine and idempotency contract.~~ **Implemented: shared lifecycle plus executor-based sync engine; existing server idempotency remains authoritative.**
-6. ~~Add connectivity detection and automatic retry.~~ **Foundation implemented: browser connectivity state, reconnect trigger and guarded periodic scheduler. Authenticated application bootstrapping and error-class-specific retry policy remain.**
-7. Add authoritative pull/reconciliation contract.
-8. Add application-wide sync status UI.
-9. Add service-worker/application-shell support where appropriate.
-10. Convert one real existing workflow end-to-end as the reference implementation.
-11. Migrate remaining modules incrementally, recording module-specific conflict/authority rules as each slice is converted.
-
-## Reference workflow candidate
-
-Assessment score capture is the first reference candidate because it already has:
-
-- a bounded school/class/session roster;
-- validation rules;
-- individual save behavior;
-- audit evidence;
-- a natural bulk-save workflow;
-- an observable distinction between local save and server confirmation.
-
-For the first offline conversion, prefer the smallest score-capture path that can demonstrate local persistence → outbox → automatic sync → server validation/audit → acknowledgement. Do not expand result approval/publication at the same time.
+1. ~~Browser durable database~~ — implemented.
+2. ~~Shared local schema/versioning~~ — implemented.
+3. ~~Local-first repository boundary~~ — implemented.
+4. ~~Durable outbox~~ — implemented.
+5. ~~Shared sync lifecycle/engine contract~~ — implemented.
+6. ~~Connectivity detection and scheduling primitive~~ — implemented as a guarded browser scheduler; transient retry classification and durable bounded backoff are implemented.
+7. ~~Initial reconciliation contract~~ — implemented as a reusable classification contract.
+8. ~~Assessment score pull/reconciliation invocation~~ — implemented against the existing authenticated assessment score roster endpoint; conflict protection is explicit.
+9. ~~Shared sync-status model~~ — implemented as a reusable status vocabulary with school-workspace UI wiring; active worker telemetry and browser verification remain.
+10. **Reference workflow: assessment score capture** — local-first mutation path, authenticated executor/scheduler wiring, durable retry scheduling, authoritative push acknowledgement and pull/reconciliation are implemented; browser persistence/reconnect tests and conflict-resolution UI remain.
+11. Convert remaining operational modules incrementally using the same shared foundation.
 
 ## Do not do
 
@@ -337,6 +393,7 @@ For the first offline conversion, prefer the smallest score-capture path that ca
 - Do not silently discard pending work after a failed request.
 - Do not display local saves as server-confirmed.
 - Do not retry mutations without stable idempotency identities.
+- Do not reuse one operation identity for separate user edits.
 - Do not use offline mode to bypass authorization or server validation.
 - Do not claim a module is offline-ready merely because its page is cached.
 - Do not invent module-specific synchronization protocols when the shared platform foundation can handle them.
@@ -369,15 +426,4 @@ A future developer should be able to stop at any checkpoint and determine:
 - what is intentionally not implemented;
 - which invariants must not be broken;
 - what the next smallest slice is;
-- which tests prove the current behavior.
-
-## Handoff rule
-
-A future developer or AI should read this document together with:
-
-- `README.md`
-- `ARCHITECTURE.md`
-- `docs/ROADMAP.md`
-- `docs/PRODUCT-DECISION-HISTORY.md`
-
-Before implementing offline behavior in a module, update this document or the relevant decision history when a new cross-cutting rule is established.
+- which tests are expected before claiming completion.

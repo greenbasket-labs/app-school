@@ -1,6 +1,7 @@
 import { getConnectivityState } from "./connectivity";
-import type { SyncExecutor, SyncRunResult } from "./sync-engine";
 import { runPendingSync } from "./sync-engine";
+import type { SyncExecutor } from "./sync-executor";
+import type { SyncRunResult } from "./sync-engine";
 
 export type SyncSchedulerOptions = {
   schoolId: string;
@@ -11,25 +12,46 @@ export type SyncSchedulerOptions = {
 };
 
 export function startSyncScheduler(options: SyncSchedulerOptions) {
+  if (typeof window === "undefined") {
+    throw new Error("Sync scheduler is only available in a browser.");
+  }
+
   const intervalMs = Math.max(options.intervalMs ?? 30_000, 5_000);
   let running = false;
 
   const run = async () => {
-    if (running || getConnectivityState() === "OFFLINE") return;
+    if (running || getConnectivityState() === "OFFLINE") {
+      return;
+    }
+
     running = true;
+
     try {
-      const result = await runPendingSync(options.schoolId, options.executor);
+      const result = await runPendingSync(
+        options.schoolId,
+        options.executor,
+      );
+
       options.onRun?.(result);
     } catch (error) {
-      options.onError?.(error instanceof Error ? error : new Error("Synchronization run failed."));
+      options.onError?.(
+        error instanceof Error
+          ? error
+          : new Error("Synchronization run failed."),
+      );
     } finally {
       running = false;
     }
   };
 
   const onOnline = () => void run();
+
   window.addEventListener("online", onOnline);
-  const timer = window.setInterval(() => void run(), intervalMs);
+
+  const timer = window.setInterval(() => {
+    void run();
+  }, intervalMs);
+
   void run();
 
   return () => {

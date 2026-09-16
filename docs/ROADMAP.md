@@ -55,10 +55,10 @@ This requirement applies across the platform, including school setup, students, 
 - [ ] Production migration baseline and verification
 - [ ] Automated typecheck/lint/build CI
 - [ ] Tenant-isolation integration tests
-- [ ] Offline-first platform foundation: local durable database, schema/versioning and repository abstraction — **started: IndexedDB v1 + shared local repository boundary**
-- [ ] Offline mutation/outbox model with durable pending states — **started: durable school-scoped outbox**
-- [ ] Shared sync engine with retry, backoff and idempotency — **started: executor-based pending-operation processor**
-- [ ] Connectivity/sync status model and application-wide UI treatment — **started: browser connectivity state + reconnect/periodic scheduler; application UI wiring remains**
+- [ ] Offline-first platform foundation: local durable database, schema/versioning and repository abstraction — **implemented at primitive level; browser verification remains**
+- [ ] Offline mutation/outbox model with durable pending states — **implemented at primitive level; browser verification remains**
+- [ ] Shared sync engine with retry, backoff and idempotency — **implemented at primitive level; browser verification remains**
+- [ ] Connectivity/sync status model and application-wide UI treatment — **implemented at vocabulary + school-workspace UI level; active worker telemetry and browser verification remain**
 
 ## Phase 1 — School configuration
 - [x] Academic session foundation
@@ -91,7 +91,7 @@ This requirement applies across the platform, including school setup, students, 
 - [x] Assessment definitions
 - [x] Score capture — initial roster + per-student save slice
 - [x] Score validation — school/class/session/enrollment/max-score validation
-- [ ] Offline-capable assessment and score capture foundation
+- [ ] Offline-capable assessment and score capture foundation — **implemented as local-first reference workflow; reconciliation + browser tests remain**
 - [ ] Result submission
 - [ ] Result approval
 - [ ] Result publication
@@ -152,6 +152,118 @@ This requirement applies across the platform, including school setup, students, 
 - [ ] Render production deployment
 - [ ] Tenant-safe onboarding and support operations
 
+## Role-based workspaces — cross-cutting product layer
+
+Role-based workspaces are part of the product surface, but they do **not** replace the module roadmap above. A workspace is a role-specific view over the same school-scoped capabilities, records, modules, notifications, reports and audit history.
+
+The core model is:
+
+```text
+                App-School core records + module state
+                              │
+             ┌────────────────┼────────────────┐
+             ▼                ▼                ▼
+       Management          Teaching        Family/Learner
+        workspace          workspace          workspace
+             │                │                │
+       owner / principal    teacher       parent / guardian
+       school admin         subject/class      student
+```
+
+Planned role/workspace surfaces:
+
+- [ ] Owner / Principal / School Administrator workspace — school health, setup readiness, staffing/capabilities, academic/attendance/finance summaries, alerts, audit-sensitive actions
+- [ ] Teacher workspace — assigned classes/subjects, attendance, score capture, pending sync/conflicts, relevant communication and task queue
+- [ ] Parent / Guardian workspace — linked students, attendance, published results, invoices/payments, notices and school communication
+- [ ] Student workspace — own timetable/academic context where supported, attendance, published results, notices and permitted self-service actions
+- [ ] Shared role-aware navigation and landing experience
+- [ ] Capability-driven workspace composition — users only see actions/data their active school membership permits
+- [ ] Multi-role account handling — one identity may hold different capabilities/roles in different schools or contexts without weakening tenant isolation
+- [ ] Institutional context adapters — allow the same core to support school-wide use first, then constrained contexts such as a government school through a principal/administrator and a university through an eligible department/unit rather than requiring the entire institution to adopt App-School at once
+
+### Module, school and user control model
+
+App-School uses **one shared module system**. A school decides which modules are enabled for that school, and each user is then granted capabilities within the enabled modules.
+
+```text
+                 App-School module catalogue
+                           │
+                 school enables/disables
+                           │
+                           ▼
+                 modules active in School A
+                           │
+              capability assignment per user
+                           │
+          ┌────────────────┼────────────────┐
+          ▼                ▼                ▼
+       Owner           Teacher          Parent/Student
+     allowed set       allowed set        allowed set
+```
+
+Rules:
+
+- A **disabled school module is unavailable to every user in that school**, regardless of their personal capability set.
+- An **enabled module is not automatically available to every user**; capabilities still determine who may view, create, edit, approve, publish, administer or otherwise act within it.
+- The owner/authorized school administrator controls module activation according to the existing module-settings and backend-enforcement model.
+- Role dashboards are composed from the intersection of **school-enabled modules × user capabilities × authorized school context**.
+- Users with multiple roles/capability sets see one combined workspace based on what they are currently authorized to do, not separate copies of the underlying data.
+- The same model must work for a school, a government school deployment, or an authorized university department/unit without creating separate product forks.
+
+### Role/workspace design rules
+
+- Roles are presentation and workflow groupings; **capabilities remain the authorization source of truth**.
+- Do not create a separate data model or database for each role.
+- A role workspace must derive from the same authoritative records and existing modules.
+- A user may have different capabilities in different schools or institutional units.
+- Government schools and universities are future deployment contexts; they do not require a fork of the App-School core.
+- University support should initially be scoped to an authorized department/unit context where appropriate rather than assuming institution-wide administration.
+- Role dashboards must not cause completed V1 modules to be reopened unnecessarily; build them from existing trusted records and current workflows.
+
+## Commercial billing & result access — cross-cutting product layer
+
+The commercial layer is separate from school finance and separate from module/capability authorization.
+
+Initial plans:
+
+| Plan | Monthly | School share of paid result access |
+|---|---:|---:|
+| Free | ₦0 | 0% |
+| Basic | ₦5,000 | 25% |
+| Starter | ₦10,000 | 50% |
+| Pro | ₦20,000 | 75% |
+| Premium | ₦35,000 | 100% |
+| Custom | Negotiated | 100% by default until negotiated terms exist |
+
+Rules:
+
+- [x] Centralized commercial plan configuration — `src/domain/commercial/plans.ts`
+- [x] Deterministic result revenue allocation from any configured result fee
+- [x] Zero result fee normalizes to no payment required
+- [x] Persist school subscription + plan state — new schools initialize to Free; existing schools are lazily materialized as Free when first accessed
+- [x] Persist school Result Access setting and configurable fee — default disabled with ₦0 fee; owner-only updates with audit evidence
+- [x] Result authorization boundary — pure policy evaluates school/student authorization, publication, free/paid configuration and entitlement state in that order
+- [x] Persist result payment attempt — school-scoped idempotency and immutable result/payment context validation
+- [x] Provider-specific result checkout initialization — Paystack and Flutterwave reuse the existing school provider configuration boundary; Monnify adapter remains pending
+- [ ] Verified result payment flow using existing provider infrastructure
+- [ ] Immutable result transaction/revenue allocation ledger
+- [ ] Payment webhook/callback idempotency for result transactions
+- [ ] Result access grant/unlock
+- [ ] School result-revenue dashboard
+- [ ] App-School commercial administration dashboard
+- [ ] Subscription lifecycle: renewal, failure, grace, upgrade, downgrade, cancellation
+- [ ] Refund/chargeback and school settlement operations
+
+Commercial rules:
+
+- Result Access may be free or paid; the fee is school-configured and never hard-coded to ₦200.
+- Historical revenue splits are immutable snapshots of the plan and amount at transaction confirmation time.
+- Payment never bypasses authorization to the student's published result.
+- School finance records remain separate from App-School subscription and result-access revenue records.
+- Existing Paystack/Flutterwave/Monnify provider infrastructure should be reused rather than duplicated.
+- Provider fees must remain separately represented from gross amount and revenue allocation; the final live fee-bearing policy must be confirmed against the chosen provider and commercial agreement.
+- Commercial plan state must not override school module enablement or user capabilities.
+
 ## Current V1 sequence
 
 1. **Assessment definitions** — complete and tested against Greenfield Heritage Academy.
@@ -161,7 +273,9 @@ This requirement applies across the platform, including school setup, students, 
 5. **Result publication** — after approval.
 6. **Report cards** — derive from trusted published academic records.
 7. **Academic history** — preserve and present results across sessions.
-8. **Offline-first foundation** — browser persistence, repository, outbox, lifecycle, sync processor and connectivity scheduler are started; next establish authoritative pull/reconciliation and application sync-status UI before converting score capture end-to-end.
+8. **Offline-first foundation** — local persistence, repository, durable outbox, sync engine, connectivity scheduler, durable retry backoff and school-workspace status UI are established at platform level; next prove browser persistence/reconnect behavior, then complete authoritative pull/reconciliation before marking the first module offline-ready.
+9. **Role-based workspaces** — cross-cutting product layer after the current V1 sequence is preserved; dashboards should compose existing modules rather than become a new competing product track.
+10. **Commercial billing/result access** — cross-cutting product layer; persistence/configuration, authorization, persisted payment attempts and Paystack/Flutterwave checkout initialization are established, while verified payment/ledger/entitlement work remains incremental and must not reorder the core academic V1 sequence.
 
 ## V1 completion rule
 
@@ -174,3 +288,5 @@ Every completed slice must preserve the existing platform boundaries: school-sco
 Do not build reports merely because other school systems have them. Each report must turn trusted school records into a decision or action the school actually needs. Keep reports school-scoped, capability-controlled, module-controlled and derived from authoritative records.
 
 Do not treat offline-first as a later UI enhancement. It is a platform architecture requirement that must shape persistence, mutation handling, synchronization, conflict handling and module design from this point forward.
+
+Do not treat commercial billing as a second school-finance system. Keep platform subscriptions, result-access revenue, school allocations, provider fees and settlements auditable and distinct.

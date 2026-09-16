@@ -1,6 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { listLocalRecords, saveLocalMutation } from "@/domain/platform/local-repository";
+import { localRecordId } from "@/domain/platform/client-operation";
+import { syncLifecycleLabel } from "@/domain/platform/sync-state";
+import { startSyncScheduler } from "@/domain/platform/sync-scheduler";
+import { assessmentScoreSyncExecutor } from "@/domain/assessments/score-sync-executor";
+import { reconcileAssessmentScores } from "@/domain/platform/reconciliation-client";
 
 type RosterRow = {
   enrollmentId: string;
@@ -10,6 +16,7 @@ type RosterRow = {
   middleName: string | null;
   lastName: string;
   score: number | null;
+  syncState?: "DRAFT" | "PENDING_SYNC" | "SYNCING" | "SYNCED" | "FAILED" | "CONFLICT";
 };
 
 type InitialData = {
@@ -25,6 +32,90 @@ export default function ScoreCaptureWorkspace({ schoolId, assessmentId, initialD
   const [students, setStudents] = useState(initialData.students);
   const [saving, setSaving] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [online, setOnline] = useState(true);
+
+  useEffect(() => {
+    setOnline(navigator.onLine);
+    const onOnline = () => setOnline(true);
+    const onOffline = () => setOnline(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        for (const student of initialData.students) {
+          const existing = await listLocalRecords<RosterRow>(schoolId, "AssessmentRosterStudent");
+          if (existing.some((record) => record.entityId === student.studentId)) continue;
+          await saveLocalMutation<RosterRow>({
+            schoolId,
+            entityType: "AssessmentRosterStudent",
+            entityId: student.studentId,
+            operationType: "CACHE",
+            payload: student,
+            operationId: `assessment.roster-cache:${schoolId}:${assessmentId}:${student.studentId}`,
+            record: {
+              id: localRecordId(schoolId, "AssessmentRosterStudent", student.studentId),
+              schoolId,
+              entityType: "AssessmentRosterStudent",
+              entityId: student.studentId,
+              data: student,
+              syncState: "SYNCED",
+            },
+          });
+        }
+      } catch {
+        // Best-effort cache only.
+      }
+    })();
+  }, [assessmentId, initialData.students, schoolId]);
+
+  useEffect(() => {
+    const cleanup = startSyncScheduler({ schoolId, executor: assessmentScoreSyncExecutor });
+    return cleanup;
+  }, [schoolId]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        if (navigator.onLine) {
+          await reconcileAssessmentScores({ schoolId, assessmentId });
+        }
+        const localScores = await listLocalRecords<{ assessmentId: string; studentId: string; score: number }>(schoolId, "AssessmentScore");
+        const relevant = new Map(localScores.filter((record) => record.data.assessmentId === assessmentId).map((record) => [record.data.studentId, record]));
+        if (!active || relevant.size === 0) return;
+        setStudents((current) => current.map((student) => {
+          const record = relevant.get(student.studentId);
+          return record ? { ...student, score: record.data.score, syncState: record.syncState } : student;
+        }));
+      } catch {
+        // Keep server-provided initial data and local working data when reconciliation is unavailable.
+      }
+    })();
+    return () => { active = false; };
+  }, [assessmentId, schoolId]);
+
+  useEffect(() => {
+    if (!online) return;
+    void reconcileAssessmentScores({ schoolId, assessmentId }).then(async () => {
+      const localScores = await listLocalRecords<{ assessmentId: string; studentId: string; score: number }>(schoolId, "AssessmentScore");
+      const relevant = new Map(localScores.filter((record) => record.data.assessmentId === assessmentId).map((record) => [record.data.studentId, record]));
+      setStudents((current) => current.map((student) => {
+        const record = relevant.get(student.studentId);
+        return record ? { ...student, score: record.data.score, syncState: record.syncState } : student;
+      }));
+    }).catch(() => {
+      // Reconnect pull is best-effort; queued pushes remain handled by the scheduler.
+    });
+  }, [assessmentId, online, schoolId]);
+
+  const visibleStudents = useMemo(() => students, [students]);
 
   async function save(studentId: string, rawScore: string) {
     setMessage("");
@@ -39,17 +130,29 @@ export default function ScoreCaptureWorkspace({ schoolId, assessmentId, initialD
     }
     setSaving(studentId);
     try {
-      const response = await fetch(`/api/schools/${schoolId}/assessments/${assessmentId}/scores`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ studentId, score }),
+      const operationId = `assessment.score:${schoolId}:${assessmentId}:${studentId}:${crypto.randomUUID()}`;
+      const entityId = `${assessmentId}:${studentId}`;
+      await saveLocalMutation<{ assessmentId: string; studentId: string; score: number }>({
+        schoolId,
+        entityType: "AssessmentScore",
+        entityId,
+        operationType: "UPSERT",
+        payload: { assessmentId, studentId, score },
+        operationId,
+        record: {
+          id: localRecordId(schoolId, "AssessmentScore", entityId),
+          schoolId,
+          entityType: "AssessmentScore",
+          entityId,
+          data: { assessmentId, studentId, score },
+          syncState: "PENDING_SYNC",
+        },
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message ?? "Could not save score.");
-      setStudents((current) => current.map((student) => student.studentId === studentId ? { ...student, score: data.score.score } : student));
-      setMessage("Score saved and audited.");
+      setStudents((current) => current.map((student) => student.studentId === studentId ? { ...student, score, syncState: "PENDING_SYNC" } : student));
+      setMessage(online ? "Score saved locally and queued for synchronization." : "Score saved locally. It will synchronize when the connection returns.");
+      if (online) void startSyncScheduler({ schoolId, executor: assessmentScoreSyncExecutor })();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not save score.");
+      setMessage(error instanceof Error ? error.message : "Could not save score locally.");
     } finally {
       setSaving(null);
     }
@@ -62,16 +165,23 @@ export default function ScoreCaptureWorkspace({ schoolId, assessmentId, initialD
           <h2 style={{ margin: 0, fontSize: 20 }}>Enter scores</h2>
           <p style={{ color: "#53615a", marginTop: 6 }}>Only actively enrolled students in this class and session are shown.</p>
         </div>
-        <strong>Max {initialData.assessment.maxScore}</strong>
+        <strong>{online ? "Online" : "Offline"} · Max {initialData.assessment.maxScore}</strong>
       </div>
-      {students.length === 0 ? <p style={{ color: "#8a3d2f" }}>No active students are enrolled in this class for the selected session.</p> : (
+      {visibleStudents.length === 0 ? <p style={{ color: "#8a3d2f" }}>No active students are enrolled in this class for the selected session.</p> : (
         <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
-          {students.map((student, index) => (
-            <div key={student.studentId} style={{ display: "grid", gridTemplateColumns: "44px minmax(180px, 1fr) 120px 90px", gap: 12, alignItems: "center", borderTop: "1px solid #edf0ee", padding: "10px 0" }}>
+          {visibleStudents.map((student, index) => (
+            <div key={student.studentId} style={{ display: "grid", gridTemplateColumns: "44px minmax(180px, 1fr) 120px 150px", gap: 12, alignItems: "center", borderTop: "1px solid #edf0ee", padding: "10px 0" }}>
               <span style={{ color: "#53615a" }}>{index + 1}</span>
               <div><strong>{studentName(student)}</strong><div style={{ color: "#53615a", fontSize: 12 }}>{student.admissionNumber}</div></div>
               <input aria-label={`Score for ${studentName(student)}`} defaultValue={student.score ?? ""} type="number" min="0" max={initialData.assessment.maxScore} step="0.01" id={`score-${student.studentId}`} style={inputStyle} />
-              <button disabled={saving === student.studentId} onClick={() => save(student.studentId, (document.getElementById(`score-${student.studentId}`) as HTMLInputElement).value)} style={buttonStyle}>{saving === student.studentId ? "Saving…" : "Save"}</button>
+              <div style={{ display: "grid", gap: 6 }}>
+                <button disabled={saving === student.studentId} onClick={() => save(student.studentId, (document.getElementById(`score-${student.studentId}`) as HTMLInputElement).value)} style={buttonStyle}>{saving === student.studentId ? "Saving…" : "Save locally"}</button>
+                {student.syncState ? (
+                  <span style={{ color: "#53615a", fontSize: 12 }}>
+                    {syncLifecycleLabel[student.syncState]}
+                  </span>
+                ) : null}
+              </div>
             </div>
           ))}
         </div>

@@ -31,11 +31,12 @@ export type LocalOutboxItem = {
   attemptCount: number;
   status: "PENDING" | "SYNCING" | "FAILED" | "CONFLICT" | "ACKNOWLEDGED";
   lastError?: string | null;
+  nextAttemptAt?: string | null;
 };
 
 export function requireBrowser() {
-  if (typeof window === "undefined" || typeof indexedDB === "undefined") {
-    throw new Error("The App-School local store is only available in a browser.");
+  if (typeof indexedDB === "undefined") {
+    throw new Error("The App-School local store is only available when IndexedDB is available.");
   }
 }
 
