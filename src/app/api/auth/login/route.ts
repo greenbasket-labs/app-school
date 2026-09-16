@@ -14,7 +14,12 @@ export async function POST(request: Request) {
     const user = await authenticateUser(input.email, input.password);
     const expiresAt = await signIn(user.id);
 
-    return NextResponse.json({ ok: true, userId: user.id, expiresAt }, { status: 200 });
+    return NextResponse.json({
+      ok: true,
+      userId: user.id,
+      expiresAt,
+      requiresFirstLoginPasswordChange: user.requiresFirstLoginPasswordChange,
+    }, { status: 200 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ ok: false, error: "INVALID_LOGIN_DATA" }, { status: 400 });
