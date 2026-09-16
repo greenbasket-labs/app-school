@@ -109,6 +109,29 @@ The academic engine is intentionally built as dependent slices, not one large fe
   - Latest finance history is available from the Finance workspace
   - Detailed accounting reconciliation, refunds, write-offs and settlement matching remain deferred
 
+### Commercial billing & result access — cross-cutting
+This is App-School commercial infrastructure, not school-fee finance. It must not reorder the core academic V1 sequence.
+
+- [x] Centralized Free/Basic/Starter/Pro/Premium/Custom plan rules
+- [x] Persist school subscription + plan state
+- [x] Persist school Result Access configuration
+- [x] Result authorization boundary
+- [x] Provider-neutral result payment-attempt contract
+- [x] Persisted result payment attempt with school-scoped idempotency
+- [x] Paystack and Flutterwave result checkout initialization
+- [x] Server-side Paystack and Flutterwave payment verification
+- [x] Immutable Result Access transaction + revenue allocation boundary
+- [x] Provider event replay/idempotency boundary
+- [x] Callback/webhook adapters for Paystack and Flutterwave
+- [ ] Result entitlement persistence/verification
+- [ ] School transaction/revenue view
+- [ ] Subscription lifecycle: renewal, failure, grace, upgrade, downgrade and cancellation
+- [ ] Settlement/refund operations
+- [ ] Commercial analytics/admin surfaces
+- [ ] Monnify result-access adapter
+
+Commercial rules are defined in `docs/COMMERCIAL-BILLING-HANDOFF.md`. Payment does not bypass result authorization. Historical revenue splits are immutable snapshots. Do not hard-code a result fee such as ₦200.
+
 ### Phase 5 — Communication
 - [ ] Parent/guardian communication
 - [ ] Staff communication
