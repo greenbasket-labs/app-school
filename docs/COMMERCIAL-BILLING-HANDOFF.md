@@ -2,7 +2,7 @@
 
 ## Status
 
-The first commercial implementation slice establishes centralized plan configuration and deterministic result-revenue allocation. Payment collection, subscriptions, result entitlements and settlement remain separate follow-up slices.
+The commercial implementation now has centralized plan rules plus database-backed school subscription and Result Access configuration. Payment collection, result entitlements and settlement remain separate follow-up slices.
 
 ## Product model
 
@@ -117,6 +117,8 @@ SchoolSettlement
 ProviderEvent / provider reference
 ```
 
+The current slice introduces `SchoolSubscription` and `ResultAccessSetting`. A separate immutable transaction/ledger model remains intentionally deferred until the verified payment boundary exists.
+
 These must reuse existing User, School, Student, Guardian, Session, Term and capability identities.
 
 ## Idempotency
@@ -137,12 +139,16 @@ Implemented:
 - deterministic result-revenue allocation from any configured amount;
 - validation of non-negative result-access amounts;
 - zero-price normalization to no payment required;
-- unit tests for plan values and allocation rules.
+- database-backed `SchoolSubscription` with Free/Monthly/Active defaults;
+- database-backed `ResultAccessSetting` with disabled/₦0 defaults;
+- new schools initialize both commercial records during onboarding;
+- existing schools are lazily materialized with safe Free/disabled defaults when first accessed;
+- owner-only Result Access updates with audit evidence;
+- school-scoped subscription and Result Access read APIs;
+- Prisma migration for the new commercial persistence boundary.
 
 Not yet implemented:
 
-- database-backed commercial plans/subscriptions;
-- school result-access settings persistence/UI;
 - result-access payment attempt;
 - provider-specific result payment verification for this feature;
 - result-access transaction ledger;
@@ -156,8 +162,8 @@ Not yet implemented:
 ## Implementation sequence
 
 1. ~~Centralized commercial plan configuration~~ — implemented and unit-tested.
-2. Persist school subscription + plan state.
-3. Persist school result-access configuration.
+2. ~~Persist school subscription + plan state~~ — implemented with Free default and onboarding/lazy materialization.
+3. ~~Persist school result-access configuration~~ — implemented with owner-only mutation and audit evidence.
 4. Establish result authorization/entitlement boundary.
 5. Create result payment attempt using the existing provider boundary.
 6. Verified payment → commercial transaction + immutable revenue allocation.
