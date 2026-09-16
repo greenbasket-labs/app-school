@@ -485,7 +485,7 @@ model FeeStructure {
   @@index([schoolId, isActive])
 }
 model SchoolSubscription {
-  id String @id @default(uuid()) @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
   schoolId String @unique @db.Uuid
   planCode CommercialPlanCode @default(FREE)
   billingPeriod BillingPeriod @default(MONTHLY)
