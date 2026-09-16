@@ -4,7 +4,7 @@
 
 This document is the implementation contract for application-wide offline-first behavior. It is a design/handoff document, not a claim that the runtime is already implemented.
 
-The repository now contains reusable browser persistence, local-first repository, durable outbox, sync lifecycle, sync-engine primitive, connectivity/scheduling primitives, and an initial authoritative reconciliation contract. These are still platform foundations; no operational module is considered end-to-end offline-ready until its real repository, authenticated server executor, reconciliation and tests are wired and verified.
+The repository contains reusable browser persistence, local-first repository, durable outbox, sync lifecycle, sync-engine primitive, connectivity/scheduling primitives, an initial authoritative reconciliation contract, and a shared sync-status model. These are still platform foundations; no operational module is considered end-to-end offline-ready until its real repository, authenticated server executor, reconciliation and tests are wired and verified.
 
 ## Handoff principle
 
@@ -53,7 +53,8 @@ The browser foundation currently includes:
 - explicit local synchronization states;
 - a shared sync-engine loop that reads pending work, marks it `SYNCING`, delegates the server operation to an executor, then records `ACKNOWLEDGED`, `FAILED` or `CONFLICT`;
 - connectivity detection and a browser scheduler that attempts synchronization when online, on reconnect and on a guarded periodic interval;
-- a first pull/reconciliation contract carrying a school-scoped cursor, authoritative server record/version and explicit `APPLY`, `CONFLICT` or `IGNORE` classification.
+- a first pull/reconciliation contract carrying a school-scoped cursor, authoritative server record/version and explicit `APPLY`, `CONFLICT` or `IGNORE` classification;
+- a shared sync-status model for application-wide presentation of `IDLE`, `OFFLINE`, `SYNCING`, `FAILED` and `CONFLICT` states.
 
 The server already has school-scoped idempotency primitives. The sync engine deliberately does not invent another server persistence model; it expects the executor/server API to use the existing idempotency identity.
 
@@ -68,7 +69,7 @@ This foundation does **not** yet provide end-to-end offline operation for a modu
 - retry policy for transient vs permanent errors;
 - conflict rules where concurrent edits matter;
 - browser persistence/reconnect tests;
-- visible sync status in the application UI;
+- visible sync status integrated into the application UI;
 - authentication/session behavior that is safe during temporary offline periods.
 
 Do not mark the roadmap complete because these platform files exist.
@@ -184,6 +185,20 @@ classify each record
 The exact server pull endpoint and cursor/version semantics are intentionally still open. Do not invent a universal cursor format until the first real module establishes a server contract that can be reused.
 
 Do not invent a fake `SYNCED` state from local timestamps alone. A record is synchronized only when the server acknowledgement and authoritative state are known.
+
+## Shared sync-status model
+
+The platform defines a common status vocabulary in `src/domain/platform/sync-status.ts` so application UI does not create incompatible module-specific meanings.
+
+```text
+IDLE
+OFFLINE
+SYNCING
+FAILED
+CONFLICT
+```
+
+The snapshot also carries pending, failed and conflict counts, the last successful synchronization timestamp and an optional message. The status model is presentation/state-contract infrastructure only; it does not itself perform synchronization.
 
 ## State model
 
@@ -328,7 +343,7 @@ A new operational module is incomplete until it can answer:
 5. ~~Create the sync state machine and idempotency contract.~~ **Implemented: shared lifecycle plus executor-based sync engine; existing server idempotency remains authoritative.**
 6. ~~Add connectivity detection and automatic retry.~~ **Started: connectivity state plus reconnect/periodic scheduler exists; retry classification/backoff still needs verification.**
 7. ~~Add authoritative pull/reconciliation contract.~~ **Started: shared cursor/version and APPLY/CONFLICT/IGNORE contract exists; live server pull protocol remains.**
-8. Add application-wide sync status UI.
+8. ~~Add application-wide sync status model.~~ **Implemented: shared status vocabulary and snapshot contract; visible application UI remains.**
 9. Add service-worker/application-shell support where appropriate.
 10. Convert one real existing workflow end-to-end as the reference implementation.
 11. Migrate remaining modules incrementally, recording module-specific conflict/authority rules as each slice is converted.
