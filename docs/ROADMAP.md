@@ -245,9 +245,9 @@ Rules:
 - [x] Result authorization boundary — pure policy evaluates school/student authorization, publication, free/paid configuration and entitlement state in that order
 - [x] Persist result payment attempt — school-scoped idempotency and immutable result/payment context validation
 - [x] Provider-specific result checkout initialization — Paystack and Flutterwave reuse the existing school provider configuration boundary; Monnify adapter remains pending
+- [x] Persist verified transaction + immutable revenue allocation boundary — server-side boundary accepts only an already-verified payment; provider verification is still required before production invocation
 - [ ] Verified result payment flow using existing provider infrastructure
-- [ ] Immutable result transaction/revenue allocation ledger
-- [ ] Payment webhook/callback idempotency for result transactions
+- [ ] Provider webhook/callback event idempotency for result transactions
 - [ ] Result access grant/unlock
 - [ ] School result-revenue dashboard
 - [ ] App-School commercial administration dashboard
@@ -275,7 +275,7 @@ Commercial rules:
 7. **Academic history** — preserve and present results across sessions.
 8. **Offline-first foundation** — local persistence, repository, durable outbox, sync engine, connectivity scheduler, durable retry backoff and school-workspace status UI are established at platform level; next prove browser persistence/reconnect behavior, then complete authoritative pull/reconciliation before marking the first module offline-ready.
 9. **Role-based workspaces** — cross-cutting product layer after the current V1 sequence is preserved; dashboards should compose existing modules rather than become a new competing product track.
-10. **Commercial billing/result access** — cross-cutting product layer; persistence/configuration, authorization, persisted payment attempts and Paystack/Flutterwave checkout initialization are established, while verified payment/ledger/entitlement work remains incremental and must not reorder the core academic V1 sequence.
+10. **Commercial billing/result access** — cross-cutting product layer; persistence/configuration, authorization, persisted payment attempts, Paystack/Flutterwave checkout initialization, and the verified transaction/allocation persistence boundary are established, while actual provider verification and entitlement work remains incremental and must not reorder the core academic V1 sequence.
 
 ## V1 completion rule
 
