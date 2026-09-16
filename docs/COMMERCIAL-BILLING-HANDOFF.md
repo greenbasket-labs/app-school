@@ -2,7 +2,7 @@
 
 ## Status
 
-The commercial implementation now has centralized plan rules, database-backed school subscription and Result Access configuration, a pure result-access authorization policy, a provider-neutral result payment-attempt boundary, persisted result payment attempts with school-scoped idempotency, and provider-specific checkout initialization for Paystack and Flutterwave using the existing school payment-provider configuration boundary. Payment verification, result entitlements and settlement remain separate follow-up slices. Monnify remains configured as an available provider but does not yet have a result-access initialization adapter.
+The commercial implementation now has centralized plan rules, database-backed school subscription and Result Access configuration, a pure result-access authorization policy, a provider-neutral result payment-attempt boundary, persisted result payment attempts with school-scoped idempotency, provider-specific checkout initialization for Paystack and Flutterwave using the existing school payment-provider configuration boundary, server-side provider verification for Paystack and Flutterwave, an immutable commercial transaction/revenue-allocation boundary, and a durable provider-event replay boundary. Result entitlement, settlement and subscription lifecycle remain separate follow-up slices. Monnify remains configured as an available provider but does not yet have a result-access initialization or verification adapter.
 
 ## Product model
 
@@ -59,7 +59,7 @@ Later upgrade to Pro → old transaction remains ₦50 / ₦150
 
 ## Payment-provider fees
 
-The eventual ledger must preserve gross amount, provider fee, net amount, school share and App-School share. The final rule for whether provider fees are absorbed before allocation or handled separately must be confirmed against the selected provider and commercial agreement before live settlement.
+The ledger preserves gross amount, provider fee, net amount, school share and App-School share. The final rule for whether provider fees are absorbed before allocation or handled separately must be confirmed against the selected provider and commercial agreement before live settlement.
 
 ## Result entitlement and security
 
@@ -120,7 +120,33 @@ Monnify remains part of the shared provider type/configuration boundary but need
 
 A failed provider initialization transitions the persisted attempt to `FAILED`. A successfully initialized attempt becomes `INITIALIZED` and stores the provider reference and checkout URL. A previously initialized idempotent attempt can be returned without creating another provider checkout.
 
-This boundary still does **not** verify payment, create a commercial transaction, allocate revenue, grant result access or perform settlement.
+## Server-side provider verification
+
+`src/domain/commercial/result-payment-verification.ts` is the server-side verification boundary. It uses provider APIs rather than trusting browser redirect/query success.
+
+For Paystack it verifies the provider reference, successful provider status, NGN currency and exact amount against the persisted attempt. For Flutterwave it verifies the transaction through the provider API, then checks successful status, `tx_ref`, NGN currency and exact amount against the persisted attempt. Provider fee data is normalized when supplied by the provider.
+
+Verification returns a normalized `VerifiedProviderPayment`. Verification alone does not grant result access; the verified value must pass through the immutable commercial transaction boundary.
+
+## Immutable commercial transaction boundary
+
+`recordVerifiedResultPayment()` is the financial confirmation boundary. It locks the payment attempt, rejects mismatched amount/currency/reference values, snapshots the active commercial plan through the same database transaction, creates the immutable `ResultAccessTransaction`, creates the matching `ResultRevenueAllocation`, and marks the payment attempt `SUCCEEDED`.
+
+The transaction path is deliberately separate from school-finance invoices and `PaymentIntent` records. Replays for an already-succeeded payment attempt resolve to the existing transaction rather than creating a second financial event.
+
+## Provider event idempotency
+
+The durable provider-event boundary is persisted as `ResultPaymentProviderEvent` by the migration `prisma/migrations/20260916193000_result_payment_provider_events/migration.sql` and `src/domain/commercial/result-payment-provider-events.ts`.
+
+The unique key is:
+
+```text
+provider + eventKey
+```
+
+A provider callback/webhook must reserve this event before applying its verified payment. A repeated delivery returns the existing event. A previously `PROCESSED` event must not create another commercial transaction. A `RECEIVED` event may be retried after an interrupted processing attempt. Reusing an event key with a different payment attempt or provider reference is an explicit conflict.
+
+This event table is the replay boundary; it is not itself proof of payment. Provider verification remains mandatory before `recordVerifiedResultPayment()` is called.
 
 ## Bounded contexts
 
@@ -161,13 +187,21 @@ SchoolSettlement
 ProviderEvent / provider reference
 ```
 
-Current commercial persistence includes `SchoolSubscription`, `ResultAccessSetting`, and `ResultPaymentAttempt`. Immutable commercial transaction, revenue allocation and entitlement models remain intentionally deferred until the provider verification boundary is ready.
+Current commercial persistence includes `SchoolSubscription`, `ResultAccessSetting`, `ResultPaymentAttempt`, `ResultAccessTransaction`, `ResultRevenueAllocation`, and `ResultPaymentProviderEvent` through the current incremental migration boundaries. Result entitlement persistence remains intentionally deferred until the verified transaction path is ready to feed it.
 
 These must reuse existing User, School, Student, Guardian, Session, Term and capability identities.
 
 ## Idempotency
 
-Protect against double-clicks, refresh/retry, callback retry, webhook retry and duplicate provider events. The current persisted-attempt boundary protects the initialization retry/double-click case. The verified transaction path must add its own idempotent provider-event/transaction boundary before granting access.
+Protect against double-clicks, refresh/retry, callback retry, webhook retry and duplicate provider events.
+
+Current boundaries:
+
+- initialization retry: `(schoolId, idempotencyKey)` on `ResultPaymentAttempt`;
+- provider event replay: `(provider, eventKey)` on `ResultPaymentProviderEvent`;
+- commercial transaction replay: unique `paymentAttemptId` on `ResultAccessTransaction`.
+
+The callback/webhook adapter must use all three boundaries in that order: identify/reserve event → load the bound attempt → verify with provider → record the verified transaction.
 
 ## Refunds
 
@@ -196,15 +230,18 @@ Implemented:
 - payment-attempt validation tests;
 - persisted `ResultPaymentAttempt` with school-scoped idempotency and immutable context checks;
 - provider-specific Paystack and Flutterwave result checkout initialization using the existing school provider configuration;
-- initialized/failed attempt state transitions with provider reference and checkout URL persistence.
+- initialized/failed attempt state transitions with provider reference and checkout URL persistence;
+- server-side Paystack and Flutterwave verification with exact attempt amount/currency/reference checks;
+- provider verification tests for success and mismatch/failure cases;
+- immutable `ResultAccessTransaction` and `ResultRevenueAllocation` persistence with active-plan snapshot;
+- transaction replay protection through the payment-attempt uniqueness boundary;
+- durable `ResultPaymentProviderEvent` replay/idempotency boundary with explicit context-conflict detection;
+- provider-event idempotency unit tests.
 
 Not yet implemented:
 
-- provider-specific Monnify result payment initialization;
-- server-side provider verification for result-access payments;
-- immutable result-access transaction ledger;
-- immutable revenue allocation snapshot;
-- provider webhook/callback event idempotency boundary for commercial transactions;
+- provider-specific Monnify result payment initialization and verification;
+- commercial callback/webhook route adapters that reserve events, locate attempts and invoke server-side verification;
 - result-access entitlement persistence/verification;
 - school/App-School settlement ledger;
 - refunds/chargebacks;
@@ -221,13 +258,15 @@ Not yet implemented:
 5. ~~Define result payment-attempt boundary~~ — implemented as a provider-neutral, idempotency-aware pure contract.
 6. ~~Persist result payment attempt~~ — implemented with school-scoped idempotency and immutable context validation.
 7. ~~Provider-specific checkout initialization~~ — Paystack and Flutterwave implemented using the existing provider configuration boundary; Monnify adapter remains deferred.
-8. Verified payment → commercial transaction + immutable revenue allocation.
-9. Payment idempotency/webhook replay protection.
-10. Result entitlement/unlock.
-11. School transaction/revenue view.
-12. Subscription lifecycle: renewal, failure, grace, upgrade, downgrade and cancellation.
-13. Settlement/refund operations.
-14. Commercial analytics/admin surfaces.
+8. ~~Server-side provider verification~~ — Paystack and Flutterwave verification implemented and tested.
+9. ~~Verified payment → commercial transaction + immutable revenue allocation~~ — implemented with atomic plan snapshot and replay-safe transaction persistence.
+10. ~~Payment idempotency/provider-event replay boundary~~ — implemented with durable provider/event uniqueness and explicit conflict handling.
+11. Provider callback/webhook route adapters.
+12. Result entitlement/unlock.
+13. School transaction/revenue view.
+14. Subscription lifecycle: renewal, failure, grace, upgrade, downgrade and cancellation.
+15. Settlement/refund operations.
+16. Commercial analytics/admin surfaces.
 
 Every slice must pass typecheck, tests and production build before the next slice.
 
@@ -241,4 +280,6 @@ Every slice must pass typecheck, tests and production build before the next slic
 - Do not mix App-School subscription revenue with school fee revenue.
 - Do not create a second payment-provider integration when the existing boundary can be reused.
 - Do not let commercial plan state override school module enablement or user capabilities.
+- Do not mark a provider callback successful merely because a redirect/query says payment succeeded; verify with the provider server-side.
+- Do not create an entitlement before the verified commercial transaction is durably recorded.
 - Do not build complex settlement/refund/accounting before the MVP transaction path is verified.
