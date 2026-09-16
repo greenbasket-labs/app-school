@@ -243,6 +243,8 @@ Rules:
 - [x] Persist school subscription + plan state — new schools initialize to Free; existing schools are lazily materialized as Free when first accessed
 - [x] Persist school Result Access setting and configurable fee — default disabled with ₦0 fee; owner-only updates with audit evidence
 - [x] Result authorization boundary — pure policy evaluates school/student authorization, publication, free/paid configuration and entitlement state in that order
+- [x] Persist result payment attempt — school-scoped idempotency and immutable result/payment context validation
+- [x] Provider-specific result checkout initialization — Paystack and Flutterwave reuse the existing school provider configuration boundary; Monnify adapter remains pending
 - [ ] Verified result payment flow using existing provider infrastructure
 - [ ] Immutable result transaction/revenue allocation ledger
 - [ ] Payment webhook/callback idempotency for result transactions
@@ -262,8 +264,6 @@ Commercial rules:
 - Provider fees must remain separately represented from gross amount and revenue allocation; the final live fee-bearing policy must be confirmed against the chosen provider and commercial agreement.
 - Commercial plan state must not override school module enablement or user capabilities.
 
-The implementation contract is `docs/COMMERCIAL-BILLING-HANDOFF.md`.
-
 ## Current V1 sequence
 
 1. **Assessment definitions** — complete and tested against Greenfield Heritage Academy.
@@ -275,7 +275,7 @@ The implementation contract is `docs/COMMERCIAL-BILLING-HANDOFF.md`.
 7. **Academic history** — preserve and present results across sessions.
 8. **Offline-first foundation** — local persistence, repository, durable outbox, sync engine, connectivity scheduler, durable retry backoff and school-workspace status UI are established at platform level; next prove browser persistence/reconnect behavior, then complete authoritative pull/reconciliation before marking the first module offline-ready.
 9. **Role-based workspaces** — cross-cutting product layer after the current V1 sequence is preserved; dashboards should compose existing modules rather than become a new competing product track.
-10. **Commercial billing/result access** — cross-cutting product layer; persistence/configuration and the authorization policy are established, while payment/entitlement/ledger work remains incremental and must not reorder the core academic V1 sequence.
+10. **Commercial billing/result access** — cross-cutting product layer; persistence/configuration, authorization, persisted payment attempts and Paystack/Flutterwave checkout initialization are established, while verified payment/ledger/entitlement work remains incremental and must not reorder the core academic V1 sequence.
 
 ## V1 completion rule
 
