@@ -77,6 +77,14 @@ export async function createOrGetResultPaymentAttempt(
     ON CONFLICT ("schoolId", "idempotencyKey") DO NOTHING
   `);
 
+  return getResultPaymentAttempt(attempt.schoolId, attempt.idempotencyKey, attempt);
+}
+
+export async function getResultPaymentAttempt(
+  schoolId: string,
+  idempotencyKey: string,
+  expected?: ResultPaymentAttemptInput,
+): Promise<PersistedResultPaymentAttempt> {
   const rows = await db.$queryRaw<Array<{
     id: string;
     schoolId: string;
@@ -96,26 +104,45 @@ export async function createOrGetResultPaymentAttempt(
       "amount"::text AS "amount", "currency", "provider", "idempotencyKey",
       "status", "providerReference", "checkoutUrl"
     FROM "ResultPaymentAttempt"
-    WHERE "schoolId" = ${attempt.schoolId}::uuid
-      AND "idempotencyKey" = ${attempt.idempotencyKey}
+    WHERE "schoolId" = ${schoolId}::uuid
+      AND "idempotencyKey" = ${idempotencyKey}
     LIMIT 1
   `);
 
   const existing = rows[0];
   if (!existing) throw new Error("Result payment attempt could not be persisted.");
 
-  const sameContext =
-    existing.studentId === attempt.studentId &&
-    existing.academicSessionId === attempt.academicSessionId &&
-    existing.academicTermId === attempt.academicTermId &&
-    Number(existing.amount) === attempt.amountNaira &&
-    existing.provider === attempt.provider;
+  if (expected) {
+    const sameContext =
+      existing.studentId === expected.studentId &&
+      existing.academicSessionId === expected.academicSessionId &&
+      existing.academicTermId === expected.academicTermId &&
+      Number(existing.amount) === expected.amountNaira &&
+      existing.provider === expected.provider;
 
-  if (!sameContext) {
-    throw new ResultPaymentAttemptConflictError(
-      "The idempotency key is already bound to a different result payment attempt.",
-    );
+    if (!sameContext) {
+      throw new ResultPaymentAttemptConflictError(
+        "The idempotency key is already bound to a different result payment attempt.",
+      );
+    }
   }
 
   return mapAttempt(existing);
+}
+
+export async function transitionResultPaymentAttempt(
+  attemptId: string,
+  status: "INITIALIZED" | "FAILED",
+  providerReference?: string,
+  checkoutUrl?: string,
+) {
+  await db.$executeRaw(Prisma.sql`
+    UPDATE "ResultPaymentAttempt"
+    SET
+      "status" = ${status},
+      "providerReference" = COALESCE(${providerReference ?? null}, "providerReference"),
+      "checkoutUrl" = COALESCE(${checkoutUrl ?? null}, "checkoutUrl"),
+      "updatedAt" = CURRENT_TIMESTAMP
+    WHERE "id" = ${attemptId}::uuid
+  `);
 }
