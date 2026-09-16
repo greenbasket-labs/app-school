@@ -158,7 +158,11 @@ export default function ScoreCaptureWorkspace({ schoolId, assessmentId, initialD
               <input aria-label={`Score for ${studentName(student)}`} defaultValue={student.score ?? ""} type="number" min="0" max={initialData.assessment.maxScore} step="0.01" id={`score-${student.studentId}`} style={inputStyle} />
               <div style={{ display: "grid", gap: 6 }}>
                 <button disabled={saving === student.studentId} onClick={() => save(student.studentId, (document.getElementById(`score-${student.studentId}`) as HTMLInputElement).value)} style={buttonStyle}>{saving === student.studentId ? "Saving…" : "Save locally"}</button>
-                {student.syncState ? <span style={{ color: "#53615a", fontSize: 12 }}>{syncLifecycleLabel(student.syncState)}</span> : null}
+                {student.syncState ? (
+  <span style={{ color: "#53615a", fontSize: 12 }}>
+    {syncLifecycleLabel[student.syncState]}
+  </span>
+) : null}
               </div>
             </div>
           ))}
