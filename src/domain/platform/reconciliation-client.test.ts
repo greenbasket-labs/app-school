@@ -5,6 +5,13 @@ import { getLocalRecordByEntity, saveLocalMutation } from "./local-repository";
 import { reconcileAssessmentScores } from "./reconciliation-client";
 import { openAppSchoolLocalDb } from "./local-store";
 
+type TestScore = {
+  assessmentId: string;
+  studentId: string;
+  score: number;
+  updatedAt?: string;
+};
+
 const SCHOOL_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const ASSESSMENT_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const STUDENT_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
@@ -63,7 +70,7 @@ describe("assessment score reconciliation", () => {
       }), { status: 200 })),
     });
 
-    const local = await getLocalRecordByEntity(SCHOOL_ID, "AssessmentScore", `${ASSESSMENT_ID}:${STUDENT_ID}`);
+    const local = await getLocalRecordByEntity<TestScore>(SCHOOL_ID, "AssessmentScore", `${ASSESSMENT_ID}:${STUDENT_ID}`);
     expect(result).toEqual({ pulled: 1, applied: 1, ignored: 0, conflicts: 0 });
     expect(local?.syncState).toBe("SYNCED");
     expect(local?.data).toEqual({ assessmentId: ASSESSMENT_ID, studentId: STUDENT_ID, score: 7.5, updatedAt: "2026-09-16T10:01:00.000Z" });
@@ -105,7 +112,7 @@ describe("assessment score reconciliation", () => {
       }), { status: 200 })),
     });
 
-    const local = await getLocalRecordByEntity(SCHOOL_ID, "AssessmentScore", `${ASSESSMENT_ID}:${STUDENT_ID}`);
+    const local = await getLocalRecordByEntity<TestScore>(SCHOOL_ID, "AssessmentScore", `${ASSESSMENT_ID}:${STUDENT_ID}`);
     expect(result.conflicts).toBe(1);
     expect(local?.syncState).toBe("CONFLICT");
     expect(local?.data.score).toBe(9);
