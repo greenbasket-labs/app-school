@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const recordEvent = vi.fn();
-const transitionEvent = vi.fn();
-const recordTransaction = vi.fn();
+const { recordEvent, transitionEvent, recordTransaction } = vi.hoisted(() => ({
+  recordEvent: vi.fn(),
+  transitionEvent: vi.fn(),
+  recordTransaction: vi.fn(),
+}));
 
 vi.mock("./result-payment-provider-events", () => ({
   recordResultPaymentProviderEvent: recordEvent,
