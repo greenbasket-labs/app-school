@@ -4,12 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { CAPABILITIES } from "@/domain/auth/capabilities";
 import { MODULE_CATALOG } from "@/domain/modules/catalog";
-import {
-  normalizeCacNumber,
-  normalizeEmail,
-  normalizeOrganizationName,
-  normalizeSchoolName,
-} from "@/domain/identity/normalize";
+import { normalizeCacNumber, normalizeEmail, normalizeOrganizationName, normalizeSchoolName } from "@/domain/identity/normalize";
 
 const inputSchema = z.object({
   email: z.string().email(), password: z.string().min(12).max(128), organizationName: z.string().min(2).max(200), schoolName: z.string().min(2).max(200), cacNumber: z.string().min(4).max(64),
@@ -55,7 +50,10 @@ export async function registerSchoolOwner(raw: RegisterSchoolOwnerInput) {
         await tx.schoolModule.create({ data: { schoolId: school.id, moduleId, enabled: enabledByDefault, enabledAt: enabledByDefault ? school.createdAt : null } });
       }
 
-      await tx.auditEvent.create({ data: { schoolId: school.id, actorUserId: user.id, action: "school.identity.created", entityType: "School", entityId: school.id, currentState: { organizationId: organization.id, schoolId: school.id, schoolName: school.name, schoolCreatedAt: school.createdAt.toISOString(), cacIdentityBound: true, ownerMembershipId: membership.id } } });
+      await tx.schoolSubscription.create({ data: { schoolId: school.id, planCode: "FREE", billingPeriod: "MONTHLY", status: "ACTIVE" } });
+      await tx.resultAccessSetting.create({ data: { schoolId: school.id, enabled: false, amountNaira: 0 } });
+
+      await tx.auditEvent.create({ data: { schoolId: school.id, actorUserId: user.id, action: "school.identity.created", entityType: "School", entityId: school.id, currentState: { organizationId: organization.id, schoolId: school.id, schoolName: school.name, schoolCreatedAt: school.createdAt.toISOString(), cacIdentityBound: true, ownerMembershipId: membership.id, commercialPlan: "FREE", resultAccessEnabled: false } } });
       return { user, organization, school, membership };
     }, { maxWait: 10000, timeout: 10000 });
   } catch (error) {
