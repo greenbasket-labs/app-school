@@ -4,7 +4,7 @@
 
 This document is the implementation contract for application-wide offline-first behavior. It is a design/handoff document, not a claim that the runtime is already implemented.
 
-The repository contains reusable browser persistence, local-first repository, durable outbox, sync lifecycle, sync-engine primitive, connectivity/scheduling primitives, an initial authoritative reconciliation contract, and a shared sync-status model. These are still platform foundations; no operational module is considered end-to-end offline-ready until its real repository, authenticated server executor, reconciliation and tests are wired and verified.
+The repository contains reusable browser persistence, local-first repository, durable outbox, sync lifecycle, sync-engine primitive, connectivity/scheduling primitives, an initial authoritative reconciliation contract, and a shared sync-status model. The assessment score-capture screen now writes score mutations to the durable local repository/outbox first. These are still platform/reference foundations; no operational module is considered end-to-end offline-ready until its authenticated server executor, reconciliation and browser reconnect tests are wired and verified.
 
 ## Handoff principle
 
@@ -54,25 +54,43 @@ The browser foundation currently includes:
 - a shared sync-engine loop that reads pending work, marks it `SYNCING`, delegates the server operation to an executor, then records `ACKNOWLEDGED`, `FAILED` or `CONFLICT`;
 - connectivity detection and a browser scheduler that attempts synchronization when online, on reconnect and on a guarded periodic interval;
 - a first pull/reconciliation contract carrying a school-scoped cursor, authoritative server record/version and explicit `APPLY`, `CONFLICT` or `IGNORE` classification;
-- a shared sync-status model for application-wide presentation of `IDLE`, `OFFLINE`, `SYNCING`, `FAILED` and `CONFLICT` states.
+- a shared application sync-status model;
+- an assessment score-capture local-first mutation path using a stable operation identity.
 
-The server already has school-scoped idempotency primitives. The sync engine deliberately does not invent another server persistence model; it expects the executor/server API to use the existing idempotency identity.
-
-The reconciliation contract is not a live pull API. The actual module-specific server endpoint/cursor/version protocol remains to be implemented and tested.
+The server already has school-scoped idempotency primitives, and the assessment score endpoint accepts an `Idempotency-Key` for safe replay of the same logical mutation.
 
 This foundation does **not** yet provide end-to-end offline operation for a module. In particular, the following are still required before a module can claim offline readiness:
 
-- a real module repository using local reads/writes;
-- an authenticated server executor/API contract for that module;
+- a real authenticated module executor wired to the sync engine;
 - authoritative local update from the server acknowledgement;
 - real pull/reconciliation invocation against server changes;
 - retry policy for transient vs permanent errors;
 - conflict rules where concurrent edits matter;
 - browser persistence/reconnect tests;
-- visible sync status integrated into the application UI;
+- visible sync status in the application UI;
 - authentication/session behavior that is safe during temporary offline periods.
 
 Do not mark the roadmap complete because these platform files exist.
+
+## Reference workflow checkpoint — assessment score capture
+
+The assessment score workspace is now the first local-first reference slice.
+
+Current behavior:
+
+```text
+user enters score
+      ↓
+client validates local shape/range
+      ↓
+IndexedDB record + durable outbox written atomically
+      ↓
+UI shows Saved ✓ / Pending sync
+```
+
+The existing server route remains authoritative for authentication, school capability, module state, score-context validation, persistence and audit. The client has not yet completed the final automatic server executor/reconciliation loop for this screen.
+
+The assessment screen deliberately does not mark a locally persisted score as server-confirmed. Result submission/publication remains separate and is not part of this offline conversion.
 
 ## Authority model
 
@@ -167,7 +185,7 @@ Sync is not only push.
 
 When online, the client must also be able to receive authoritative changes made elsewhere so the local working copy converges toward the server state.
 
-The initial reconciliation contract is now defined in `src/domain/platform/reconciliation.ts`:
+The initial reconciliation contract is defined in `src/domain/platform/reconciliation.ts`:
 
 ```text
 cursor + school
@@ -185,20 +203,6 @@ classify each record
 The exact server pull endpoint and cursor/version semantics are intentionally still open. Do not invent a universal cursor format until the first real module establishes a server contract that can be reused.
 
 Do not invent a fake `SYNCED` state from local timestamps alone. A record is synchronized only when the server acknowledgement and authoritative state are known.
-
-## Shared sync-status model
-
-The platform defines a common status vocabulary in `src/domain/platform/sync-status.ts` so application UI does not create incompatible module-specific meanings.
-
-```text
-IDLE
-OFFLINE
-SYNCING
-FAILED
-CONFLICT
-```
-
-The snapshot also carries pending, failed and conflict counts, the last successful synchronization timestamp and an optional message. The status model is presentation/state-contract infrastructure only; it does not itself perform synchronization.
 
 ## State model
 
@@ -334,32 +338,18 @@ A new operational module is incomplete until it can answer:
 - How is tenant isolation preserved locally?
 - What tests prove those behaviors?
 
-## First implementation sequence
+## Implementation sequence
 
-1. ~~Choose and add the browser durable database layer.~~ **Implemented: versioned IndexedDB foundation.**
-2. ~~Create shared local schema/versioning conventions.~~ **Implemented: explicit database/version/store constants and upgrade path.**
-3. ~~Create repository interfaces for local-first reads/writes.~~ **Implemented: shared local repository boundary.**
-4. ~~Create the durable outbox.~~ **Implemented: durable school-scoped outbox persistence.**
-5. ~~Create the sync state machine and idempotency contract.~~ **Implemented: shared lifecycle plus executor-based sync engine; existing server idempotency remains authoritative.**
-6. ~~Add connectivity detection and automatic retry.~~ **Started: connectivity state plus reconnect/periodic scheduler exists; retry classification/backoff still needs verification.**
-7. ~~Add authoritative pull/reconciliation contract.~~ **Started: shared cursor/version and APPLY/CONFLICT/IGNORE contract exists; live server pull protocol remains.**
-8. ~~Add application-wide sync status model.~~ **Implemented: shared status vocabulary and snapshot contract; visible application UI remains.**
-9. Add service-worker/application-shell support where appropriate.
-10. Convert one real existing workflow end-to-end as the reference implementation.
-11. Migrate remaining modules incrementally, recording module-specific conflict/authority rules as each slice is converted.
-
-## Reference workflow candidate
-
-Assessment score capture is the first reference candidate because it already has:
-
-- a bounded school/class/session roster;
-- validation rules;
-- individual save behavior;
-- audit evidence;
-- a natural bulk-save workflow;
-- an observable distinction between local save and server confirmation.
-
-For the first offline conversion, prefer the smallest score-capture path that can demonstrate local persistence → outbox → automatic sync → server validation/audit → acknowledgement. Do not expand result approval/publication at the same time.
+1. ~~Browser durable database~~ — implemented.
+2. ~~Shared local schema/versioning~~ — implemented.
+3. ~~Local-first repository boundary~~ — implemented.
+4. ~~Durable outbox~~ — implemented.
+5. ~~Shared sync lifecycle/engine contract~~ — implemented.
+6. ~~Connectivity detection and scheduling primitive~~ — implemented as a guarded browser scheduler; retry classification/backoff still needs verification.
+7. ~~Initial reconciliation contract~~ — implemented as a reusable classification contract; live server pull protocol remains.
+8. ~~Shared sync-status model~~ — implemented as a reusable status vocabulary; application-wide UI wiring remains.
+9. **Reference workflow: assessment score capture** — local-first mutation path implemented; authenticated executor, end-to-end automatic sync, reconciliation invocation and browser tests remain.
+10. Convert remaining operational modules incrementally using the same shared foundation.
 
 ## Do not do
 
