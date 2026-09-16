@@ -4,6 +4,7 @@ import { CAPABILITIES } from "@/domain/auth/capabilities";
 import { currentSession } from "@/domain/auth/session-cookie";
 import { getSchoolModules } from "@/domain/modules/service";
 import { db } from "@/lib/db";
+import SyncStatusIndicator from "./sync-status-indicator";
 
 export default async function SchoolWorkspacePage({ params }: { params: Promise<{ schoolId: string }> }) {
   const session = await currentSession();
@@ -39,6 +40,7 @@ export default async function SchoolWorkspacePage({ params }: { params: Promise<
         <p style={{ margin: 0, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", fontSize: 13 }}>School workspace</p>
         <h1 style={{ margin: "10px 0 8px", fontSize: 36 }}>{membership.school.name}</h1>
         <p style={{ color: "#53615a", lineHeight: 1.6 }}>School identity and access are established first. Operational workflows sit behind the same school boundary.</p>
+        <SyncStatusIndicator schoolId={schoolId} />
         <div style={{ marginTop: 28, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
           <div style={{ border: "1px solid #e0e6e2", borderRadius: 12, padding: 16 }}><strong>School status</strong><div style={{ marginTop: 6 }}>{membership.school.status}</div></div>
           <div style={{ border: "1px solid #e0e6e2", borderRadius: 12, padding: 16 }}><strong>Setup status</strong><div style={{ marginTop: 6 }}>{membership.school.setupStatus.replaceAll("_", " ").toLowerCase()}</div></div>
