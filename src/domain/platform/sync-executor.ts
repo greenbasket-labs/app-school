@@ -1,6 +1,13 @@
-export type SyncExecutorResult = {
+export type SyncAuthoritativePayload<T = unknown> = {
+  data: T;
+  serverVersion: string;
+  updatedAt?: string;
+};
+
+export type SyncExecutorResult<T = unknown> = {
   status: "ACKNOWLEDGED" | "FAILED" | "CONFLICT";
   serverVersion?: string | null;
+  authoritative?: SyncAuthoritativePayload<T> | null;
   error?: string | null;
   retryable?: boolean;
 };
