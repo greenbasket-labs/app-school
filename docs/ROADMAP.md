@@ -159,7 +159,7 @@ Role-based workspaces are part of the product surface, but they do **not** repla
 The core model is:
 
 ```text
-                App-School core records + capabilities
+                App-School core records + module state
                               │
              ┌────────────────┼────────────────┐
              ▼                ▼                ▼
@@ -180,6 +180,35 @@ Planned role/workspace surfaces:
 - [ ] Capability-driven workspace composition — users only see actions/data their active school membership permits
 - [ ] Multi-role account handling — one identity may hold different capabilities/roles in different schools or contexts without weakening tenant isolation
 - [ ] Institutional context adapters — allow the same core to support school-wide use first, then constrained contexts such as a government school through a principal/administrator and a university through an eligible department/unit rather than requiring the entire institution to adopt App-School at once
+
+### Module, school and user control model
+
+App-School uses **one shared module system**. A school decides which modules are enabled for that school, and each user is then granted capabilities within the enabled modules.
+
+```text
+                 App-School module catalogue
+                           │
+                 school enables/disables
+                           │
+                           ▼
+                 modules active in School A
+                           │
+              capability assignment per user
+                           │
+          ┌────────────────┼────────────────┐
+          ▼                ▼                ▼
+       Owner           Teacher          Parent/Student
+     allowed set       allowed set        allowed set
+```
+
+Rules:
+
+- A **disabled school module is unavailable to every user in that school**, regardless of their personal capability set.
+- An **enabled module is not automatically available to every user**; capabilities still determine who may view, create, edit, approve, publish, administer or otherwise act within it.
+- The owner/authorized school administrator controls module activation according to the existing module-settings and backend-enforcement model.
+- Role dashboards are composed from the intersection of **school-enabled modules × user capabilities × authorized school context**.
+- Users with multiple roles/capability sets see one combined workspace based on what they are currently authorized to do, not separate copies of the underlying data.
+- The same model must work for a school, a government school deployment, or an authorized university department/unit without creating separate product forks.
 
 ### Role/workspace design rules
 
