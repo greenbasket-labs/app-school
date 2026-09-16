@@ -35,6 +35,7 @@ export async function recordResultPaymentProviderEvent(input: {
   providerReference?: string | null;
 }) {
   const eventKey = requireText(input.eventKey, "eventKey");
+  const paymentAttemptId = input.paymentAttemptId?.trim() || null;
   const providerReference = input.providerReference?.trim() || null;
   const id = crypto.randomUUID();
 
@@ -43,7 +44,7 @@ export async function recordResultPaymentProviderEvent(input: {
       ("id", "provider", "eventKey", "paymentAttemptId", "providerReference", "status", "receivedAt")
     VALUES
       (${id}::uuid, ${input.provider}, ${eventKey},
-       ${input.paymentAttemptId ? Prisma.raw(`'${input.paymentAttemptId}'::uuid`) : Prisma.sql`NULL`},
+       ${paymentAttemptId ? Prisma.sql`${paymentAttemptId}::uuid` : Prisma.sql`NULL`},
        ${providerReference}, 'RECEIVED', CURRENT_TIMESTAMP)
     ON CONFLICT ("provider", "eventKey") DO NOTHING
   `);
@@ -59,21 +60,13 @@ export async function recordResultPaymentProviderEvent(input: {
   const event = rows[0];
   if (!event) throw new Error("Result payment provider event could not be persisted.");
 
-  if (
-    input.paymentAttemptId &&
-    event.paymentAttemptId &&
-    event.paymentAttemptId !== input.paymentAttemptId
-  ) {
+  if (paymentAttemptId && event.paymentAttemptId && event.paymentAttemptId !== paymentAttemptId) {
     throw new ResultPaymentProviderEventConflictError(
       "The provider event key is already bound to a different payment attempt.",
     );
   }
 
-  if (
-    providerReference &&
-    event.providerReference &&
-    event.providerReference !== providerReference
-  ) {
+  if (providerReference && event.providerReference && event.providerReference !== providerReference) {
     throw new ResultPaymentProviderEventConflictError(
       "The provider event key is already bound to a different provider reference.",
     );
