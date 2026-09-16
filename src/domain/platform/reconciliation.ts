@@ -69,7 +69,7 @@ export type AssessmentScorePull = {
   nextCursor: string | null;
 };
 
-export function assessmentScoreServerVersion(updatedAt: Date | string) {
+export function assessmentScoreServerVersion(updatedAt: Date | string, entityId = "") {
   const value = updatedAt instanceof Date ? updatedAt.toISOString() : new Date(updatedAt).toISOString();
-  return value;
+  return entityId ? `${value}:${entityId}` : value;
 }
