@@ -2,7 +2,24 @@
 
 ## Status
 
-This document defines the implementation contract for application-wide offline-first behavior. It is a design/handoff document, not a claim that the offline runtime is already implemented.
+This document is the implementation contract for application-wide offline-first behavior. It is a design/handoff document, not a claim that the runtime is already implemented.
+
+The repository currently contains a small server-side synchronization/idempotency foundation, but the browser durable-store, durable outbox, shared sync worker and application-wide offline UI are still implementation work. Keep the checklist in `docs/ROADMAP.md` and this document aligned with actual code, not intended architecture.
+
+## Handoff principle
+
+A new developer or AI must be able to take ownership from the current commit and continue without reconstructing product decisions from chat history.
+
+Before changing offline behavior, read in this order:
+
+1. `README.md` — product boundary and current implementation narrative.
+2. `ARCHITECTURE.md` — security, tenancy, module and data-boundary rules.
+3. `docs/ROADMAP.md` — what is complete, what is pending, and the current V1 sequence.
+4. `docs/PRODUCT-DECISION-HISTORY.md` — decisions that should not be silently reversed.
+5. This file — offline-specific implementation contract.
+6. The current module/domain implementation and its tests — actual code is authoritative over stale prose.
+
+When a slice is completed, update the documentation in the same change so the repository remains self-explanatory.
 
 ## Product requirement
 
@@ -24,6 +41,12 @@ outbox → sync → authorization/validation → PostgreSQL → audit → acknow
 ```
 
 Offline-first is application-wide. It applies to school setup, students, enrollment, attendance, assessments/results, finance, communication, reports and future modules.
+
+## Current implementation boundary
+
+The repository already has reusable server-side primitives for synchronization identity and school-scoped idempotent results. The existing `offline-sync` primitive validates `schoolId`, operation and key, and produces a stable sync identity. The existing idempotency primitive reads and records results using the school + operation + key identity. These are foundations, not the complete offline runtime.
+
+Do not mark offline-first complete merely because these files exist. The roadmap remains the source of truth for which runtime layers are actually implemented.
 
 ## Authority model
 
@@ -47,6 +70,8 @@ The local store should be able to persist:
 - pending mutations in the outbox;
 - conflict/failure information required for recovery.
 
+Schema/version changes must be explicit and migration-safe. A developer must be able to identify the current local schema version and how a user moves from an older version to a newer one.
+
 ### 2. Repository boundary
 
 UI and domain workflows should not call `fetch()` directly for every operation.
@@ -63,7 +88,9 @@ Domain repository/service
 
 The repository decides whether an operation can be completed locally, queued for synchronization, or must be deferred until current server authority is available.
 
-### 3. Outbox
+Existing online APIs should remain usable while a workflow is being migrated. Do not rewrite every module at once.
+
+### 3. Durable outbox
 
 Every mutation that must reach the server later needs a durable outbox record.
 
@@ -83,9 +110,9 @@ status            pending/syncing/failed/conflict/acknowledged
 lastError         recoverable error information
 ```
 
-Exact persistence shape should be chosen with the implementation after reviewing the existing Prisma/domain conventions.
+The exact browser persistence shape should follow the actual implementation and existing domain conventions. Do not introduce a second outbox model inside an individual module.
 
-### 4. Sync engine
+### 4. Shared sync engine
 
 The sync engine is shared by all modules.
 
@@ -102,6 +129,8 @@ Required behavior:
 
 Connectivity restoration must not require the user to manually re-save work.
 
+Retry policy must distinguish transient failures from authorization, validation and conflict failures. Never retry a permanent validation/authorization failure forever.
+
 ### 5. Pull/reconciliation
 
 Sync is not only push.
@@ -109,6 +138,8 @@ Sync is not only push.
 When online, the client must also be able to receive authoritative changes made elsewhere so the local working copy converges toward the server state.
 
 The exact pull protocol is intentionally open until the first implementation slice establishes the required cursor/version contract.
+
+Do not invent a fake "synced" state from local timestamps alone. A record is synchronized only when the server acknowledgement and authoritative state are known.
 
 ## State model
 
@@ -132,6 +163,18 @@ CONFLICT
 
 A conflict is not equivalent to a network error.
 
+Recommended visible meanings:
+
+| State | Meaning |
+|---|---|
+| Draft | User has changed the form but has not committed the local working copy. |
+| Saved locally | The device has durably persisted the change; server confirmation is not available yet. |
+| Pending sync | The local mutation is queued for server synchronization. |
+| Syncing | A worker is currently attempting the server operation. |
+| Synced | The server accepted the operation and the local record reflects the acknowledged authoritative result. |
+| Failed | Synchronization could not complete and the operation remains recoverable. |
+| Conflict | The server cannot safely apply the local mutation without an explicit resolution path. |
+
 ## Idempotency
 
 Retries are expected. Duplicate effects are not.
@@ -140,7 +183,7 @@ Every server-bound mutation needs a stable client operation identity/idempotency
 
 The server must recognize a repeated operation identity and avoid applying the same logical mutation twice.
 
-Existing school-scoped idempotency foundations should be reused rather than introducing a second concept.
+Reuse the existing school-scoped idempotency foundation rather than creating a second concept. The existing server primitive is a foundation for this contract; the browser outbox must store and resend the same operation identity.
 
 ## Conflict handling
 
@@ -180,6 +223,8 @@ A browser route, local cache key or queued payload must never be treated as suff
 
 When the active school context changes, the local data layer must not accidentally expose the previous school's data to the new context.
 
+Local storage keys, repository queries, outbox records and synchronization requests must all carry sufficient tenant identity to prevent cross-school leakage.
+
 ## Authentication and sessions
 
 Offline continuity does not mean bypassing identity security.
@@ -193,6 +238,27 @@ Do not silently weaken authentication to make offline mode work.
 The application should eventually cache the minimum application shell and static assets needed to reopen supported workflows during network loss.
 
 Service-worker behavior should be introduced deliberately rather than treating browser caching as equivalent to local operational data persistence.
+
+The application shell may be cached before all data workflows are offline-capable, but documentation and UI must not imply that cached pages alone provide offline support.
+
+## Testing contract
+
+Every offline foundation change should be testable without depending on an external network.
+
+At minimum, test these invariants for the reference workflow:
+
+1. local save survives refresh;
+2. local save survives browser/page restart within the supported device storage boundary;
+3. offline mutation creates exactly one durable pending operation;
+4. reconnect sends the operation automatically;
+5. retrying the same operation does not duplicate the server effect;
+6. permanent validation/authorization failures remain recoverable and do not loop forever;
+7. a conflict is represented as conflict rather than silently overwritten;
+8. local data is isolated by school context;
+9. server acknowledgement moves the local record to `SYNCED` with authoritative values;
+10. meaningful server-side completion is audited once according to domain rules.
+
+Use unit tests for state transitions and idempotency behavior, plus integration/e2e tests for browser persistence and reconnect behavior as the tooling is added.
 
 ## Module acceptance rule
 
@@ -209,6 +275,7 @@ A new operational module is incomplete until it can answer:
 - What happens after refresh or browser restart?
 - What is audited when synchronization succeeds?
 - How is tenant isolation preserved locally?
+- What tests prove those behaviors?
 
 ## First implementation sequence
 
@@ -216,16 +283,17 @@ A new operational module is incomplete until it can answer:
 2. Create shared local schema/versioning conventions.
 3. Create repository interfaces for local-first reads/writes.
 4. Create the durable outbox.
-5. Create the sync state machine and idempotency contract.
+5. Create the sync state machine and idempotency contract using the existing server foundation.
 6. Add connectivity detection and automatic retry.
 7. Add authoritative pull/reconciliation contract.
 8. Add application-wide sync status UI.
 9. Add service-worker/application-shell support where appropriate.
-10. Convert one real existing workflow end-to-end as the reference implementation, then migrate the remaining modules using the shared foundation.
+10. Convert one real existing workflow end-to-end as the reference implementation.
+11. Migrate remaining modules incrementally, recording module-specific conflict/authority rules as each slice is converted.
 
 ## Reference workflow candidate
 
-Assessment score capture is a useful first end-to-end reference because it already has:
+Assessment score capture is the first reference candidate because it already has:
 
 - a bounded school/class/session roster;
 - validation rules;
@@ -234,19 +302,49 @@ Assessment score capture is a useful first end-to-end reference because it alrea
 - a natural bulk-save workflow;
 - an observable distinction between local save and server confirmation.
 
-The workflow must be redesigned around the shared offline foundation rather than receiving a module-specific offline implementation.
+For the first offline conversion, prefer the smallest score-capture path that can demonstrate local persistence → outbox → automatic sync → server validation/audit → acknowledgement. Do not expand result approval/publication at the same time.
 
 ## Do not do
 
 - Do not create one offline database per module.
 - Do not store authoritative operational state only in React state.
-- Do not treat `localStorage` as the main operational database.
+- Do not use `localStorage` as the main operational database.
 - Do not silently discard pending work after a failed request.
 - Do not display local saves as server-confirmed.
 - Do not retry mutations without stable idempotency identities.
 - Do not use offline mode to bypass authorization or server validation.
 - Do not claim a module is offline-ready merely because its page is cached.
 - Do not invent module-specific synchronization protocols when the shared platform foundation can handle them.
+- Do not mark roadmap checkboxes complete because a design or handoff document exists; mark them complete only after the corresponding runtime behavior is implemented and tested.
+- Do not rewrite the Prisma schema with `prisma db pull` as part of ordinary offline development; inspect migrations/schema deliberately and preserve the checked-in canonical schema.
+
+## Checkpoint / takeover rule
+
+At the end of every implementation slice:
+
+```text
+Code changed
+   ↓
+Tests run + result recorded
+   ↓
+README updated if product boundary changed
+   ↓
+ROADMAP updated only for verified status
+   ↓
+Handoff/decision history updated for new cross-cutting rules
+   ↓
+Commit is self-describing
+   ↓
+Next developer can continue from repository state alone
+```
+
+A future developer should be able to stop at any checkpoint and determine:
+
+- what is implemented;
+- what is intentionally not implemented;
+- which invariants must not be broken;
+- what the next smallest slice is;
+- which tests prove the current behavior.
 
 ## Handoff rule
 
