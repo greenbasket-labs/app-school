@@ -6,26 +6,31 @@ export type SyncRunResult = {
   acknowledged: number;
   failed: number;
   conflicts: number;
+  retrying: number;
 };
 
 export async function runPendingSync(schoolId: string, executor: SyncExecutor): Promise<SyncRunResult> {
   const pending = await getPendingOutbox(schoolId);
-  const result: SyncRunResult = { attempted: 0, acknowledged: 0, failed: 0, conflicts: 0 };
+  const result: SyncRunResult = { attempted: 0, acknowledged: 0, failed: 0, conflicts: 0, retrying: 0 };
 
   for (const item of pending) {
     result.attempted += 1;
-    await updateOutboxStatus(item.operationId, "SYNCING", { attemptCount: item.attemptCount + 1 });
+    const attemptCount = item.attemptCount + 1;
+    await updateOutboxStatus(item.operationId, "SYNCING", { attemptCount });
 
     try {
       const response = await executor(item);
       await applySyncResult(item, response);
       if (response.status === "ACKNOWLEDGED") result.acknowledged += 1;
-      if (response.status === "FAILED") result.failed += 1;
+      if (response.status === "FAILED") {
+        if (response.retryable) result.retrying += 1;
+        else result.failed += 1;
+      }
       if (response.status === "CONFLICT") result.conflicts += 1;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Synchronization failed.";
-      await applySyncResult(item, { status: "FAILED", error: message });
-      result.failed += 1;
+      await applySyncResult(item, { status: "FAILED", error: message, retryable: true });
+      result.retrying += 1;
     }
   }
 
@@ -45,6 +50,12 @@ async function applySyncResult(
   if (response.status === "CONFLICT") {
     await updateOutboxStatus(item.operationId, "CONFLICT", { lastError: response.error ?? "Server reported a conflict." });
     await markLocalRecordState(`${item.schoolId}:${item.entityType}:${item.entityId}`, "CONFLICT");
+    return;
+  }
+
+  if (response.retryable) {
+    await updateOutboxStatus(item.operationId, "PENDING", { lastError: response.error ?? "Temporary synchronization failure." });
+    await markLocalRecordState(`${item.schoolId}:${item.entityType}:${item.entityId}`, "PENDING_SYNC");
     return;
   }
 
