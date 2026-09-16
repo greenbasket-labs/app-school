@@ -12,7 +12,6 @@ export default function SyncStatusIndicator({ schoolId }: { schoolId: string }) 
   const [pending, setPending] = useState(0);
   const [failed, setFailed] = useState(0);
   const [conflicts, setConflicts] = useState(0);
-  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     const refresh = async () => {
@@ -25,17 +24,20 @@ export default function SyncStatusIndicator({ schoolId }: { schoolId: string }) 
         ]);
         const failedCount = records.filter((record) => record.syncState === "FAILED").length;
         const conflictCount = records.filter((record) => record.syncState === "CONFLICT").length;
-        const nextSyncing = outbox.length > 0 && state === "ONLINE";
         setPending(outbox.length);
         setFailed(failedCount);
         setConflicts(conflictCount);
-        setSyncing(nextSyncing);
-        setStatus(deriveSyncStatus({ connectivity: state, pending: outbox.length, failed: failedCount, conflicts: conflictCount, syncing: nextSyncing }));
+        setStatus(deriveSyncStatus({
+          connectivity: state,
+          pending: outbox.length,
+          failed: failedCount,
+          conflicts: conflictCount,
+          syncing: false,
+        }));
       } catch {
         setPending(0);
         setFailed(0);
         setConflicts(0);
-        setSyncing(false);
         setStatus(state === "OFFLINE" ? "OFFLINE" : "FAILED");
       }
     };
@@ -77,7 +79,6 @@ export default function SyncStatusIndicator({ schoolId }: { schoolId: string }) 
       {pending > 0 ? <span>{pending} pending</span> : null}
       {failed > 0 ? <span>{failed} failed</span> : null}
       {conflicts > 0 ? <span>{conflicts} conflict{conflicts === 1 ? "" : "s"}</span> : null}
-      {syncing ? <span>· background sync active</span> : null}
     </div>
   );
 }
