@@ -152,6 +152,45 @@ This requirement applies across the platform, including school setup, students, 
 - [ ] Render production deployment
 - [ ] Tenant-safe onboarding and support operations
 
+## Role-based workspaces — cross-cutting product layer
+
+Role-based workspaces are part of the product surface, but they do **not** replace the module roadmap above. A workspace is a role-specific view over the same school-scoped capabilities, records, modules, notifications, reports and audit history.
+
+The core model is:
+
+```text
+                App-School core records + capabilities
+                              │
+             ┌────────────────┼────────────────┐
+             ▼                ▼                ▼
+       Management          Teaching        Family/Learner
+        workspace          workspace          workspace
+             │                │                │
+       owner / principal    teacher       parent / guardian
+       school admin         subject/class      student
+```
+
+Planned role/workspace surfaces:
+
+- [ ] Owner / Principal / School Administrator workspace — school health, setup readiness, staffing/capabilities, academic/attendance/finance summaries, alerts, audit-sensitive actions
+- [ ] Teacher workspace — assigned classes/subjects, attendance, score capture, pending sync/conflicts, relevant communication and task queue
+- [ ] Parent / Guardian workspace — linked students, attendance, published results, invoices/payments, notices and school communication
+- [ ] Student workspace — own timetable/academic context where supported, attendance, published results, notices and permitted self-service actions
+- [ ] Shared role-aware navigation and landing experience
+- [ ] Capability-driven workspace composition — users only see actions/data their active school membership permits
+- [ ] Multi-role account handling — one identity may hold different capabilities/roles in different schools or contexts without weakening tenant isolation
+- [ ] Institutional context adapters — allow the same core to support school-wide use first, then constrained contexts such as a government school through a principal/administrator and a university through an eligible department/unit rather than requiring the entire institution to adopt App-School at once
+
+### Role/workspace design rules
+
+- Roles are presentation and workflow groupings; **capabilities remain the authorization source of truth**.
+- Do not create a separate data model or database for each role.
+- A role workspace must derive from the same authoritative records and existing modules.
+- A user may have different capabilities in different schools or institutional units.
+- Government schools and universities are future deployment contexts; they do not require a fork of the App-School core.
+- University support should initially be scoped to an authorized department/unit context where appropriate rather than assuming institution-wide administration.
+- Role dashboards must not cause completed V1 modules to be reopened unnecessarily; build them from existing trusted records and current workflows.
+
 ## Current V1 sequence
 
 1. **Assessment definitions** — complete and tested against Greenfield Heritage Academy.
@@ -162,6 +201,7 @@ This requirement applies across the platform, including school setup, students, 
 6. **Report cards** — derive from trusted published academic records.
 7. **Academic history** — preserve and present results across sessions.
 8. **Offline-first foundation** — local persistence, repository, durable outbox, sync engine, connectivity scheduler, durable retry backoff and school-workspace status UI are established at platform level; next prove browser persistence/reconnect behavior, then complete authoritative pull/reconciliation before marking the first module offline-ready.
+9. **Role-based workspaces** — cross-cutting product layer after the current V1 sequence is preserved; dashboards should compose existing modules rather than become a new competing product track.
 
 ## V1 completion rule
 
