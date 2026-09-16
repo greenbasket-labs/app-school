@@ -19,7 +19,7 @@ A paid result request is represented by `ResultPaymentAttempt` with:
 - explicit lifecycle status;
 - optional provider reference and checkout URL for later initialization.
 
-The persistence boundary does **not** prove payment, create an entitlement, or create a commercial transaction.
+The persistence boundary does **not** prove payment, create access by itself, or replace server authorization.
 
 ## Idempotency
 
@@ -31,12 +31,20 @@ Repeated requests with the same key return the existing logical attempt when the
 
 The persistence table is school-scoped and references the existing school, student, academic session and academic term identities. The application authorization policy must run before an attempt is created; payment persistence does not grant result access.
 
+## Verified-payment boundary
+
+Provider callbacks/events must be verified server-side before a `ResultAccessTransaction` is recorded. Provider-event idempotency prevents replay from creating another processing record.
+
+After the verified commercial transaction is persisted, a durable `ResultAccessEntitlement` is created atomically with that transaction. The entitlement is scoped to the same school, student, academic session and academic term and is unique for that access scope. This makes the transaction the economic proof and the entitlement the durable access proof.
+
 ## Deliberate separation
 
 This is not the existing school `PaymentIntent` used for student fee invoices. School finance and App-School commercial result-access billing remain separate bounded contexts.
 
-The table is currently introduced through an explicit SQL migration while the Prisma schema representation is reconciled in a later schema-maintenance slice. Do not add a second incompatible representation or manually edit production data to compensate.
+The result-payment tables are currently introduced through explicit SQL migrations while the Prisma schema representation is reconciled in a later schema-maintenance slice. Do not add a second incompatible representation or manually edit production data to compensate.
 
-## Next
+## Remaining access boundary
 
-The next slice is provider initialization through the existing payment-provider boundary, followed by server-side provider verification before any commercial transaction or result entitlement is created.
+The entitlement can now be queried for a student/session/term, but the parent-facing identity boundary is still separate. The existing guardian model establishes a school-scoped `StudentGuardian` relationship, while the current schema does not yet attach a guardian to a login identity. A future access route must therefore establish authenticated identity, school membership, and the authorized student/guardian relationship before using the entitlement to allow a published result.
+
+The published-result boundary remains assessment-level: publication requires approval and records `assessment.result_published`. Payment must never substitute for that publication state.
