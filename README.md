@@ -169,6 +169,7 @@ The goal is not the largest feature list. The goal is a strong platform that can
 16. **Student status lifecycle** — controlled active/inactive/withdrawn transitions with terminal withdrawal and audit history.
 17. **Assessment definitions and initial score capture** — assessment roster, per-student score validation and audited score persistence.
 18. **Offline platform foundation** — shared local persistence, outbox, sync lifecycle, scheduler, reconciliation contract, status model and assessment-score idempotency boundary.
+19. **Commercial plan foundation** — centralized Free/Basic/Starter/Pro/Premium/Custom pricing and deterministic result-access revenue allocation; payment/subscription/entitlement remains incremental.
 
 ## Module model
 
@@ -200,10 +201,41 @@ This catalog will grow as new product modules are implemented. A module can be a
 - Module enablement and staff capability are separate concerns.
 - Operational APIs must enforce both module state and capability authorization.
 
+## Commercial model
+
+App-School now has a centralized starting commercial configuration, while the live billing/transaction system remains incremental.
+
+### School plans
+
+| Plan | Monthly price | School share of paid result access |
+|---|---:|---:|
+| Free | ₦0 | 0% |
+| Basic | ₦5,000 | 25% |
+| Starter | ₦10,000 | 50% |
+| Pro | ₦20,000 | 75% |
+| Premium | ₦35,000 | 100% |
+| Custom | Negotiated | 100% by default until negotiated terms are configured |
+
+These are starting commercial values. They are centralized in `src/domain/commercial/plans.ts` and must not be hard-coded across the UI or payment flows.
+
+### Result Access
+
+A school may choose to make official published results free or charge a configurable amount. The result fee is not fixed at ₦200.
+
+When paid result access is implemented, the transaction will snapshot the active plan and actual monetary split so later plan changes cannot rewrite history.
+
+Payment does not bypass result authorization: the user must independently be authorized to the student's published result before an entitlement can be used.
+
+### Commercial boundaries
+
+School fees/payment records remain school-finance records. App-School subscriptions, result-access transactions, revenue allocation, provider fees, refunds and school settlements will be maintained as a separate commercial bounded context while reusing existing payment-provider infrastructure where appropriate.
+
+The implementation contract is `docs/COMMERCIAL-BILLING-HANDOFF.md`.
+
 ## Roadmap and handoff
 
-The implementation roadmap lives in `docs/ROADMAP.md`. Offline-specific runtime contracts and takeover rules live in `docs/OFFLINE-FIRST-HANDOFF.md`.
+The implementation roadmap lives in `docs/ROADMAP.md`. Offline-specific runtime contracts and takeover rules live in `docs/OFFLINE-FIRST-HANDOFF.md`. Commercial billing and result-access rules live in `docs/COMMERCIAL-BILLING-HANDOFF.md`.
 
-**Takeover rule:** a developer or AI joining the repository should be able to read the product boundary, architecture, roadmap, product decisions, and offline handoff and continue from the current repository state without reconstructing decisions from chat history.
+**Takeover rule:** a developer or AI joining the repository should be able to read the product boundary, architecture, roadmap, product decisions, offline handoff, and commercial handoff and continue from the current repository state without reconstructing decisions from chat history.
 
 At each slice, keep code and documentation synchronized. Never mark a roadmap item complete solely because a design contract exists; completion requires implemented and verified runtime behavior.
