@@ -23,8 +23,8 @@ async function access(schoolId: string) {
   return session;
 }
 
-function withServerVersion<T extends { updatedAt: Date }>(score: T) {
-  return { ...score, serverVersion: assessmentScoreServerVersion(score.updatedAt) };
+function scoreVersion(updatedAt: Date | null) {
+  return updatedAt ? assessmentScoreServerVersion(updatedAt) : null;
 }
 
 export async function GET(request: Request, { params }: { params: Promise<{ schoolId: string }> }) {
@@ -36,12 +36,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ scho
     if (!z.string().uuid().safeParse(assessmentId).success) return NextResponse.json({ ok: false, error: "INVALID_ASSESSMENT_ID" }, { status: 400 });
 
     const roster = await getAssessmentScoreRoster(schoolId, assessmentId);
-    return NextResponse.json({
-      ok: true,
-      assessment: roster.assessment,
-      students: roster.students,
-      scores: roster.scores?.map(withServerVersion),
-    });
+    const students = roster.students.map((student) => ({
+      ...student,
+      serverVersion: scoreVersion(student.updatedAt),
+    }));
+    return NextResponse.json({ ok: true, assessment: roster.assessment, students });
   } catch (error) {
     if (error instanceof AuthorizationError || error instanceof ModuleDisabledError) return NextResponse.json({ ok: false, error: "FORBIDDEN", message: error.message }, { status: 403 });
     if (error instanceof AssessmentScoreValidationError) return NextResponse.json({ ok: false, error: "INVALID_SCORE_CONTEXT", message: error.message }, { status: 400 });
@@ -76,7 +75,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ sch
         },
       });
       return {
-        score: { ...withServerVersion(score), score: score.score.toNumber() },
+        score: {
+          id: score.id,
+          assessmentId: score.assessmentId,
+          studentId: score.studentId,
+          score: score.score.toNumber(),
+          updatedAt: score.updatedAt.toISOString(),
+          serverVersion,
+        },
         created: !existing,
       };
     };
