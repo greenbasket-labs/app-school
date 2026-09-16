@@ -1,7 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { allocateResultRevenue, getCommercialPlan, type CommercialPlanCode } from "./plans";
-import { getSchoolSubscription } from "./subscription";
 
 export class ResultAccessTransactionError extends Error {}
 
@@ -66,7 +65,20 @@ export async function recordVerifiedResultPayment(input: VerifiedResultPayment) 
       throw new ResultAccessTransactionError("Verified payment amount or currency does not match the payment attempt.");
     }
 
-    const subscription = await getSchoolSubscription(attempt.schoolId);
+    // Snapshot the commercial plan through the same transaction client. This keeps
+    // plan/share selection atomic with the immutable transaction ledger write.
+    const existingSubscription = await tx.schoolSubscription.findUnique({
+      where: { schoolId: attempt.schoolId },
+      select: { planCode: true, status: true },
+    });
+    const subscription = existingSubscription ?? await tx.schoolSubscription.create({
+      data: { schoolId: attempt.schoolId, planCode: "FREE", billingPeriod: "MONTHLY", status: "ACTIVE" },
+      select: { planCode: true, status: true },
+    });
+    if (subscription.status === "CANCELED" || subscription.status === "PAUSED") {
+      throw new ResultAccessTransactionError("School commercial subscription is inactive.");
+    }
+
     const planCode = subscription.planCode as CommercialPlanCode;
     const plan = getCommercialPlan(planCode);
     const allocation = allocateResultRevenue(input.amountNaira, planCode);
