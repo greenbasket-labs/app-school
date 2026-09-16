@@ -3,12 +3,12 @@ import { z } from "zod";
 import { acceptParentAccessInvitation } from "@/domain/communication/parent-access";
 import { signIn } from "@/domain/auth/session-cookie";
 
-const schema = z.object({ token: z.string().min(20), password: z.string().min(12).max(128) });
+const schema = z.object({ token: z.string().min(20) });
 
 export async function POST(request: Request) {
   try {
     const input = schema.parse(await request.json());
-    const result = await acceptParentAccessInvitation(input.token, input.password);
+    const result = await acceptParentAccessInvitation(input.token);
     await signIn(result.userId);
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
