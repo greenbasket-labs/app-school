@@ -124,6 +124,9 @@ This is App-School commercial infrastructure, not school-fee finance. It must no
 - [x] Provider event replay/idempotency boundary
 - [x] Callback/webhook adapters for Paystack and Flutterwave
 - [x] Result entitlement persistence and lookup boundary
+- [x] Guardian account bootstrap from school Guardian records
+- [x] Guardian first-login temporary password and mandatory password change
+- [x] Guardian contact-verification state boundary
 - [ ] End-to-end parent/guardian entitlement authorization route
 - [ ] School transaction/revenue view
 - [ ] Subscription lifecycle: renewal, failure, grace, upgrade, downgrade and cancellation
