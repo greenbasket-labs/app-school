@@ -51,8 +51,18 @@ export async function updateResultAccessSetting(schoolId: string, userId: string
         action: "commercial.result_access.updated",
         entityType: "ResultAccessSetting",
         entityId: setting.id,
-        previousState: { ...current, amountNaira: current.amountNaira.toString() },
-        currentState: { ...setting, amountNaira: setting.amountNaira.toString() },
+        previousState: {
+          id: current.id,
+          schoolId: current.schoolId,
+          enabled: current.enabled,
+          amountNaira: current.amountNaira.toString(),
+        },
+        currentState: {
+          id: setting.id,
+          schoolId: setting.schoolId,
+          enabled: setting.enabled,
+          amountNaira: setting.amountNaira.toString(),
+        },
       },
     });
     return setting;
