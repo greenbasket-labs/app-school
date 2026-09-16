@@ -47,7 +47,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sch
         action: "assessment.score_saved",
         entityType: "AssessmentScore",
         entityId: score.id,
-        previousState: null,
+        previousState: { _tag: "NULL" },
         currentState: { assessmentId, studentId: score.studentId, score: score.score.toString() },
         metadata: { assessmentName: assessmentId },
       },
