@@ -98,16 +98,6 @@ export async function createGuardianPhoneVerificationToken(userId: string) {
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
   await db.$executeRaw`
-    CREATE TABLE IF NOT EXISTS "GuardianPhoneVerificationToken" (
-      "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      "userId" UUID NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
-      "tokenHash" TEXT NOT NULL UNIQUE,
-      "expiresAt" TIMESTAMPTZ(6) NOT NULL,
-      "usedAt" TIMESTAMPTZ(6),
-      "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT now()
-    )
-  `;
-  await db.$executeRaw`
     INSERT INTO "GuardianPhoneVerificationToken" ("userId", "tokenHash", "expiresAt")
     VALUES (${userId}::uuid, ${tokenHash}, ${expiresAt})
   `;
