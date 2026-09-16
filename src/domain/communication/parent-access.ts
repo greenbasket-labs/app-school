@@ -6,6 +6,10 @@ function tokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+function createTemporaryPassword() {
+  return randomBytes(18).toString("base64url");
+}
+
 export async function listGuardiansForAccess(schoolId: string) {
   return db.$queryRaw<Array<{
     id: string;
@@ -61,8 +65,7 @@ export async function createParentAccessInvitation(
   return token;
 }
 
-export async function acceptParentAccessInvitation(token: string, password: string) {
-  if (password.length < 12) throw new Error("Password must be at least 12 characters.");
+export async function acceptParentAccessInvitation(token: string) {
   const rows = await db.$queryRaw<Array<{
     id: string;
     schoolId: string;
@@ -85,7 +88,9 @@ export async function acceptParentAccessInvitation(token: string, password: stri
 
   const existingUser = await db.user.findUnique({ where: { email: invite.email }, select: { id: true } });
   if (existingUser) throw new Error("An account already exists for this email.");
-  const passwordHash = await hash(password, 12);
+
+  const temporaryPassword = createTemporaryPassword();
+  const passwordHash = await hash(temporaryPassword, 12);
 
   return db.$transaction(async (tx) => {
     const user = await tx.user.create({ data: { email: invite.email, passwordHash }, select: { id: true, email: true } });
@@ -104,6 +109,10 @@ export async function acceptParentAccessInvitation(token: string, password: stri
       WHERE "id" = ${invite.guardianId}::uuid AND "schoolId" = ${invite.schoolId}::uuid
     `;
     await tx.$executeRaw`
+      INSERT INTO "GuardianAccountSecurity" ("guardianId", "userId", "mustChangePassword", "emailVerifiedAt")
+      VALUES (${invite.guardianId}::uuid, ${user.id}::uuid, true, now())
+    `;
+    await tx.$executeRaw`
       UPDATE "ParentAccessInvitation"
       SET "usedAt" = now()
       WHERE "id" = ${invite.id}::uuid
@@ -115,9 +124,9 @@ export async function acceptParentAccessInvitation(token: string, password: stri
         action: "communication.parent_access_accepted",
         entityType: "Guardian",
         entityId: invite.guardianId,
-        currentState: { membershipId: membership.id, email: user.email },
+        currentState: { membershipId: membership.id, email: user.email, requiresFirstLoginPasswordChange: true },
       },
     });
-    return { userId: user.id, schoolId: invite.schoolId };
+    return { userId: user.id, schoolId: invite.schoolId, temporaryPassword, requiresFirstLoginPasswordChange: true };
   });
 }
