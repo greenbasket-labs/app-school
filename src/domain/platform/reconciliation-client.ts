@@ -20,7 +20,7 @@ type LocalScore = {
   assessmentId: string;
   studentId: string;
   score: number;
-  updatedAt?: string;
+  updatedAt: string;
 };
 
 export type ReconcileAssessmentScoresResult = {
