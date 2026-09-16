@@ -2,6 +2,7 @@ export type SyncExecutorResult = {
   status: "ACKNOWLEDGED" | "FAILED" | "CONFLICT";
   serverVersion?: string | null;
   error?: string | null;
+  retryable?: boolean;
 };
 
 export type SyncExecutor = (item: {
