@@ -1,4 +1,4 @@
-import { applyAuthoritativeLocalRecord, getLocalRecordByEntity } from "./local-repository";
+import { applyAuthoritativeLocalRecord, getLocalRecordByEntity, markLocalRecordState } from "./local-repository";
 import { getPendingOutbox, updateOutboxStatus } from "./local-outbox";
 import { nextRetryAt } from "./retry-policy";
 import type { SyncExecutor, SyncExecutorResult } from "./sync-executor";
@@ -10,12 +10,6 @@ export type SyncRunResult = {
   conflicts: number;
   retrying: number;
   deferred: number;
-};
-
-export type SyncAuthoritativePayload = {
-  data: unknown;
-  serverVersion: string;
-  updatedAt?: string;
 };
 
 export async function runPendingSync(
@@ -53,12 +47,7 @@ export async function runPendingSync(
       if (response.status === "CONFLICT") result.conflicts += 1;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Synchronization failed.";
-      await applySyncResult(
-        item,
-        { status: "FAILED", error: message, retryable: true },
-        attemptCount,
-        now,
-      );
+      await applySyncResult(item, { status: "FAILED", error: message, retryable: true }, attemptCount, now);
       result.retrying += 1;
     }
   }
@@ -72,32 +61,37 @@ async function applySyncResult(
   attemptCount: number,
   now: Date,
 ) {
-  const localRecordId = `${item.schoolId}:${item.entityType}:${item.entityId}`;
+  const local = await getLocalRecordByEntity(item.schoolId, item.entityType, item.entityId);
 
   if (response.status === "ACKNOWLEDGED") {
-    await updateOutboxStatus(item.operationId, "ACKNOWLEDGED", {
-      lastError: null,
-      nextAttemptAt: null,
-    });
-
-    const serverVersion = response.serverVersion ?? null;
-    if (!serverVersion) {
+    if (!local) {
       await updateOutboxStatus(item.operationId, "FAILED", {
-        lastError: "Server acknowledgement did not include an authoritative server version.",
+        lastError: "Local record is missing for acknowledged synchronization.",
         nextAttemptAt: null,
       });
       return;
     }
 
-    const local = await getLocalRecordByEntity(item.schoolId, item.entityType, item.entityId);
-    if (!local) return;
+    const authoritative = response.authoritative;
+    const serverVersion = authoritative?.serverVersion ?? response.serverVersion ?? null;
+    if (!authoritative || !serverVersion) {
+      await updateOutboxStatus(item.operationId, "FAILED", {
+        lastError: "Server acknowledgement did not include authoritative data and version.",
+        nextAttemptAt: null,
+      });
+      await markLocalRecordState(local.id, "FAILED");
+      return;
+    }
 
-    const payload = extractAuthoritativePayload(response);
+    await updateOutboxStatus(item.operationId, "ACKNOWLEDGED", {
+      lastError: null,
+      nextAttemptAt: null,
+    });
     await applyAuthoritativeLocalRecord({
-      id: localRecordId,
-      data: payload?.data ?? local.data,
+      id: local.id,
+      data: authoritative.data,
       serverVersion,
-      updatedAt: payload?.updatedAt,
+      updatedAt: authoritative.updatedAt,
     });
     return;
   }
@@ -107,11 +101,7 @@ async function applySyncResult(
       lastError: response.error ?? "Server reported a synchronization conflict.",
       nextAttemptAt: null,
     });
-    const local = await getLocalRecordByEntity(item.schoolId, item.entityType, item.entityId);
-    if (local) {
-      const { markLocalRecordState } = await import("./local-repository");
-      await markLocalRecordState(local.id, "CONFLICT");
-    }
+    if (local) await markLocalRecordState(local.id, "CONFLICT");
     return;
   }
 
@@ -120,11 +110,7 @@ async function applySyncResult(
       lastError: response.error ?? "Temporary synchronization failure.",
       nextAttemptAt: nextRetryAt(attemptCount, now),
     });
-    const local = await getLocalRecordByEntity(item.schoolId, item.entityType, item.entityId);
-    if (local) {
-      const { markLocalRecordState } = await import("./local-repository");
-      await markLocalRecordState(local.id, "PENDING_SYNC");
-    }
+    if (local) await markLocalRecordState(local.id, "PENDING_SYNC");
     return;
   }
 
@@ -132,14 +118,5 @@ async function applySyncResult(
     lastError: response.error ?? "Server rejected synchronization.",
     nextAttemptAt: null,
   });
-  const local = await getLocalRecordByEntity(item.schoolId, item.entityType, item.entityId);
-  if (local) {
-    const { markLocalRecordState } = await import("./local-repository");
-    await markLocalRecordState(local.id, "FAILED");
-  }
-}
-
-function extractAuthoritativePayload(response: SyncExecutorResult): SyncAuthoritativePayload | null {
-  const candidate = response as SyncExecutorResult & { authoritative?: SyncAuthoritativePayload };
-  return candidate.authoritative ?? null;
+  if (local) await markLocalRecordState(local.id, "FAILED");
 }
