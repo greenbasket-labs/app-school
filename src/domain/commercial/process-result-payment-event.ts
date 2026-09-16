@@ -1,17 +1,18 @@
-import { recordVerifiedResultPayment, type VerifiedResultPayment } from "./result-access-transactions";
+import { recordVerifiedResultPayment } from "./result-access-transactions";
 import {
   recordResultPaymentProviderEvent,
   transitionResultPaymentProviderEvent,
 } from "./result-payment-provider-events";
 import type { PersistedResultPaymentAttempt } from "./result-payment-attempts";
 import type { ResultPaymentProvider } from "./result-access-policy";
+import type { VerifiedProviderPayment } from "./result-payment-verification";
 
 export async function processResultPaymentProviderEvent(input: {
   provider: ResultPaymentProvider;
   eventKey: string;
   attempt: PersistedResultPaymentAttempt;
   providerReference: string;
-  verify: () => Promise<VerifiedResultPayment>;
+  verify: () => Promise<VerifiedProviderPayment>;
 }) {
   const event = await recordResultPaymentProviderEvent({
     provider: input.provider,
@@ -26,7 +27,10 @@ export async function processResultPaymentProviderEvent(input: {
 
   try {
     const verified = await input.verify();
-    const result = await recordVerifiedResultPayment(verified);
+    const result = await recordVerifiedResultPayment({
+      paymentAttemptId: input.attempt.id,
+      ...verified,
+    });
     await transitionResultPaymentProviderEvent(event.id, "PROCESSED");
     return { duplicate: result.duplicate, transactionId: result.transactionId } as const;
   } catch (error) {
