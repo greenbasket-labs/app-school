@@ -12,6 +12,52 @@ export type ResultAccessAuthorizationInput = {
   entitled: boolean;
 };
 
+export type ResultPaymentProvider = "PAYSTACK" | "FLUTTERWAVE" | "MONNIFY";
+
+export type ResultPaymentAttemptInput = {
+  schoolId: string;
+  studentId: string;
+  academicSessionId: string;
+  academicTermId: string;
+  amountNaira: number;
+  provider: ResultPaymentProvider;
+  idempotencyKey: string;
+};
+
+export type ResultPaymentAttempt = ResultPaymentAttemptInput & {
+  currency: "NGN";
+  status: "PENDING";
+};
+
+function requireId(value: string, name: string): string {
+  if (!value.trim()) throw new Error(`${name} is required.`);
+  return value.trim();
+}
+
+export function createResultPaymentAttempt(input: ResultPaymentAttemptInput): ResultPaymentAttempt {
+  const schoolId = requireId(input.schoolId, "schoolId");
+  const studentId = requireId(input.studentId, "studentId");
+  const academicSessionId = requireId(input.academicSessionId, "academicSessionId");
+  const academicTermId = requireId(input.academicTermId, "academicTermId");
+  const idempotencyKey = requireId(input.idempotencyKey, "idempotencyKey");
+
+  if (!Number.isFinite(input.amountNaira) || input.amountNaira <= 0) {
+    throw new Error("Result payment amount must be a positive finite number.");
+  }
+
+  return {
+    schoolId,
+    studentId,
+    academicSessionId,
+    academicTermId,
+    amountNaira: Number(input.amountNaira.toFixed(2)),
+    provider: input.provider,
+    idempotencyKey,
+    currency: "NGN",
+    status: "PENDING",
+  };
+}
+
 /**
  * Result access is deliberately evaluated after identity, school context and
  * student relationship have already been established. Payment is an access
