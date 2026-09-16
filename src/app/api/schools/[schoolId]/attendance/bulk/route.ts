@@ -5,6 +5,7 @@ import { CAPABILITIES } from "@/domain/auth/capabilities";
 import { currentSession } from "@/domain/auth/session-cookie";
 import { getAttendanceRoster, saveBulkAttendance } from "@/domain/attendance/bulk";
 import { ModuleDisabledError, requireSchoolModule } from "@/domain/modules/guard";
+import { replayOrRecordIdempotentResult } from "@/domain/platform/sync-server";
 import { db } from "@/lib/db";
 
 const itemSchema = z.object({
@@ -127,98 +128,122 @@ export async function POST(
       CAPABILITIES.RECORD_ATTENDANCE,
     );
 
+    const idempotencyKey = request.headers.get("Idempotency-Key");
     const input = schema.parse(await request.json());
 
-    const existing = (await db.attendanceRecord.findMany({
-      where: {
-        schoolId,
-        academicSessionId: input.academicSessionId,
-        classArmId: input.classArmId,
-        attendanceDate: input.attendanceDate,
-        studentId: {
-          in: input.items.map((item) => item.studentId),
-        },
-      },
-      select: {
-        id: true,
-        studentId: true,
-        status: true,
-        note: true,
-        recordedByUserId: true,
-        recordedAt: true,
-      },
-    })) as ExistingAttendanceRecord[];
-
-    const before = new Map(
-      existing.map((record) => [record.studentId, record]),
-    );
-
-    const records = await saveBulkAttendance({
-      schoolId,
-      ...input,
-      recordedByUserId: session.user.id,
-    });
-
-    await db.$transaction([
-      db.auditEvent.create({
-        data: {
+    const execute = async () => {
+      const existing = (await db.attendanceRecord.findMany({
+        where: {
           schoolId,
-          actorUserId: session.user.id,
-          action: "attendance.bulk_saved",
-          entityType: "AttendanceRecord",
-          entityId: input.classArmId,
-          currentState: {
-            academicSessionId: input.academicSessionId,
-            classArmId: input.classArmId,
-            attendanceDate: input.attendanceDate.toISOString(),
-            count: records.length,
+          academicSessionId: input.academicSessionId,
+          classArmId: input.classArmId,
+          attendanceDate: input.attendanceDate,
+          studentId: {
+            in: input.items.map((item) => item.studentId),
           },
         },
-      }),
+        select: {
+          id: true,
+          studentId: true,
+          status: true,
+          note: true,
+          recordedByUserId: true,
+          recordedAt: true,
+        },
+      })) as ExistingAttendanceRecord[];
 
-      ...records
-        .filter((record) => {
-          const old = before.get(record.studentId);
+      const before = new Map(
+        existing.map((record) => [record.studentId, record]),
+      );
 
-          return (
-            old &&
-            (old.status !== record.status ||
-              (old.note ?? null) !== (record.note ?? null))
-          );
-        })
-        .map((record) => {
-          const old = before.get(record.studentId)!;
+      const records = await saveBulkAttendance({
+        schoolId,
+        ...input,
+        recordedByUserId: session.user.id,
+      });
 
-          return db.auditEvent.create({
-            data: {
-              schoolId,
-              actorUserId: session.user.id,
-              action: "attendance.corrected",
-              entityType: "AttendanceRecord",
-              entityId: record.id,
-              previousState: {
-                status: old.status,
-                note: old.note,
-                recordedByUserId: old.recordedByUserId,
-                recordedAt: old.recordedAt.toISOString(),
-              },
-              currentState: {
-                status: record.status,
-                note: record.note,
-                recordedByUserId: record.recordedByUserId,
-                recordedAt: record.recordedAt.toISOString(),
-              },
-              metadata: {
-                reason: "bulk_attendance_correction",
-              },
+      await db.$transaction([
+        db.auditEvent.create({
+          data: {
+            schoolId,
+            actorUserId: session.user.id,
+            action: "attendance.bulk_saved",
+            entityType: "AttendanceRecord",
+            entityId: input.classArmId,
+            currentState: {
+              academicSessionId: input.academicSessionId,
+              classArmId: input.classArmId,
+              attendanceDate: input.attendanceDate.toISOString(),
+              count: records.length,
             },
-          });
+          },
         }),
-    ]);
+
+        ...records
+          .filter((record) => {
+            const old = before.get(record.studentId);
+
+            return (
+              old &&
+              (old.status !== record.status ||
+                (old.note ?? null) !== (record.note ?? null))
+            );
+          })
+          .map((record) => {
+            const old = before.get(record.studentId)!;
+
+            return db.auditEvent.create({
+              data: {
+                schoolId,
+                actorUserId: session.user.id,
+                action: "attendance.corrected",
+                entityType: "AttendanceRecord",
+                entityId: record.id,
+                previousState: {
+                  status: old.status,
+                  note: old.note,
+                  recordedByUserId: old.recordedByUserId,
+                  recordedAt: old.recordedAt.toISOString(),
+                },
+                currentState: {
+                  status: record.status,
+                  note: record.note,
+                  recordedByUserId: record.recordedByUserId,
+                  recordedAt: record.recordedAt.toISOString(),
+                },
+                metadata: {
+                  reason: "bulk_attendance_correction",
+                },
+              },
+            });
+          }),
+      ]);
+
+      return {
+        records: records.map((record) => ({
+          ...record,
+          attendanceDate: record.attendanceDate.toISOString(),
+          recordedAt: record.recordedAt.toISOString(),
+          score: undefined,
+        })),
+        count: records.length,
+      };
+    };
+
+    const result = idempotencyKey
+      ? await replayOrRecordIdempotentResult({
+          schoolId,
+          operation: "attendance.bulk",
+          key: idempotencyKey,
+          execute,
+        })
+      : { replayed: false, result: await execute() };
 
     return NextResponse.json({
       ok: true,
-      records,
+      records: result.result.records,
+      replayed: result.replayed,
+      count: result.result.count,
     });
   } catch (error) {
     if (error instanceof ZodError) {
