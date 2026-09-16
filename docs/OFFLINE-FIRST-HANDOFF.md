@@ -4,7 +4,7 @@
 
 This document is the implementation contract for application-wide offline-first behavior. It is a design/handoff document, not a claim that the runtime is already implemented.
 
-The repository currently contains a small server-side synchronization/idempotency foundation and the first browser durable-store/outbox foundation. The shared sync worker, application-wide offline UI and module end-to-end migration are still implementation work. Keep the checklist in `docs/ROADMAP.md` and this document aligned with actual code, not intended architecture.
+The repository now contains reusable browser persistence, local-first repository, durable outbox, sync lifecycle, and a first shared sync-engine primitive. These are still platform foundations; no operational module is considered end-to-end offline-ready until its real repository, server executor, reconciliation and tests are wired and verified.
 
 ## Handoff principle
 
@@ -20,22 +20,6 @@ Before changing offline behavior, read in this order:
 6. The current module/domain implementation and its tests — actual code is authoritative over stale prose.
 
 When a slice is completed, update the documentation in the same change so the repository remains self-explanatory.
-
-## Current implementation checkpoint
-
-The first browser persistence slice now provides a versioned IndexedDB database named `app-school-local` (version 1) with shared `records` and `outbox` stores.
-
-```text
-Browser
-  ↓
-IndexedDB: app-school-local v1
-  ├── records
-  └── outbox
-```
-
-The shared local layer defines durable record metadata and explicit synchronization states. The outbox layer defines durable school-scoped mutation records, retry metadata and status mapping, and prevents duplicate insertion of an already-known operation ID in the local store.
-
-This checkpoint does **not** make any module offline-capable by itself. No module should be marked offline-ready until its repository, mutation, synchronization, reconciliation and tests are actually wired.
 
 ## Product requirement
 
@@ -60,11 +44,30 @@ Offline-first is application-wide. It applies to school setup, students, enrollm
 
 ## Current implementation boundary
 
-The repository has reusable server-side primitives for synchronization identity and school-scoped idempotent results. The existing `offline-sync` primitive validates `schoolId`, operation and key, and produces a stable sync identity. The existing idempotency primitive reads and records results using the school + operation + key identity.
+The browser foundation currently includes:
 
-The browser persistence layer now gives modules a shared durable place for local records and pending mutations. The missing piece is the orchestration that connects those local operations to server-side validation, authorization, idempotency, audit and authoritative acknowledgement.
+- versioned IndexedDB storage;
+- shared local `records` and `outbox` stores;
+- a school-scoped local repository boundary;
+- durable local mutation + outbox persistence in one transaction;
+- explicit local synchronization states;
+- a shared sync-engine loop that reads pending work, marks it `SYNCING`, delegates the server operation to an executor, then records `ACKNOWLEDGED`, `FAILED` or `CONFLICT`.
 
-Do not mark offline-first complete merely because these foundations exist. The roadmap remains the source of truth for which runtime layers are actually implemented.
+The server already has school-scoped idempotency primitives. The sync engine deliberately does not invent another server persistence model; it expects the executor/server API to use the existing idempotency identity.
+
+This foundation does **not** yet provide end-to-end offline operation for a module. In particular, the following are still required before a module can claim offline readiness:
+
+- a real module repository using local reads/writes;
+- a server executor/API contract for that module;
+- authoritative local update from the server acknowledgement;
+- connectivity detection and automatic invocation;
+- retry policy for transient vs permanent errors;
+- pull/reconciliation for server-side changes made elsewhere;
+- conflict rules where concurrent edits matter;
+- browser persistence/reconnect tests;
+- visible sync status in the application UI.
+
+Do not mark the roadmap complete because these platform files exist.
 
 ## Authority model
 
@@ -80,14 +83,15 @@ Do not mark offline-first complete merely because these foundations exist. The r
 
 Use IndexedDB or another browser-supported durable database. Do not use React state, memory or `localStorage` as the operational store.
 
-The current foundation uses an explicit database name/version and shared object-store conventions:
+The local store should be able to persist:
 
-- `records` — durable local working records plus synchronization metadata;
-- `outbox` — durable pending mutations and retry/conflict state.
+- authorized school reference data needed by supported workflows;
+- operational records required for offline continuity;
+- local record metadata such as sync state and last server version where needed;
+- pending mutations in the outbox;
+- conflict/failure information required for recovery.
 
 Schema/version changes must be explicit and migration-safe. A developer must be able to identify the current local schema version and how a user moves from an older version to a newer one.
-
-The browser local store is a working copy. It must never be presented as a second server authority.
 
 ### 2. Repository boundary
 
@@ -127,11 +131,13 @@ status            pending/syncing/failed/conflict/acknowledged
 lastError         recoverable error information
 ```
 
-The current shared outbox foundation persists these fields in IndexedDB and provides operations for enqueueing, finding pending work and changing synchronization status. Domain mutation contracts remain module-specific and must be documented when a real workflow is migrated.
+The exact browser persistence shape should follow the actual implementation and existing domain conventions. Do not introduce a second outbox model inside an individual module.
 
 ### 4. Shared sync engine
 
 The sync engine is shared by all modules.
+
+The current engine can process pending browser outbox records and delegate each operation to a server executor. The executor is responsible for translating the queued mutation into the existing authenticated server API contract.
 
 Required behavior:
 
@@ -148,8 +154,6 @@ Connectivity restoration must not require the user to manually re-save work.
 
 Retry policy must distinguish transient failures from authorization, validation and conflict failures. Never retry a permanent validation/authorization failure forever.
 
-**Implementation status:** not yet implemented.
-
 ### 5. Pull/reconciliation
 
 Sync is not only push.
@@ -158,9 +162,7 @@ When online, the client must also be able to receive authoritative changes made 
 
 The exact pull protocol is intentionally open until the first implementation slice establishes the required cursor/version contract.
 
-Do not invent a fake `synced` state from local timestamps alone. A record is synchronized only when the server acknowledgement and authoritative state are known.
-
-**Implementation status:** not yet implemented.
+Do not invent a fake `SYNCED` state from local timestamps alone. A record is synchronized only when the server acknowledgement and authoritative state are known.
 
 ## State model
 
@@ -184,8 +186,6 @@ CONFLICT
 
 A conflict is not equivalent to a network error.
 
-Recommended visible meanings:
-
 | State | Meaning |
 |---|---|
 | Draft | User has changed the form but has not committed the local working copy. |
@@ -204,7 +204,7 @@ Every server-bound mutation needs a stable client operation identity/idempotency
 
 The server must recognize a repeated operation identity and avoid applying the same logical mutation twice.
 
-Reuse the existing school-scoped idempotency foundation rather than creating a second concept. The browser outbox must store and resend the same operation identity.
+Reuse the existing school-scoped idempotency foundation rather than creating a second concept. The browser outbox must preserve and resend the same operation identity.
 
 ## Conflict handling
 
@@ -300,11 +300,11 @@ A new operational module is incomplete until it can answer:
 
 ## First implementation sequence
 
-1. ~~Choose and add the browser durable database layer.~~ **Started: IndexedDB v1 with shared `records` and `outbox` stores is implemented.**
-2. ~~Create shared local schema/versioning conventions.~~ **Started: explicit database/version/store constants are implemented.**
-3. Create repository interfaces for local-first reads/writes.
-4. ~~Create the durable outbox.~~ **Started: durable school-scoped outbox primitives are implemented.**
-5. Create the sync state machine and idempotency contract using the existing server foundation.
+1. ~~Choose and add the browser durable database layer.~~ **Implemented: versioned IndexedDB foundation.**
+2. ~~Create shared local schema/versioning conventions.~~ **Implemented: explicit database/version/store constants and upgrade path.**
+3. ~~Create repository interfaces for local-first reads/writes.~~ **Implemented: shared local repository boundary.**
+4. ~~Create the durable outbox.~~ **Implemented: durable school-scoped outbox persistence.**
+5. ~~Create the sync state machine and idempotency contract.~~ **Implemented: shared lifecycle plus executor-based sync engine; existing server idempotency remains authoritative.**
 6. Add connectivity detection and automatic retry.
 7. Add authoritative pull/reconciliation contract.
 8. Add application-wide sync status UI.
