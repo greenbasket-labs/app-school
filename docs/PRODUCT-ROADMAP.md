@@ -123,7 +123,8 @@ This is App-School commercial infrastructure, not school-fee finance. It must no
 - [x] Immutable Result Access transaction + revenue allocation boundary
 - [x] Provider event replay/idempotency boundary
 - [x] Callback/webhook adapters for Paystack and Flutterwave
-- [ ] Result entitlement persistence/verification
+- [x] Result entitlement persistence and lookup boundary
+- [ ] End-to-end parent/guardian entitlement authorization route
 - [ ] School transaction/revenue view
 - [ ] Subscription lifecycle: renewal, failure, grace, upgrade, downgrade and cancellation
 - [ ] Settlement/refund operations
