@@ -48,6 +48,23 @@ export async function getLocalRecordByEntity<T>(schoolId: string, entityType: st
   return rows.find((row) => row.entityId === entityId) ?? null;
 }
 
+export async function saveLocalRecord<T>(record: LocalRecordInput<T>): Promise<LocalRecord<T>> {
+  const db = await openAppSchoolLocalDb();
+  try {
+    const transaction = db.transaction(LOCAL_STORES.records, "readwrite");
+    const store = transaction.objectStore(LOCAL_STORES.records);
+    const next: LocalRecord<T> = {
+      ...record,
+      updatedAt: record.updatedAt ?? new Date().toISOString(),
+    };
+    store.put(next);
+    await transactionDone(transaction);
+    return next;
+  } finally {
+    db.close();
+  }
+}
+
 export async function saveLocalMutation<T>(mutation: LocalMutation<T>): Promise<LocalRecord<T>> {
   const now = new Date().toISOString();
   const db = await openAppSchoolLocalDb();
