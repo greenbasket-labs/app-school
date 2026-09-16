@@ -26,7 +26,6 @@ export const assessmentScoreSyncExecutor: SyncExecutor = async (item) => {
       return {
         status: "ACKNOWLEDGED",
         serverVersion: response.headers.get("ETag") ?? response.headers.get("X-Server-Version"),
-        result: data,
       };
     }
 
@@ -34,8 +33,17 @@ export const assessmentScoreSyncExecutor: SyncExecutor = async (item) => {
       return { status: "CONFLICT", error: data?.message ?? "Server reported a synchronization conflict." };
     }
 
-    return { status: "FAILED", error: data?.message ?? `Server rejected synchronization (${response.status}).` };
+    const retryable = response.status === 408 || response.status === 425 || response.status === 429 || response.status >= 500;
+    return {
+      status: "FAILED",
+      error: data?.message ?? `Server rejected synchronization (${response.status}).`,
+      retryable,
+    };
   } catch (error) {
-    return { status: "FAILED", error: error instanceof Error ? error.message : "Network synchronization failed." };
+    return {
+      status: "FAILED",
+      error: error instanceof Error ? error.message : "Network synchronization failed.",
+      retryable: true,
+    };
   }
 };
