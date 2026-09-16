@@ -10,8 +10,7 @@ CREATE TABLE "ResultAccessEntitlement" (
   CONSTRAINT "ResultAccessEntitlement_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "School"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT "ResultAccessEntitlement_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT "ResultAccessEntitlement_academicSessionId_fkey" FOREIGN KEY ("academicSessionId") REFERENCES "AcademicSession"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT "ResultAccessEntitlement_academicTermId_fkey" FOREIGN KEY ("academicTermId") REFERENCES "AcademicTerm"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT "ResultAccessEntitlement_transactionId_fkey" FOREIGN KEY ("transactionId") REFERENCES "ResultAccessTransaction"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+  CONSTRAINT "ResultAccessEntitlement_academicTermId_fkey" FOREIGN KEY ("academicTermId") REFERENCES "AcademicTerm"("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 CREATE UNIQUE INDEX "ResultAccessEntitlement_transactionId_key"
