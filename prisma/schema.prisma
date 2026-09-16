@@ -7,19 +7,93 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserStatus { ACTIVE LOCKED DISABLED }
-enum OrganizationStatus { SETUP ACTIVE SUSPENDED CLOSED }
-enum SchoolStatus { SETUP ACTIVE SUSPENDED CLOSED }
-enum SetupStatus { NOT_STARTED ORGANIZATION_CREATED SCHOOL_INFORMATION_REQUIRED CAC_REQUIRED IDENTITY_READY COMPLETED }
-enum MembershipStatus { ACTIVE SUSPENDED ENDED }
-enum IdentityVerificationStatus { SUPPLIED VERIFIED REJECTED REVIEW_REQUIRED }
-enum AcademicSessionStatus { DRAFT ACTIVE CLOSED }
-enum StudentStatus { ACTIVE INACTIVE WITHDRAWN }
-enum EnrollmentStatus { ACTIVE COMPLETED WITHDRAWN }
-enum AttendanceStatus { PRESENT ABSENT LATE EXCUSED }
-enum CommercialPlanCode { FREE BASIC STARTER PRO PREMIUM CUSTOM }
-enum BillingPeriod { MONTHLY ANNUAL }
-enum SubscriptionStatus { ACTIVE PAST_DUE PAUSED CANCELED }
+enum UserStatus {
+  ACTIVE
+  LOCKED
+  DISABLED
+}
+
+enum OrganizationStatus {
+  SETUP
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum SchoolStatus {
+  SETUP
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum SetupStatus {
+  NOT_STARTED
+  ORGANIZATION_CREATED
+  SCHOOL_INFORMATION_REQUIRED
+  CAC_REQUIRED
+  IDENTITY_READY
+  COMPLETED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  SUSPENDED
+  ENDED
+}
+
+enum IdentityVerificationStatus {
+  SUPPLIED
+  VERIFIED
+  REJECTED
+  REVIEW_REQUIRED
+}
+
+enum AcademicSessionStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  WITHDRAWN
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  WITHDRAWN
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum CommercialPlanCode {
+  FREE
+  BASIC
+  STARTER
+  PRO
+  PREMIUM
+  CUSTOM
+}
+
+enum BillingPeriod {
+  MONTHLY
+  ANNUAL
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  PAUSED
+  CANCELED
+}
 
 model User {
   id String @id @default(uuid()) @db.Uuid
@@ -188,7 +262,7 @@ model Subject {
   @@index([schoolId, name])
 }
 model ClassSubject {
-  id String @id @default(uuid())
+  id String @id @default(uuid()) @db.Uuid
   academicSessionId String @db.Uuid
   classArmId String @db.Uuid
   subjectId String @db.Uuid
@@ -411,7 +485,7 @@ model FeeStructure {
   @@index([schoolId, isActive])
 }
 model SchoolSubscription {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @default(uuid()) @db.Uuid
   schoolId String @unique @db.Uuid
   planCode CommercialPlanCode @default(FREE)
   billingPeriod BillingPeriod @default(MONTHLY)
