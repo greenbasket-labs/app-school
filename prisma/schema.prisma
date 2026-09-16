@@ -86,19 +86,19 @@ model School {
   @@index([normalizedName])
 }
 model Module {
-  id String @id @default(uuid())
+  id String @id @default(uuid()) @db.Uuid
   code String @unique
   name String
   description String?
   category String
   sortOrder Int @default(0)
   schoolModules SchoolModule[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
 model SchoolModule {
   schoolId String @db.Uuid
-  moduleId String
+  moduleId String @db.Uuid
   enabled Boolean @default(false)
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   module Module @relation(fields: [moduleId], references: [id], onDelete: Restrict)
@@ -188,7 +188,7 @@ model Subject {
   @@index([schoolId, name])
 }
 model ClassSubject {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid())
   academicSessionId String @db.Uuid
   classArmId String @db.Uuid
   subjectId String @db.Uuid
