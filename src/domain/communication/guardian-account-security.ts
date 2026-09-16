@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
-import { hash, verify } from "bcryptjs";
+import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
+import { verifyPassword } from "@/domain/auth/password";
 
 export type GuardianAccountSecurityState = {
   guardianId: string;
@@ -57,7 +58,7 @@ export async function changeGuardianFirstLoginPassword(input: {
   if (!security.mustChangePassword) throw new Error("First-login password change is not required.");
 
   const user = await db.user.findUnique({ where: { id: input.userId }, select: { passwordHash: true } });
-  if (!user || !(await verify(input.currentPassword, user.passwordHash))) {
+  if (!user || !(await verifyPassword(input.currentPassword, user.passwordHash))) {
     throw new Error("Current password is incorrect.");
   }
 
