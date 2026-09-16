@@ -4,7 +4,7 @@
 
 This document is the implementation contract for application-wide offline-first behavior. It is a design/handoff document, not a claim that the runtime is already implemented.
 
-The repository contains reusable browser persistence, local-first repository, durable outbox, sync lifecycle, sync-engine primitive, connectivity/scheduling primitives, an initial authoritative reconciliation contract, and a shared sync-status model. The assessment score-capture screen now writes score mutations to the durable local repository/outbox first. These are still platform/reference foundations; no operational module is considered end-to-end offline-ready until its authenticated server executor, reconciliation and browser reconnect tests are wired and verified.
+The repository contains reusable browser persistence, local-first repository, durable outbox, sync lifecycle, sync-engine primitive, connectivity/scheduling primitives, an initial authoritative reconciliation contract, and a shared sync-status model. The assessment score-capture screen now writes score mutations to the durable local repository/outbox first and has a module-specific authenticated sync executor wired to the shared scheduler. These are still platform/reference foundations; no operational module is considered end-to-end offline-ready until reconciliation and browser reconnect tests are wired and verified.
 
 ## Handoff principle
 
@@ -52,22 +52,22 @@ The browser foundation currently includes:
 - durable local mutation + outbox persistence in one transaction;
 - explicit local synchronization states;
 - a shared sync-engine loop that reads pending work, marks it `SYNCING`, delegates the server operation to an executor, then records `ACKNOWLEDGED`, `FAILED` or `CONFLICT`;
+- retry classification for transient vs permanent failures;
 - connectivity detection and a browser scheduler that attempts synchronization when online, on reconnect and on a guarded periodic interval;
 - a first pull/reconciliation contract carrying a school-scoped cursor, authoritative server record/version and explicit `APPLY`, `CONFLICT` or `IGNORE` classification;
 - a shared application sync-status model;
-- an assessment score-capture local-first mutation path using a stable operation identity.
+- an assessment score-capture local-first mutation path using a stable per-attempt operation identity;
+- an assessment score synchronization executor that calls the authenticated server score endpoint with the same idempotency key used by the durable outbox;
+- assessment roster caching as a best-effort local working set.
 
 The server already has school-scoped idempotency primitives, and the assessment score endpoint accepts an `Idempotency-Key` for safe replay of the same logical mutation.
 
 This foundation does **not** yet provide end-to-end offline operation for a module. In particular, the following are still required before a module can claim offline readiness:
 
-- a real authenticated module executor wired to the sync engine;
-- authoritative local update from the server acknowledgement;
+- authoritative local update from the server acknowledgement beyond the current synchronization-state transition;
 - real pull/reconciliation invocation against server changes;
-- retry policy for transient vs permanent errors;
-- conflict rules where concurrent edits matter;
 - browser persistence/reconnect tests;
-- visible sync status in the application UI;
+- visible application-wide sync status in the UI;
 - authentication/session behavior that is safe during temporary offline periods.
 
 Do not mark the roadmap complete because these platform files exist.
@@ -85,10 +85,14 @@ client validates local shape/range
       ↓
 IndexedDB record + durable outbox written atomically
       ↓
-UI shows Saved ✓ / Pending sync
+UI shows local-save/pending state
+      ↓
+online scheduler invokes AssessmentScore executor
+      ↓
+Idempotency-Key → authenticated score API
 ```
 
-The existing server route remains authoritative for authentication, school capability, module state, score-context validation, persistence and audit. The client has not yet completed the final automatic server executor/reconciliation loop for this screen.
+The existing server route remains authoritative for authentication, school capability, module state, score-context validation, persistence and audit. The client now has the executor/scheduler connection, but it has not yet completed final pull/reconciliation verification or browser reconnect testing.
 
 The assessment screen deliberately does not mark a locally persisted score as server-confirmed. Result submission/publication remains separate and is not part of this offline conversion.
 
@@ -240,11 +244,11 @@ A conflict is not equivalent to a network error.
 
 Retries are expected. Duplicate effects are not.
 
-Every server-bound mutation needs a stable client operation identity/idempotency key that remains unchanged across retries.
+Every server-bound mutation needs a stable client operation identity/idempotency key that remains unchanged across retries. Separate user edits need separate operation identities.
 
 The server must recognize a repeated operation identity and avoid applying the same logical mutation twice.
 
-Reuse the existing school-scoped idempotency foundation rather than creating a second concept. The browser outbox must preserve and resend the same operation identity.
+Reuse the existing school-scoped idempotency foundation rather than creating a second concept. The browser outbox must preserve and resend the same operation identity for the life of that pending edit.
 
 ## Conflict handling
 
@@ -310,7 +314,7 @@ At minimum, test these invariants for the reference workflow:
 
 1. local save survives refresh;
 2. local save survives browser/page restart within the supported device storage boundary;
-3. offline mutation creates exactly one durable pending operation;
+3. offline mutation creates exactly one durable pending operation for that edit;
 4. reconnect sends the operation automatically;
 5. retrying the same operation does not duplicate the server effect;
 6. permanent validation/authorization failures remain recoverable and do not loop forever;
@@ -345,10 +349,10 @@ A new operational module is incomplete until it can answer:
 3. ~~Local-first repository boundary~~ — implemented.
 4. ~~Durable outbox~~ — implemented.
 5. ~~Shared sync lifecycle/engine contract~~ — implemented.
-6. ~~Connectivity detection and scheduling primitive~~ — implemented as a guarded browser scheduler; retry classification/backoff still needs verification.
+6. ~~Connectivity detection and scheduling primitive~~ — implemented as a guarded browser scheduler; transient retry classification is implemented; backoff still needs verification.
 7. ~~Initial reconciliation contract~~ — implemented as a reusable classification contract; live server pull protocol remains.
 8. ~~Shared sync-status model~~ — implemented as a reusable status vocabulary; application-wide UI wiring remains.
-9. **Reference workflow: assessment score capture** — local-first mutation path implemented; authenticated executor, end-to-end automatic sync, reconciliation invocation and browser tests remain.
+9. **Reference workflow: assessment score capture** — local-first mutation path and authenticated executor/scheduler wiring implemented; reconciliation invocation and browser persistence/reconnect tests remain.
 10. Convert remaining operational modules incrementally using the same shared foundation.
 
 ## Do not do
@@ -359,6 +363,7 @@ A new operational module is incomplete until it can answer:
 - Do not silently discard pending work after a failed request.
 - Do not display local saves as server-confirmed.
 - Do not retry mutations without stable idempotency identities.
+- Do not reuse one operation identity for separate user edits.
 - Do not use offline mode to bypass authorization or server validation.
 - Do not claim a module is offline-ready merely because its page is cached.
 - Do not invent module-specific synchronization protocols when the shared platform foundation can handle them.
