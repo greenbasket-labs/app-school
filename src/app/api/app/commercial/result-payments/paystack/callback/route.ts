@@ -1,23 +1,17 @@
 import { NextResponse } from "next/server";
-import { getResultPaymentAttemptById } from "@/domain/commercial/result-payment-attempts";
+import { getResultPaymentAttemptByProviderReference } from "@/domain/commercial/result-payment-attempts";
 import { processResultPaymentProviderEvent } from "@/domain/commercial/process-result-payment-event";
 import { verifyPaystackResultPayment } from "@/domain/commercial/result-payment-verification";
 
 export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const reference = url.searchParams.get("reference")?.trim() ?? "";
-  const attemptId = url.searchParams.get("resultPaymentAttemptId")?.trim() ?? "";
+  const reference = new URL(request.url).searchParams.get("reference")?.trim() ?? "";
 
-  if (!reference || !attemptId) {
+  if (!reference) {
     return NextResponse.json({ error: "PAYMENT_CALLBACK_DATA_REQUIRED" }, { status: 400 });
   }
 
   try {
-    const attempt = await getResultPaymentAttemptById(attemptId);
-    if (attempt.provider !== "PAYSTACK") {
-      return NextResponse.json({ error: "PAYMENT_PROVIDER_MISMATCH" }, { status: 400 });
-    }
-
+    const attempt = await getResultPaymentAttemptByProviderReference("PAYSTACK", reference);
     const result = await processResultPaymentProviderEvent({
       provider: "PAYSTACK",
       eventKey: reference,
