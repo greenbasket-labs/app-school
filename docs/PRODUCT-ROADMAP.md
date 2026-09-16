@@ -124,15 +124,19 @@ This is App-School commercial infrastructure, not school-fee finance. It must no
 - [x] Provider event replay/idempotency boundary
 - [x] Callback/webhook adapters for Paystack and Flutterwave
 - [x] Result entitlement persistence and lookup boundary
-- [x] Guardian account bootstrap from school Guardian records
-- [x] Guardian first-login temporary password and mandatory password change
-- [x] Guardian contact-verification state boundary
-- [ ] End-to-end parent/guardian entitlement authorization route
+- [x] **End-to-end parent/guardian entitlement authorization route**
+  - Requires an authenticated guardian account that completed first-login password change
+  - Requires email or phone verification
+  - Resolves the requested student through the server-side `StudentGuardian` relationship
+  - Verifies the selected session/term and published result server-side
+  - Applies free access or the exact school/student/session/term entitlement
+  - Does not trust browser-supplied school IDs or student IDs as relationship proof
 - [ ] School transaction/revenue view
 - [ ] Subscription lifecycle: renewal, failure, grace, upgrade, downgrade and cancellation
 - [ ] Settlement/refund operations
 - [ ] Commercial analytics/admin surfaces
 - [ ] Monnify result-access adapter
+- [ ] Parent result UI/student selection and payment-required workflow
 
 Commercial rules are defined in `docs/COMMERCIAL-BILLING-HANDOFF.md`. Payment does not bypass result authorization. Historical revenue splits are immutable snapshots. Do not hard-code a result fee such as ₦200.
 
@@ -207,6 +211,6 @@ If these questions cannot be answered, do not start building a large feature set
 
 ## Handoff rule
 
-A new human developer or AI coding agent should be able to enter the repository, read the documentation, inspect the current code, identify the next unchecked slice, understand why it exists, and continue development without needing the original conversation.
+A new human developer or AI coding agent should be able to enter the repository, read the documentation, identify the next unchecked slice, understand why it exists, and continue development without needing the original conversation.
 
 The roadmap is therefore part of the product's continuity mechanism, not merely a task list.
