@@ -53,3 +53,23 @@ export function assertReconciliationCursor(cursor: ReconciliationCursor) {
   }
   return cursor;
 }
+
+export type AssessmentScoreAuthoritativeRecord = AuthoritativeRecord<{
+  assessmentId: string;
+  studentId: string;
+  score: number;
+  updatedAt: string;
+}>;
+
+export type AssessmentScorePull = {
+  schoolId: string;
+  assessmentId: string;
+  cursor: string | null;
+  records: AssessmentScoreAuthoritativeRecord[];
+  nextCursor: string | null;
+};
+
+export function assessmentScoreServerVersion(updatedAt: Date | string) {
+  const value = updatedAt instanceof Date ? updatedAt.toISOString() : new Date(updatedAt).toISOString();
+  return value;
+}
