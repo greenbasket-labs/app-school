@@ -10,7 +10,7 @@ Fresh production implementation. No inherited application code.
 
 The starting point is not "build another school-management system." The starting point is the economic problem around technology access.
 
-Many private schools operate in an environment where the technology they need already exists, but the school cannot reasonably afford to assemble and maintain all of it independently. A school may otherwise need to pay separately for:
+Many schools operate in an environment where the technology they need already exists, but the school cannot reasonably afford to assemble and maintain all of it independently. A school may otherwise need to pay separately for:
 
 - a developer or technical staff
 - domain registration
@@ -64,7 +64,42 @@ The product is intentionally built as a configurable school operating platform r
 - **Only the school owner can enable or disable modules.**
 - Disabling a module hides/stops its operational surface; it does not delete historical records.
 - Staff access is controlled separately through capabilities. Enabling a module does not automatically give every staff member access.
-- The database remains the source of truth. Settings control product behavior, not ownership of the underlying records.
+- The database remains the server source of truth. Settings control product behavior, not ownership of the underlying records.
+- **Offline-first is a platform requirement for the entire application.** The school should be able to continue supported operational work when internet connectivity is unavailable, using durable local data and synchronization rather than depending on a live request for every action.
+
+## Offline-first product requirement
+
+App-School is designed for school environments where internet connectivity may be slow, intermittent or temporarily unavailable.
+
+The target product behavior is:
+
+```text
+ONLINE
+UI → Local durable data → immediate result
+                       ↘ Sync → Server → PostgreSQL → Audit
+
+OFFLINE
+UI → Local durable data → immediate result
+                       ↘ Durable pending change / outbox
+
+BACK ONLINE
+Pending changes → Sync → server validation/authorization
+               → persist + audit → acknowledgement
+```
+
+### Application-wide offline-first rules
+
+- Offline-first applies to the whole application, not only attendance or assessments.
+- Operational screens should read from a local durable working set when the needed data is available on the device.
+- Important writes should be saved locally first and survive refresh, browser restart and temporary loss of connectivity.
+- Pending changes must have an explicit synchronization state; **local save is not the same as server confirmation**.
+- Sync retries must be idempotent and must not create duplicate records or duplicate side effects.
+- Failed synchronization must preserve the pending work for retry or resolution.
+- Conflicts involving important school records must be detected and handled according to domain rules; silent overwrites are not acceptable without an explicit product decision.
+- Offline data and queued operations must respect school tenancy and capability boundaries.
+- Server authorization, important validation, approvals/publication and audit remain authoritative when a queued operation reaches the server.
+- Actions that inherently require current server authority may remain online-only, but this must be deliberate and documented rather than an accidental network dependency.
+- Modules must reuse the shared offline/local-data/outbox/sync architecture rather than implementing unrelated offline mechanisms.
 
 ## Product development philosophy
 
@@ -87,7 +122,7 @@ Implement
    ↓
 Validate security + data boundaries
    ↓
-Test
+Test online + offline + reconnect behavior
    ↓
 Record the decision
    ↓
@@ -114,6 +149,7 @@ The goal is not the largest feature list. The goal is a strong platform that can
 14. **Attendance history & correction** — historical attendance search plus capability-controlled corrections with previous/current state audit evidence.
 15. **Parent/guardian records** — school-scoped guardian records plus many-to-many student relationships, with relationship metadata and audited link/unlink actions.
 16. **Student status lifecycle** — controlled active/inactive/withdrawn transitions with terminal withdrawal and audit history.
+17. **Assessment definitions and initial score capture** — assessment roster, per-student score validation and audited score persistence.
 
 ## Module model
 
@@ -218,6 +254,10 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [ ] Production migration baseline and verification
 - [ ] Automated typecheck/lint/build CI
 - [ ] Tenant-isolation integration tests
+- [ ] Offline-first platform foundation: local durable database, schema/versioning and repository abstraction
+- [ ] Offline mutation/outbox model with durable pending states
+- [ ] Shared sync engine with retry, backoff and idempotency
+- [ ] Connectivity/sync status model and application-wide UI treatment
 
 ### Phase 1 — School configuration
 - [x] Academic session foundation
@@ -232,6 +272,7 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [x] Session lifecycle: draft → active → closed
 - [x] Formal setup readiness calculation
 - [x] School profile/configuration settings — first slice
+- [ ] Offline-capable school setup and configuration workflows
 
 ### Phase 2 — Core daily operations
 - [x] Student records
@@ -242,11 +283,14 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [x] Capability assignment UI — initial owner-managed slice
 - [x] Parent/guardian records and student relationships — initial slice
 - [x] Student status lifecycle
+- [ ] Offline-capable student and enrollment workflows
+- [ ] Offline-capable attendance workflows and reconciliation
 
 ### Phase 3 — Academic engine
-- [ ] Assessment definitions
-- [ ] Score capture
-- [ ] Score validation
+- [x] Assessment definitions
+- [x] Score capture — initial roster + per-student save slice
+- [x] Score validation — school/class/session/enrollment/max-score validation
+- [ ] Offline-capable assessment and score capture foundation
 - [ ] Result submission
 - [ ] Result approval
 - [ ] Result publication
@@ -254,49 +298,81 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [ ] Academic history
 
 ### Phase 4 — Finance
-- [ ] Fee structures
-- [ ] Student fee assignments
-- [ ] Invoices / obligations
-- [ ] Payment recording
-- [ ] Payment provider integration
-- [ ] Receipts
-- [ ] Balances and reconciliation
-- [ ] Finance audit trail
+- [x] Fee structures
+- [x] Student fee assignments
+- [x] Invoices / obligations
+- [x] Payment recording
+- [x] Payment provider integration — Paystack, Flutterwave and Monnify foundation
+- [x] Receipts
+- [x] Balances and reconciliation
+- [x] Finance audit trail
+- [ ] Offline-capable finance workflows with explicit server-confirmed payment states
 
 ### Phase 5 — Communication
-- [ ] Parent/guardian communication
-- [ ] Staff communication
-- [ ] Announcements
-- [ ] Notifications
-- [ ] Delivery/status history
+- [x] In-app notifications — school-scoped notices, selected active-member recipients, read state and inbox
+- [x] Notification channel preferences — in-app, SMS, email and WhatsApp preference controls; only in-app delivery is live
+- [x] Parent/guardian authenticated recipients — one-time owner-created access link for existing guardians with email
+- [x] Attendance absence alert — linked parent in-app notification when a student is marked absent
+- [x] Payment confirmation alert — linked parent in-app notification when a payment is recorded
+- [x] Result publication alert — linked parent in-app notification when a result is published
+- [ ] Offline-capable communication drafts and queued outbound actions
+- [ ] Staff communication expansion — broaden only when a real workflow requires it
+- [ ] Delivery/status history for external channels
 - [ ] WhatsApp/SMS/email integrations where justified
 
 ### Phase 6 — Reports & management
-- [ ] Operational dashboards
-- [ ] Attendance reports
-- [ ] Academic reports
-- [ ] Finance reports
-- [ ] Management summaries
-- [ ] Export workflows
+- [x] Attendance report — date-range summary with school-scoped student totals
+- [x] Academic report — published assessment performance by session, term and optional class
+- [x] Finance report — recorded invoices, payments and outstanding obligations
+- [x] Operational dashboards — initial V1 slice
+- [x] Management summaries — initial V1 slice
+- [x] Export workflows — authenticated management CSV export
+- [ ] Offline-capable report generation from locally available trusted data
 
 ### Phase 7 — Platform intelligence
-- [ ] Rules/configuration engine
-- [ ] Background jobs
-- [ ] Reliable notification processing
-- [ ] Offline-first workflows where useful
-- [ ] Idempotent sync actions
-- [ ] Anomaly/delay detection
-- [ ] AI assistance above trusted records, never as the source of truth
+- [x] Rules/configuration engine — owner-controlled rule foundation
+- [x] Background jobs — durable queue record and claim primitive
+- [x] Reliable notification processing — idempotent queue foundation
+- [ ] Offline-first platform completion — application-wide module adoption and reconciliation verification
+- [x] Idempotent sync actions — school-scoped idempotency foundation
+- [x] Anomaly/delay detection — deterministic operational anomaly checks
+- [x] AI assistance above trusted records, never as the source of truth — deterministic AI-ready management context boundary
+- [ ] Conflict resolution policies and operator-visible reconciliation tools
+- [ ] Offline security/session lifecycle hardening
 
 ### Phase 8 — Production platform
-- [ ] PostgreSQL migration/deployment process
+- [ ] PostgreSQL migration/deployment process — migration baseline exists; production verification remains
 - [ ] Object/file storage
-- [ ] Backups and recovery procedures
+- [ ] Backups and recovery procedures, including recovery of sync/outbox state where required
 - [ ] Observability and operational alerts
 - [ ] Security hardening
 - [ ] Performance/load testing
+- [ ] Offline/online transition testing at production scale
 - [ ] Render production deployment
 - [ ] Tenant-safe onboarding and support operations
+
+## Current V1 sequence
+
+1. **Assessment definitions** — complete and tested against Greenfield Heritage Academy.
+2. **Score capture + validation** — current slice: assessment roster loads from active enrollment and individual scores are validated and saved with audit evidence.
+3. **Result submission** — next.
+4. **Result approval** — after submission.
+5. **Result publication** — after approval.
+6. **Report cards** — derive from trusted published academic records.
+7. **Academic history** — preserve and present results across sessions.
+8. **Offline-first foundation** — before expanding many more operational workflows, establish the shared local-data/outbox/sync architecture and then migrate existing modules onto it.
+
+## V1 completion rule
+
+Finish the remaining roadmap items before expanding the product beyond V1. Work forward from the current phase; do not reopen completed phases unless verification exposes a real defect. Keep each slice small, production-oriented and tied to an actual school workflow.
+
+Every completed slice must preserve the existing platform boundaries: school-scoped ownership, capability authorization, module enforcement, validation of important invariants, audit evidence for meaningful changes, historical truth, and offline continuity where the workflow is expected to operate offline.
+
+## Rule
+
+Do not build reports merely because other school systems have them. Each report must turn trusted school records into a decision or action the school actually needs. Keep reports school-scoped, capability-controlled, module-controlled and derived from authoritative records.
+
+Do not treat offline-first as a later UI enhancement. It is a platform architecture requirement that must shape persistence, mutation handling, synchronization, conflict handling and module design from this point forward.
 
 ## Developer / AI continuation contract
 
@@ -310,7 +386,8 @@ Before changing code:
 4. Inspect the current implementation before assuming a model, service, route, capability or UI exists.
 5. Check the current roadmap and choose the smallest next coherent vertical slice.
 6. Preserve existing tenant, capability, audit and module boundaries.
-7. Do not invent a second architecture for a new module.
+7. Preserve the application-wide offline-first architecture; do not implement a module's persistence/sync system in isolation.
+8. Do not invent a second architecture for a new module.
 
 ### Required approach for every new module
 
@@ -329,17 +406,25 @@ Define who can view/change/approve
         ↓
 Decide whether the module belongs in Settings
         ↓
+Define what must work offline
+        ↓
+Define local durable records + pending operations
+        ↓
+Define synchronization + conflict rules
+        ↓
 Add/reuse capability boundaries
         ↓
 Add module catalog/configuration if needed
         ↓
-Implement service first
+Implement service/repository boundaries
         ↓
-Implement school-scoped API
+Implement school-scoped API + sync path
         ↓
 Implement the smallest useful UI
         ↓
 Audit meaningful state changes
+        ↓
+Test online + offline + reconnect + retry
         ↓
 Test tenant isolation and authorization
         ↓
@@ -357,6 +442,12 @@ Update README + roadmap in the same change
 - **Historical truth survives configuration:** disabling a module must not delete its records.
 - **Capture → validate → automate:** do not build automation on untrusted data.
 - **Audit meaningful changes:** preserve actor, school, action and relevant previous/current state.
+- **Offline-first is platform-wide:** do not make network availability a hidden prerequisite for normal supported workflows when the required data is already local.
+- **Local save ≠ server confirmation:** expose pending/synced/conflict/error state explicitly.
+- **Durable outbox:** pending operations must survive refresh/restart and retry safely.
+- **Idempotent sync:** retries must not duplicate records or effects.
+- **No silent conflict overwrite:** important records require deliberate conflict rules.
+- **No silent data loss:** a failed sync preserves recoverable work.
 - **No role-name shortcuts:** use capabilities for authorization decisions.
 - **No speculative features:** do not build a large module before its problem, boundary and workflow are understood.
 - **No copied feature lists:** another product can provide research context, but its feature list is not the product specification.
@@ -377,6 +468,9 @@ Every completed development slice should leave the repository in a state where a
 - Who can configure it?
 - What is audited?
 - What historical data must remain preserved?
+- What works offline?
+- What remains pending until synchronization?
+- What happens during conflict or failed synchronization?
 - What is intentionally **not** implemented yet?
 - What is the next smallest logical slice?
 
@@ -394,8 +488,10 @@ If those answers cannot be found from the code and repository documentation, the
 8. **Capture once, derive many:** one real-world event should be recorded once and downstream consequences derived from it.
 9. **Do not automate garbage:** capture → validate → automate.
 10. **AI is above the record layer:** AI can explain, summarize and assist, but trusted school records remain authoritative.
-11. **Keep the product lean:** do not build future modules before their configuration boundary and real operational need are clear.
-12. **Audit meaningful changes:** important state changes record actor, school, action and relevant state.
+11. **Offline-first is part of the record layer:** local durable storage and synchronization must be treated as shared platform architecture, not optional UI caching.
+12. **Offline security follows tenant security:** the local working set and outbox must remain scoped to authorized school data and capabilities.
+13. **Keep the product lean:** do not build future modules before their configuration boundary and real operational need are clear.
+14. **Audit meaningful changes:** important state changes record actor, school, action and relevant state.
 
 ## Local foundation test
 
@@ -440,6 +536,6 @@ Run the same request again with a different email but the same CAC. Expected res
 
 ## Important current boundary
 
-This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, setup readiness, school profile, students, enrollment, attendance, attendance history/correction, parent/guardian records, student status lifecycle, module configuration/enforcement, academic session lifecycle, and an initial staff/access management slice. Migration verification, automated tests, remaining configuration workflows and the later operational modules are still required before production launch.
+This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, setup readiness, school profile, students, enrollment, attendance, attendance history/correction, parent/guardian records, student status lifecycle, module configuration/enforcement, academic session lifecycle, initial staff/access management, assessment definitions and initial score capture/validation. Migration verification, automated tests, application-wide offline-first infrastructure and the remaining operational workflows are still required before production launch.
 
-See `docs/PRODUCT-DECISION-HISTORY.md` for the product reasoning and durable decisions. See `ARCHITECTURE.md` for frozen technical architecture.
+See `docs/PRODUCT-DECISION-HISTORY.md` for the product reasoning and durable decisions. See `ARCHITECTURE.md` for frozen technical architecture. See `docs/ROADMAP.md` for the current implementation sequence and offline-first work.
