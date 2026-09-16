@@ -169,7 +169,8 @@ The goal is not the largest feature list. The goal is a strong platform that can
 16. **Student status lifecycle** — controlled active/inactive/withdrawn transitions with terminal withdrawal and audit history.
 17. **Assessment definitions and initial score capture** — assessment roster, per-student score validation and audited score persistence.
 18. **Offline platform foundation** — shared local persistence, outbox, sync lifecycle, scheduler, reconciliation contract, status model and assessment-score idempotency boundary.
-19. **Commercial plan foundation** — centralized Free/Basic/Starter/Pro/Premium/Custom pricing and deterministic result-access revenue allocation; payment/subscription/entitlement remains incremental.
+19. **Commercial plan foundation** — centralized Free/Basic/Starter/Pro/Premium/Custom pricing and deterministic result-access revenue allocation.
+20. **Commercial persistence foundation** — database-backed school subscription and Result Access configuration; new schools initialize to Free/disabled defaults, existing schools are safely materialized on first access, and owner changes are audited.
 
 ## Module model
 
@@ -203,7 +204,7 @@ This catalog will grow as new product modules are implemented. A module can be a
 
 ## Commercial model
 
-App-School now has a centralized starting commercial configuration, while the live billing/transaction system remains incremental.
+App-School now has a centralized starting commercial configuration and persisted school-level commercial state, while the live billing/transaction system remains incremental.
 
 ### School plans
 
@@ -221,6 +222,8 @@ These are starting commercial values. They are centralized in `src/domain/commer
 ### Result Access
 
 A school may choose to make official published results free or charge a configurable amount. The result fee is not fixed at ₦200.
+
+The current persistence boundary stores one Result Access policy per school. New schools start with access disabled and a ₦0 fee. Only the school owner can change the setting, and changes produce audit evidence.
 
 When paid result access is implemented, the transaction will snapshot the active plan and actual monetary split so later plan changes cannot rewrite history.
 
