@@ -50,32 +50,35 @@ export async function getLocalRecordByEntity<T>(schoolId: string, entityType: st
 
 export async function saveLocalMutation<T>(mutation: LocalMutation<T>): Promise<LocalRecord<T>> {
   const now = new Date().toISOString();
-  const record: LocalRecord<T> = {
-    ...mutation.record,
-    updatedAt: mutation.record.updatedAt ?? now,
-  };
-  const outbox: LocalOutboxItem = {
-    operationId: mutation.operationId,
-    schoolId: mutation.schoolId,
-    actorUserId: mutation.actorUserId ?? null,
-    entityType: mutation.entityType,
-    entityId: mutation.entityId,
-    operationType: mutation.operationType,
-    payload: mutation.payload,
-    createdAt: now,
-    attemptCount: 0,
-    status: "PENDING",
-    lastError: null,
-  };
-
   const db = await openAppSchoolLocalDb();
   try {
     const transaction = db.transaction([LOCAL_STORES.records, LOCAL_STORES.outbox], "readwrite");
-    transaction.objectStore(LOCAL_STORES.records).put(record);
+    const recordStore = transaction.objectStore(LOCAL_STORES.records);
+    const existing = (await requestResult(recordStore.get(mutation.record.id))) as LocalRecord<T> | undefined;
+    const record: LocalRecord<T> = {
+      ...mutation.record,
+      serverVersion: mutation.record.serverVersion ?? existing?.serverVersion ?? null,
+      updatedAt: mutation.record.updatedAt ?? now,
+    };
+    const outbox: LocalOutboxItem = {
+      operationId: mutation.operationId,
+      schoolId: mutation.schoolId,
+      actorUserId: mutation.actorUserId ?? null,
+      entityType: mutation.entityType,
+      entityId: mutation.entityId,
+      operationType: mutation.operationType,
+      payload: mutation.payload,
+      createdAt: now,
+      attemptCount: 0,
+      status: "PENDING",
+      lastError: null,
+    };
+
+    recordStore.put(record);
 
     const outboxStore = transaction.objectStore(LOCAL_STORES.outbox);
-    const existing = await requestResult(outboxStore.get(mutation.operationId));
-    if (!existing) outboxStore.put(outbox);
+    const existingOutbox = await requestResult(outboxStore.get(mutation.operationId));
+    if (!existingOutbox) outboxStore.put(outbox);
 
     await transactionDone(transaction);
     return record;
@@ -92,6 +95,33 @@ export async function markLocalRecordState(id: string, syncState: LocalSyncState
     const existing = (await requestResult(store.get(id))) as LocalRecord | undefined;
     if (!existing) return null;
     const next = { ...existing, syncState, serverVersion: serverVersion ?? existing.serverVersion ?? null, updatedAt: new Date().toISOString() };
+    store.put(next);
+    await transactionDone(transaction);
+    return next;
+  } finally {
+    db.close();
+  }
+}
+
+export async function applyAuthoritativeLocalRecord<T>(input: {
+  id: string;
+  data: T;
+  serverVersion: string;
+  updatedAt?: string;
+}) {
+  const db = await openAppSchoolLocalDb();
+  try {
+    const transaction = db.transaction(LOCAL_STORES.records, "readwrite");
+    const store = transaction.objectStore(LOCAL_STORES.records);
+    const existing = (await requestResult(store.get(input.id))) as LocalRecord<T> | undefined;
+    if (!existing) return null;
+    const next: LocalRecord<T> = {
+      ...existing,
+      data: input.data,
+      serverVersion: input.serverVersion,
+      syncState: "SYNCED",
+      updatedAt: input.updatedAt ?? new Date().toISOString(),
+    };
     store.put(next);
     await transactionDone(transaction);
     return next;
