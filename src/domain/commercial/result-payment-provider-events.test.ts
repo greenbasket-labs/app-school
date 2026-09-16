@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const executeRaw = vi.fn();
-const queryRaw = vi.fn();
+const { executeRaw, queryRaw } = vi.hoisted(() => ({
+  executeRaw: vi.fn(),
+  queryRaw: vi.fn(),
+}));
 
 vi.mock("@/lib/db", () => ({
   db: { $executeRaw: executeRaw, $queryRaw: queryRaw },
