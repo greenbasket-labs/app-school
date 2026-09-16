@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { evaluateResultAccess } from "./result-access-policy";
+import { createResultPaymentAttempt, evaluateResultAccess } from "./result-access-policy";
 
 describe("result access policy", () => {
   const paid = { enabled: true, amountNaira: 200 };
@@ -26,5 +26,18 @@ describe("result access policy", () => {
 
   it("allows a verified entitlement without creating another charge", () => {
     expect(evaluateResultAccess({ schoolAuthorized: true, studentAuthorized: true, resultPublished: true, settings: paid, entitled: true })).toEqual({ allowed: true, reason: "ENTITLED" });
+  });
+
+  it("creates a provider-neutral pending payment attempt", () => {
+    expect(createResultPaymentAttempt({ schoolId: "school-1", studentId: "student-1", academicSessionId: "session-1", academicTermId: "term-1", amountNaira: 200, provider: "PAYSTACK", idempotencyKey: "result:student-1:session-1:term-1" })).toEqual({ schoolId: "school-1", studentId: "student-1", academicSessionId: "session-1", academicTermId: "term-1", amountNaira: 200, provider: "PAYSTACK", idempotencyKey: "result:student-1:session-1:term-1", currency: "NGN", status: "PENDING" });
+  });
+
+  it("rejects zero or negative payment attempts", () => {
+    expect(() => createResultPaymentAttempt({ schoolId: "school-1", studentId: "student-1", academicSessionId: "session-1", academicTermId: "term-1", amountNaira: 0, provider: "PAYSTACK", idempotencyKey: "k" })).toThrow("positive");
+    expect(() => createResultPaymentAttempt({ schoolId: "school-1", studentId: "student-1", academicSessionId: "session-1", academicTermId: "term-1", amountNaira: -1, provider: "PAYSTACK", idempotencyKey: "k" })).toThrow("positive");
+  });
+
+  it("requires an idempotency key", () => {
+    expect(() => createResultPaymentAttempt({ schoolId: "school-1", studentId: "student-1", academicSessionId: "session-1", academicTermId: "term-1", amountNaira: 200, provider: "PAYSTACK", idempotencyKey: " " })).toThrow("idempotencyKey");
   });
 });
