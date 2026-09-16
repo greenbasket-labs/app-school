@@ -4,7 +4,7 @@
 
 This document is the implementation contract for application-wide offline-first behavior. It is a design/handoff document, not a claim that the runtime is already implemented.
 
-The repository now contains reusable browser persistence, local-first repository, durable outbox, sync lifecycle, and a first shared sync-engine primitive. These are still platform foundations; no operational module is considered end-to-end offline-ready until its real repository, server executor, reconciliation and tests are wired and verified.
+The repository now contains reusable browser persistence, local-first repository, durable outbox, sync lifecycle, sync-engine, connectivity detection and automatic scheduling foundations. These are still platform foundations; no operational module is considered end-to-end offline-ready until its real repository, authenticated server executor, reconciliation and tests are wired and verified.
 
 ## Handoff principle
 
@@ -51,7 +51,9 @@ The browser foundation currently includes:
 - a school-scoped local repository boundary;
 - durable local mutation + outbox persistence in one transaction;
 - explicit local synchronization states;
-- a shared sync-engine loop that reads pending work, marks it `SYNCING`, delegates the server operation to an executor, then records `ACKNOWLEDGED`, `FAILED` or `CONFLICT`.
+- a shared sync-engine loop that reads pending work, marks it `SYNCING`, delegates the server operation to an executor, then records `ACKNOWLEDGED`, `FAILED` or `CONFLICT`;
+- a connectivity state primitive based on browser online/offline events;
+- a scheduler that runs sync when online, on reconnect, and on a guarded periodic interval.
 
 The server already has school-scoped idempotency primitives. The sync engine deliberately does not invent another server persistence model; it expects the executor/server API to use the existing idempotency identity.
 
@@ -59,9 +61,9 @@ This foundation does **not** yet provide end-to-end offline operation for a modu
 
 - a real module repository using local reads/writes;
 - a server executor/API contract for that module;
+- authenticated server authorization and validation for queued operations;
 - authoritative local update from the server acknowledgement;
-- connectivity detection and automatic invocation;
-- retry policy for transient vs permanent errors;
+- retry classification/backoff for transient vs permanent errors;
 - pull/reconciliation for server-side changes made elsewhere;
 - conflict rules where concurrent edits matter;
 - browser persistence/reconnect tests;
@@ -149,6 +151,8 @@ Required behavior:
 6. update local records from authoritative server results;
 7. preserve failed/conflicted operations for recovery;
 8. continue processing independently of the current page where practical.
+
+The scheduler foundation now triggers the sync loop on initial online load, browser `online` events, and a guarded periodic interval. It must still be wired into authenticated school application bootstrapping and must use a real module/server executor before it performs production mutations.
 
 Connectivity restoration must not require the user to manually re-save work.
 
@@ -305,7 +309,7 @@ A new operational module is incomplete until it can answer:
 3. ~~Create repository interfaces for local-first reads/writes.~~ **Implemented: shared local repository boundary.**
 4. ~~Create the durable outbox.~~ **Implemented: durable school-scoped outbox persistence.**
 5. ~~Create the sync state machine and idempotency contract.~~ **Implemented: shared lifecycle plus executor-based sync engine; existing server idempotency remains authoritative.**
-6. Add connectivity detection and automatic retry.
+6. ~~Add connectivity detection and automatic retry.~~ **Foundation implemented: browser connectivity state, reconnect trigger and guarded periodic scheduler. Authenticated application bootstrapping and error-class-specific retry policy remain.**
 7. Add authoritative pull/reconciliation contract.
 8. Add application-wide sync status UI.
 9. Add service-worker/application-shell support where appropriate.
