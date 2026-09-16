@@ -171,6 +171,7 @@ The goal is not the largest feature list. The goal is a strong platform that can
 18. **Offline platform foundation** — shared local persistence, outbox, sync lifecycle, scheduler, reconciliation contract, status model and assessment-score idempotency boundary.
 19. **Commercial plan foundation** — centralized Free/Basic/Starter/Pro/Premium/Custom pricing and deterministic result-access revenue allocation.
 20. **Commercial persistence foundation** — database-backed school subscription and Result Access configuration; new schools initialize to Free/disabled defaults, existing schools are safely materialized on first access, and owner changes are audited.
+21. **Guardian account security foundation** — school-captured Guardian records can bootstrap a linked User through a single-use invitation; the account receives a temporary password, first-login password change is mandatory, email verification is established through the invitation factor, and phone verification has an explicit durable token/state boundary.
 
 ## Module model
 
@@ -237,8 +238,8 @@ The implementation contract is `docs/COMMERCIAL-BILLING-HANDOFF.md`.
 
 ## Roadmap and handoff
 
-The implementation roadmap lives in `docs/ROADMAP.md`. Offline-specific runtime contracts and takeover rules live in `docs/OFFLINE-FIRST-HANDOFF.md`. Commercial billing and result-access rules live in `docs/COMMERCIAL-BILLING-HANDOFF.md`.
+The implementation roadmap lives in `docs/ROADMAP.md`. Offline-specific runtime contracts and takeover rules live in `docs/OFFLINE-FIRST-HANDOFF.md`. Commercial billing and result-access rules live in `docs/COMMERCIAL-BILLING-HANDOFF.md`. Guardian account and contact-verification rules live in `docs/GUARDIAN-ACCOUNT-SECURITY.md`.
 
-**Takeover rule:** a developer or AI joining the repository should be able to read the product boundary, architecture, roadmap, product decisions, offline handoff, and commercial handoff and continue from the current repository state without reconstructing decisions from chat history.
+**Takeover rule:** a developer or AI joining the repository should be able to read the product boundary, architecture, roadmap, product decisions, offline handoff, commercial handoff and guardian-account security boundary and continue from the current repository state without reconstructing decisions from chat history.
 
 At each slice, keep code and documentation synchronized. Never mark a roadmap item complete solely because a design contract exists; completion requires implemented and verified runtime behavior.
