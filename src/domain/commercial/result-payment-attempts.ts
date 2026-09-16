@@ -53,6 +53,21 @@ function mapAttempt(row: {
   };
 }
 
+type PaymentAttemptRow = {
+  id: string;
+  schoolId: string;
+  studentId: string;
+  academicSessionId: string;
+  academicTermId: string;
+  amount: string;
+  currency: string;
+  provider: ResultPaymentProvider;
+  idempotencyKey: string;
+  status: PersistedResultPaymentAttempt["status"];
+  providerReference: string | null;
+  checkoutUrl: string | null;
+};
+
 /**
  * Persists one logical paid-result attempt.
  *
@@ -80,25 +95,31 @@ export async function createOrGetResultPaymentAttempt(
   return getResultPaymentAttempt(attempt.schoolId, attempt.idempotencyKey, attempt);
 }
 
+async function findResultPaymentAttemptById(id: string): Promise<PersistedResultPaymentAttempt | null> {
+  const rows = await db.$queryRaw<PaymentAttemptRow[]>(Prisma.sql`
+    SELECT
+      "id", "schoolId", "studentId", "academicSessionId", "academicTermId",
+      "amount"::text AS "amount", "currency", "provider", "idempotencyKey",
+      "status", "providerReference", "checkoutUrl"
+    FROM "ResultPaymentAttempt"
+    WHERE "id" = ${id}::uuid
+    LIMIT 1
+  `);
+  return rows[0] ? mapAttempt(rows[0]) : null;
+}
+
+export async function getResultPaymentAttemptById(id: string): Promise<PersistedResultPaymentAttempt> {
+  const attempt = await findResultPaymentAttemptById(id);
+  if (!attempt) throw new Error("Result payment attempt was not found.");
+  return attempt;
+}
+
 export async function getResultPaymentAttempt(
   schoolId: string,
   idempotencyKey: string,
   expected?: ResultPaymentAttemptInput,
 ): Promise<PersistedResultPaymentAttempt> {
-  const rows = await db.$queryRaw<Array<{
-    id: string;
-    schoolId: string;
-    studentId: string;
-    academicSessionId: string;
-    academicTermId: string;
-    amount: string;
-    currency: string;
-    provider: ResultPaymentProvider;
-    idempotencyKey: string;
-    status: PersistedResultPaymentAttempt["status"];
-    providerReference: string | null;
-    checkoutUrl: string | null;
-  }>>(Prisma.sql`
+  const rows = await db.$queryRaw<PaymentAttemptRow[]>(Prisma.sql`
     SELECT
       "id", "schoolId", "studentId", "academicSessionId", "academicTermId",
       "amount"::text AS "amount", "currency", "provider", "idempotencyKey",
