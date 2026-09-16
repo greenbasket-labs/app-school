@@ -5,6 +5,7 @@ import { CAPABILITIES } from "@/domain/auth/capabilities";
 import { currentSession } from "@/domain/auth/session-cookie";
 import { getAssessmentScoreRoster, saveAssessmentScore, AssessmentScoreValidationError } from "@/domain/assessments/score-service";
 import { ModuleDisabledError, requireSchoolModule } from "@/domain/modules/guard";
+import { replayOrRecordIdempotentResult } from "@/domain/platform/sync-server";
 import { db } from "@/lib/db";
 
 const saveSchema = z.object({
@@ -41,24 +42,41 @@ export async function POST(request: Request, { params }: { params: Promise<{ sch
   try {
     const schoolId = (await params).schoolId;
     const session = await access(schoolId);
+    const idempotencyKey = request.headers.get("Idempotency-Key");
     const input = saveSchema.parse(await request.json());
-    const existing = await db.assessmentScore.findFirst({
-      where: { schoolId, assessmentId: input.assessmentId, studentId: input.studentId },
-      select: { id: true, score: true },
+
+    const execute = async () => {
+      const existing = await db.assessmentScore.findFirst({
+        where: { schoolId, assessmentId: input.assessmentId, studentId: input.studentId },
+        select: { id: true, score: true },
+      });
+      const score = await saveAssessmentScore({ schoolId, ...input });
+      await db.auditEvent.create({
+        data: {
+          schoolId,
+          actorUserId: session.user.id,
+          action: existing ? "assessment.score_updated" : "assessment.score_created",
+          entityType: "AssessmentScore",
+          entityId: score.id,
+          previousState: existing ? { score: existing.score.toString() } : undefined,
+          currentState: { assessmentId: score.assessmentId, studentId: score.studentId, score: score.score.toString() },
+        },
+      });
+      return { score: { ...score, score: score.score.toNumber() } };
+    };
+
+    if (!idempotencyKey) {
+      const result = await execute();
+      return NextResponse.json({ ok: true, ...result }, { status: result.score.id === "" ? 201 : 200 });
+    }
+
+    const replay = await replayOrRecordIdempotentResult({
+      schoolId,
+      operation: "assessment.score",
+      key: idempotencyKey,
+      execute,
     });
-    const score = await saveAssessmentScore({ schoolId, ...input });
-    await db.auditEvent.create({
-      data: {
-        schoolId,
-        actorUserId: session.user.id,
-        action: existing ? "assessment.score_updated" : "assessment.score_created",
-        entityType: "AssessmentScore",
-        entityId: score.id,
-        previousState: existing ? { score: existing.score.toString() } : undefined,
-        currentState: { assessmentId: score.assessmentId, studentId: score.studentId, score: score.score.toString() },
-      },
-    });
-    return NextResponse.json({ ok: true, score: { ...score, score: score.score.toNumber() } }, { status: existing ? 200 : 201 });
+    return NextResponse.json({ ok: true, ...replay.result }, { status: replay.replayed ? 200 : 201 });
   } catch (error) {
     if (error instanceof ZodError) return NextResponse.json({ ok: false, error: "INVALID_SCORE", issues: error.issues }, { status: 400 });
     if (error instanceof AssessmentScoreValidationError) return NextResponse.json({ ok: false, error: "INVALID_SCORE", message: error.message }, { status: 400 });
