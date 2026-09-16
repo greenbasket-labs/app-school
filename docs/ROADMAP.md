@@ -92,8 +92,8 @@ This requirement applies across the platform, including school setup, students, 
 - [x] Score capture — initial roster + per-student save slice
 - [x] Score validation — school/class/session/enrollment/max-score validation
 - [ ] Offline-capable assessment and score capture foundation — **implemented as local-first reference workflow; reconciliation + browser tests remain**
-- [ ] Result submission
-- [ ] Result approval
+- [ ] Result submission — **authenticated API route + domain service implemented; runtime/CI verification remains**
+- [ ] Result approval — **authenticated API route + domain service implemented; runtime/CI verification remains; submitter cannot approve the same assessment result**
 - [x] Result publication — approved-result gate plus owner/default or owner-assigned `RESULT.PUBLISH` capability; publication remains deliberately online/server-authoritative
 - [ ] Report cards
 - [ ] Academic history
@@ -205,9 +205,9 @@ Role workspaces remain a presentation/workflow layer over the same school-scoped
 
 1. Assessment definitions — complete.
 2. Score capture + validation — complete initial slice.
-3. Result submission — next academic slice.
-4. Result approval.
-5. Result publication — authorization route now established; verify end-to-end workflow before treating the academic publication slice as fully production-ready.
+3. Result submission — implemented API/domain boundary; verify runtime behavior before marking complete.
+4. Result approval — implemented API/domain boundary; verify runtime behavior before marking complete.
+5. Result publication — authorization route established; verify the complete submit → approve → publish workflow before treating the academic publication slice as fully production-ready.
 6. Report cards.
 7. Academic history.
 8. Offline-first foundation — platform primitives established; browser/reconciliation verification remains.
