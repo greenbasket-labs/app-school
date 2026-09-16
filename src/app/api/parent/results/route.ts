@@ -21,11 +21,7 @@ export async function GET(request: Request) {
 
     if (!access.decision.allowed) {
       if (access.decision.reason === "PAYMENT_REQUIRED") {
-        return NextResponse.json({
-          ok: false,
-          error: "PAYMENT_REQUIRED",
-          amountNaira: access.decision.allowed ? 0 : undefined,
-        }, { status: 402 });
+        return NextResponse.json({ ok: false, error: "PAYMENT_REQUIRED" }, { status: 402 });
       }
       return NextResponse.json({ ok: false, error: access.decision.reason }, { status: 403 });
     }
