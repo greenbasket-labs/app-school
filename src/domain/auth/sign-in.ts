@@ -19,5 +19,16 @@ export async function authenticateUser(emailInput: string, password: string) {
   if (!user || user.status !== "ACTIVE") throw new AuthenticationError();
   if (!(await verifyPassword(password, user.passwordHash))) throw new AuthenticationError();
 
-  return { id: user.id, email: user.email };
+  const guardianSecurity = await db.$queryRaw<Array<{ mustChangePassword: boolean }>>`
+    SELECT "mustChangePassword"
+    FROM "GuardianAccountSecurity"
+    WHERE "userId" = ${user.id}::uuid
+    LIMIT 1
+  `;
+
+  return {
+    id: user.id,
+    email: user.email,
+    requiresFirstLoginPasswordChange: guardianSecurity[0]?.mustChangePassword ?? false,
+  };
 }
