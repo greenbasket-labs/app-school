@@ -4,7 +4,9 @@
 
 This document is the implementation contract for application-wide offline-first behavior. It is a design/handoff document, not a claim that the runtime is already implemented.
 
-The repository contains reusable browser persistence, local-first repository, durable outbox, sync lifecycle, sync-engine primitive, connectivity/scheduling primitives, an initial authoritative reconciliation contract, and a shared sync-status model. The assessment score-capture screen now writes score mutations to the durable local repository/outbox first and has a module-specific authenticated sync executor wired to the shared scheduler. These are still platform/reference foundations; no operational module is considered end-to-end offline-ready until reconciliation and browser reconnect tests are wired and verified.
+The repository contains reusable browser persistence, local-first repository, durable outbox, sync lifecycle, sync-engine primitive, connectivity/scheduling primitives, an initial authoritative reconciliation contract, and a shared sync-status model. The assessment score-capture screen writes score mutations to the durable local repository/outbox first and has a module-specific authenticated sync executor wired to the shared scheduler. Durable retry scheduling is now persisted with each pending outbox item so transient failures do not retry immediately after every scheduler tick.
+
+These are still platform/reference foundations; no operational module is considered end-to-end offline-ready until reconciliation, visible application sync status, authentication/session behavior and browser persistence/reconnect tests are wired and verified.
 
 ## Handoff principle
 
@@ -51,8 +53,9 @@ The browser foundation currently includes:
 - a school-scoped local repository boundary;
 - durable local mutation + outbox persistence in one transaction;
 - explicit local synchronization states;
-- a shared sync-engine loop that reads pending work, marks it `SYNCING`, delegates the server operation to an executor, then records `ACKNOWLEDGED`, `FAILED` or `CONFLICT`;
+- a shared sync-engine loop that reads due pending work, marks it `SYNCING`, delegates the server operation to an executor, then records `ACKNOWLEDGED`, `FAILED` or `CONFLICT`;
 - retry classification for transient vs permanent failures;
+- durable retry scheduling through `nextAttemptAt`, with bounded exponential backoff from 30 seconds up to 10 minutes;
 - connectivity detection and a browser scheduler that attempts synchronization when online, on reconnect and on a guarded periodic interval;
 - a first pull/reconciliation contract carrying a school-scoped cursor, authoritative server record/version and explicit `APPLY`, `CONFLICT` or `IGNORE` classification;
 - a shared application sync-status model;
@@ -90,11 +93,28 @@ UI shows local-save/pending state
 online scheduler invokes AssessmentScore executor
       ↓
 Idempotency-Key → authenticated score API
+      ↓
+transient failure → durable nextAttemptAt/backoff
 ```
 
-The existing server route remains authoritative for authentication, school capability, module state, score-context validation, persistence and audit. The client now has the executor/scheduler connection, but it has not yet completed final pull/reconciliation verification or browser reconnect testing.
+The existing server route remains authoritative for authentication, school capability, module state, score-context validation, persistence and audit. The client now has the executor/scheduler connection and durable retry timing, but it has not yet completed final pull/reconciliation verification or browser reconnect testing.
 
 The assessment screen deliberately does not mark a locally persisted score as server-confirmed. Result submission/publication remains separate and is not part of this offline conversion.
+
+## Retry policy
+
+The shared retry policy is platform infrastructure, not a module-specific rule.
+
+- First retry delay: 30 seconds.
+- Each later retry doubles the delay.
+- Maximum retry delay: 10 minutes.
+- Retryable failures retain `PENDING` status and store `nextAttemptAt` in the durable outbox.
+- Permanent validation/authorization failures become `FAILED` and clear `nextAttemptAt`.
+- Conflicts become `CONFLICT` and clear `nextAttemptAt`.
+- Successful acknowledgement becomes `ACKNOWLEDGED` and clears `nextAttemptAt`.
+- Scheduler ticks may happen more often than the retry delay; the durable due-time is authoritative for whether an item is eligible to be attempted.
+
+The current policy intentionally uses deterministic bounded exponential backoff. Jitter can be added later when fleet-scale behavior justifies it.
 
 ## Authority model
 
@@ -116,7 +136,7 @@ The local store should be able to persist:
 - operational records required for offline continuity;
 - local record metadata such as sync state and last server version where needed;
 - pending mutations in the outbox;
-- conflict/failure information required for recovery.
+- retry timing, failure information and conflict state required for recovery.
 
 Schema/version changes must be explicit and migration-safe. A developer must be able to identify the current local schema version and how a user moves from an older version to a newer one.
 
@@ -156,6 +176,7 @@ createdAt         local creation time
 attemptCount      retry count
 status            pending/syncing/failed/conflict/acknowledged
 lastError         recoverable error information
+nextAttemptAt     durable retry eligibility time
 ```
 
 The exact browser persistence shape should follow the actual implementation and existing domain conventions. Do not introduce a second outbox model inside an individual module.
@@ -164,14 +185,14 @@ The exact browser persistence shape should follow the actual implementation and 
 
 The sync engine is shared by all modules.
 
-The current engine can process pending browser outbox records and delegate each operation to a server executor. The executor is responsible for translating the queued mutation into the existing authenticated server API contract.
+The current engine can process due pending browser outbox records and delegate each operation to a server executor. The executor is responsible for translating the queued mutation into the existing authenticated server API contract.
 
 Required behavior:
 
 1. detect or be notified when connectivity is available;
-2. discover pending operations;
+2. discover pending operations that are due;
 3. send operations using stable idempotency identities;
-4. retry transient failures safely;
+4. retry transient failures safely using durable backoff;
 5. process server acknowledgements;
 6. update local records from authoritative server results;
 7. preserve failed/conflicted operations for recovery;
@@ -317,11 +338,12 @@ At minimum, test these invariants for the reference workflow:
 3. offline mutation creates exactly one durable pending operation for that edit;
 4. reconnect sends the operation automatically;
 5. retrying the same operation does not duplicate the server effect;
-6. permanent validation/authorization failures remain recoverable and do not loop forever;
-7. a conflict is represented as conflict rather than silently overwritten;
-8. local data is isolated by school context;
-9. server acknowledgement moves the local record to `SYNCED` with authoritative values;
-10. meaningful server-side completion is audited once according to domain rules.
+6. transient failure stores durable retry timing and does not retry before `nextAttemptAt`;
+7. permanent validation/authorization failures remain recoverable and do not loop forever;
+8. a conflict is represented as conflict rather than silently overwritten;
+9. local data is isolated by school context;
+10. server acknowledgement moves the local record to `SYNCED` with authoritative values;
+11. meaningful server-side completion is audited once according to domain rules.
 
 Use unit tests for state transitions and idempotency behavior, plus integration/e2e tests for browser persistence and reconnect behavior as the tooling is added.
 
@@ -349,10 +371,10 @@ A new operational module is incomplete until it can answer:
 3. ~~Local-first repository boundary~~ — implemented.
 4. ~~Durable outbox~~ — implemented.
 5. ~~Shared sync lifecycle/engine contract~~ — implemented.
-6. ~~Connectivity detection and scheduling primitive~~ — implemented as a guarded browser scheduler; transient retry classification is implemented; backoff still needs verification.
+6. ~~Connectivity detection and scheduling primitive~~ — implemented as a guarded browser scheduler; transient retry classification and durable bounded backoff are implemented.
 7. ~~Initial reconciliation contract~~ — implemented as a reusable classification contract; live server pull protocol remains.
 8. ~~Shared sync-status model~~ — implemented as a reusable status vocabulary; application-wide UI wiring remains.
-9. **Reference workflow: assessment score capture** — local-first mutation path and authenticated executor/scheduler wiring implemented; reconciliation invocation and browser persistence/reconnect tests remain.
+9. **Reference workflow: assessment score capture** — local-first mutation path, authenticated executor/scheduler wiring and durable retry scheduling implemented; reconciliation invocation and browser persistence/reconnect tests remain.
 10. Convert remaining operational modules incrementally using the same shared foundation.
 
 ## Do not do
