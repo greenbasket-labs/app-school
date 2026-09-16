@@ -19,9 +19,15 @@ export async function requireCapability(
 
   if (!membership) throw new AuthorizationError("Active school membership required.");
 
-  const allowed = membership.capabilities.some(
-    ({ capability }) => capability.code === capabilityCode,
-  );
+  // The owner is the ultimate school authority. Ownership grants the
+  // publication capability by default; staff must receive RESULT.PUBLISH
+  // explicitly through the school's capability-assignment flow.
+  const allowed =
+    membership.isOwner && capabilityCode === "RESULT.PUBLISH"
+      ? true
+      : membership.capabilities.some(
+          ({ capability }) => capability.code === capabilityCode,
+        );
 
   if (!allowed) throw new AuthorizationError();
   return membership;
