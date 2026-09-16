@@ -2,7 +2,7 @@
 
 ## Status
 
-The commercial implementation now has centralized plan rules, database-backed school subscription and Result Access configuration, and a pure result-access authorization policy. Payment collection, result entitlements and settlement remain separate follow-up slices.
+The commercial implementation now has centralized plan rules, database-backed school subscription and Result Access configuration, a pure result-access authorization policy, and a provider-neutral result payment-attempt boundary. Payment collection/verification, result entitlements and settlement remain separate follow-up slices.
 
 ## Product model
 
@@ -76,9 +76,25 @@ Authenticated user
       no  → verified payment → entitlement → access
 ```
 
-The current policy boundary is `src/domain/commercial/result-access-policy.ts`. It deliberately evaluates authorization and publication before payment state, and treats an entitlement only as the final access condition for a paid result. It does not itself create or verify an entitlement.
+The current policy boundary is `src/domain/commercial/result-access-policy.ts`. It evaluates authorization and publication before payment state, and treats an entitlement only as the final access condition for a paid result.
 
-One successful payment must eventually unlock that specific result context; reopening it must not create another charge.
+## Result payment-attempt boundary
+
+`createResultPaymentAttempt()` now defines the provider-neutral input contract for a paid result request.
+
+The attempt carries:
+
+- school identity;
+- student identity;
+- academic session and term context;
+- configured monetary amount;
+- selected provider (`PAYSTACK`, `FLUTTERWAVE`, or `MONNIFY`);
+- a caller-supplied idempotency key;
+- NGN currency and `PENDING` state.
+
+This boundary **does not prove payment and does not call a provider**. Provider initialization and later server-side verification remain behind the existing payment integration boundary. The idempotency key is part of the contract so a future persisted attempt can safely collapse retries/double-clicks into one logical attempt.
+
+A payment attempt must only be created after the result-access policy has established that the result is published, the requester is authorized for the school/student context, and payment is actually required.
 
 ## Bounded contexts
 
@@ -119,7 +135,7 @@ SchoolSettlement
 ProviderEvent / provider reference
 ```
 
-The current slice introduces `SchoolSubscription` and `ResultAccessSetting`. The current authorization policy is pure application logic. A separate immutable transaction/ledger and entitlement model remains intentionally deferred until the verified payment boundary exists.
+The current slice introduces `SchoolSubscription`, `ResultAccessSetting`, the pure authorization policy, and the provider-neutral payment-attempt contract. A separate persisted attempt/immutable transaction/ledger and entitlement model remains intentionally deferred until the provider verification boundary is ready.
 
 These must reuse existing User, School, Student, Guardian, Session, Term and capability identities.
 
@@ -149,12 +165,14 @@ Implemented:
 - school-scoped subscription and Result Access read APIs;
 - Prisma migration for the new commercial persistence boundary;
 - pure result-access authorization policy with explicit unauthorized, unpublished, payment-required, free and entitled decisions;
-- policy tests covering authorization ordering, free access, paid access and entitlement reuse.
+- policy tests covering authorization ordering, free access, paid access and entitlement reuse;
+- provider-neutral positive-value result payment-attempt contract with provider selection and idempotency key;
+- payment-attempt validation tests.
 
 Not yet implemented:
 
-- result-access payment attempt;
-- provider-specific result payment verification for this feature;
+- persisted result-access payment attempt;
+- provider-specific result payment initialization/verification for this feature;
 - result-access transaction ledger;
 - result-access entitlement persistence/verification;
 - school/App-School settlement ledger;
@@ -169,7 +187,7 @@ Not yet implemented:
 2. ~~Persist school subscription + plan state~~ — implemented with Free default and onboarding/lazy materialization.
 3. ~~Persist school result-access configuration~~ — implemented with owner-only mutation and audit evidence.
 4. ~~Establish result authorization boundary~~ — implemented as a pure, tested policy; entitlement storage/verification remains separate.
-5. Create result payment attempt using the existing provider boundary.
+5. ~~Define result payment-attempt boundary~~ — implemented as a provider-neutral, idempotency-aware pure contract; persistence/provider initialization remains separate.
 6. Verified payment → commercial transaction + immutable revenue allocation.
 7. Payment idempotency/webhook replay protection.
 8. Result entitlement/unlock.
