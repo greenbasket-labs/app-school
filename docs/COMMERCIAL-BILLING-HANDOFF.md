@@ -2,7 +2,7 @@
 
 ## Status
 
-The commercial implementation now has centralized plan rules plus database-backed school subscription and Result Access configuration. Payment collection, result entitlements and settlement remain separate follow-up slices.
+The commercial implementation now has centralized plan rules, database-backed school subscription and Result Access configuration, and a pure result-access authorization policy. Payment collection, result entitlements and settlement remain separate follow-up slices.
 
 ## Product model
 
@@ -76,7 +76,9 @@ Authenticated user
       no  → verified payment → entitlement → access
 ```
 
-One successful payment unlocks that specific result context; reopening it must not create another charge.
+The current policy boundary is `src/domain/commercial/result-access-policy.ts`. It deliberately evaluates authorization and publication before payment state, and treats an entitlement only as the final access condition for a paid result. It does not itself create or verify an entitlement.
+
+One successful payment must eventually unlock that specific result context; reopening it must not create another charge.
 
 ## Bounded contexts
 
@@ -117,7 +119,7 @@ SchoolSettlement
 ProviderEvent / provider reference
 ```
 
-The current slice introduces `SchoolSubscription` and `ResultAccessSetting`. A separate immutable transaction/ledger model remains intentionally deferred until the verified payment boundary exists.
+The current slice introduces `SchoolSubscription` and `ResultAccessSetting`. The current authorization policy is pure application logic. A separate immutable transaction/ledger and entitlement model remains intentionally deferred until the verified payment boundary exists.
 
 These must reuse existing User, School, Student, Guardian, Session, Term and capability identities.
 
@@ -145,14 +147,16 @@ Implemented:
 - existing schools are lazily materialized with safe Free/disabled defaults when first accessed;
 - owner-only Result Access updates with audit evidence;
 - school-scoped subscription and Result Access read APIs;
-- Prisma migration for the new commercial persistence boundary.
+- Prisma migration for the new commercial persistence boundary;
+- pure result-access authorization policy with explicit unauthorized, unpublished, payment-required, free and entitled decisions;
+- policy tests covering authorization ordering, free access, paid access and entitlement reuse.
 
 Not yet implemented:
 
 - result-access payment attempt;
 - provider-specific result payment verification for this feature;
 - result-access transaction ledger;
-- result-access entitlement;
+- result-access entitlement persistence/verification;
 - school/App-School settlement ledger;
 - refunds/chargebacks;
 - subscription lifecycle;
@@ -164,7 +168,7 @@ Not yet implemented:
 1. ~~Centralized commercial plan configuration~~ — implemented and unit-tested.
 2. ~~Persist school subscription + plan state~~ — implemented with Free default and onboarding/lazy materialization.
 3. ~~Persist school result-access configuration~~ — implemented with owner-only mutation and audit evidence.
-4. Establish result authorization/entitlement boundary.
+4. ~~Establish result authorization boundary~~ — implemented as a pure, tested policy; entitlement storage/verification remains separate.
 5. Create result payment attempt using the existing provider boundary.
 6. Verified payment → commercial transaction + immutable revenue allocation.
 7. Payment idempotency/webhook replay protection.
