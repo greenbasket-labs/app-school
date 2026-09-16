@@ -1,5 +1,19 @@
 import type { SyncExecutor } from "@/domain/platform/sync-executor";
 
+type ScoreSyncResponse = {
+  ok?: boolean;
+  message?: string;
+  serverVersion?: string | null;
+  score?: {
+    id?: string;
+    assessmentId?: string;
+    studentId?: string;
+    score?: number;
+    updatedAt?: string;
+    serverVersion?: string | null;
+  };
+};
+
 export const assessmentScoreSyncExecutor: SyncExecutor = async (item) => {
   if (item.entityType !== "AssessmentScore" || item.operationType !== "UPSERT") {
     return { status: "FAILED", error: "Unsupported synchronization operation." };
@@ -20,12 +34,30 @@ export const assessmentScoreSyncExecutor: SyncExecutor = async (item) => {
       body: JSON.stringify(payload),
     });
 
-    const data = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+    const data = await response.json().catch(() => null) as ScoreSyncResponse | null;
 
     if (response.ok) {
+      const authoritative = data?.score;
+      const serverVersion = authoritative?.serverVersion ?? data?.serverVersion ?? response.headers.get("ETag")?.replace(/^"|"$/g, "") ?? response.headers.get("X-Server-Version");
+      if (!authoritative || typeof authoritative.score !== "number" || !authoritative.assessmentId || !authoritative.studentId || !serverVersion || !authoritative.updatedAt) {
+        return {
+          status: "FAILED",
+          error: "Server acknowledgement did not include complete authoritative score data and version.",
+          retryable: false,
+        };
+      }
       return {
         status: "ACKNOWLEDGED",
-        serverVersion: response.headers.get("ETag") ?? response.headers.get("X-Server-Version"),
+        serverVersion,
+        authoritative: {
+          data: {
+            assessmentId: authoritative.assessmentId,
+            studentId: authoritative.studentId,
+            score: authoritative.score,
+          },
+          serverVersion,
+          updatedAt: authoritative.updatedAt,
+        },
       };
     }
 
