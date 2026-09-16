@@ -7,72 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserStatus {
-  ACTIVE
-  LOCKED
-  DISABLED
-}
-
-enum OrganizationStatus {
-  SETUP
-  ACTIVE
-  SUSPENDED
-  CLOSED
-}
-
-enum SchoolStatus {
-  SETUP
-  ACTIVE
-  SUSPENDED
-  CLOSED
-}
-
-enum SetupStatus {
-  NOT_STARTED
-  ORGANIZATION_CREATED
-  SCHOOL_INFORMATION_REQUIRED
-  CAC_REQUIRED
-  IDENTITY_READY
-  COMPLETED
-}
-
-enum MembershipStatus {
-  ACTIVE
-  SUSPENDED
-  ENDED
-}
-
-enum IdentityVerificationStatus {
-  SUPPLIED
-  VERIFIED
-  REJECTED
-  REVIEW_REQUIRED
-}
-
-enum AcademicSessionStatus {
-  DRAFT
-  ACTIVE
-  CLOSED
-}
-
-enum StudentStatus {
-  ACTIVE
-  INACTIVE
-  WITHDRAWN
-}
-
-enum EnrollmentStatus {
-  ACTIVE
-  COMPLETED
-  WITHDRAWN
-}
-
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  LATE
-  EXCUSED
-}
+enum UserStatus { ACTIVE LOCKED DISABLED }
+enum OrganizationStatus { SETUP ACTIVE SUSPENDED CLOSED }
+enum SchoolStatus { SETUP ACTIVE SUSPENDED CLOSED }
+enum SetupStatus { NOT_STARTED ORGANIZATION_CREATED SCHOOL_INFORMATION_REQUIRED CAC_REQUIRED IDENTITY_READY COMPLETED }
+enum MembershipStatus { ACTIVE SUSPENDED ENDED }
+enum IdentityVerificationStatus { SUPPLIED VERIFIED REJECTED REVIEW_REQUIRED }
+enum AcademicSessionStatus { DRAFT ACTIVE CLOSED }
+enum StudentStatus { ACTIVE INACTIVE WITHDRAWN }
+enum EnrollmentStatus { ACTIVE COMPLETED WITHDRAWN }
+enum AttendanceStatus { PRESENT ABSENT LATE EXCUSED }
+enum CommercialPlanCode { FREE BASIC STARTER PRO PREMIUM CUSTOM }
+enum BillingPeriod { MONTHLY ANNUAL }
+enum SubscriptionStatus { ACTIVE PAST_DUE PAUSED CANCELED }
 
 model User {
   id String @id @default(uuid()) @db.Uuid
@@ -130,6 +77,8 @@ model School {
   assessments AssessmentDefinition[]
   assessmentScores AssessmentScore[]
   feeStructures FeeStructure[]
+  commercialSubscription SchoolSubscription?
+  resultAccessSetting ResultAccessSetting?
   auditEvents AuditEvent[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
@@ -137,19 +86,19 @@ model School {
   @@index([normalizedName])
 }
 model Module {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid())
   code String @unique
   name String
   description String?
   category String
   sortOrder Int @default(0)
   schoolModules SchoolModule[]
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 model SchoolModule {
   schoolId String @db.Uuid
-  moduleId String @db.Uuid
+  moduleId String
   enabled Boolean @default(false)
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   module Module @relation(fields: [moduleId], references: [id], onDelete: Restrict)
@@ -460,4 +409,28 @@ model FeeStructure {
   @@unique([schoolId, academicTermId, name])
   @@index([schoolId, academicSessionId, academicTermId])
   @@index([schoolId, isActive])
+}
+model SchoolSubscription {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @unique @db.Uuid
+  planCode CommercialPlanCode @default(FREE)
+  billingPeriod BillingPeriod @default(MONTHLY)
+  status SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime? @db.Timestamptz(6)
+  currentPeriodEnd DateTime? @db.Timestamptz(6)
+  cancelAtPeriodEnd Boolean @default(false)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  @@index([planCode, status])
+  @@index([currentPeriodEnd])
+}
+model ResultAccessSetting {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @unique @db.Uuid
+  enabled Boolean @default(false)
+  amountNaira Decimal @default(0) @db.Decimal(12, 2)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
