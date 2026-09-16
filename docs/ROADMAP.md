@@ -55,10 +55,10 @@ This requirement applies across the platform, including school setup, students, 
 - [ ] Production migration baseline and verification
 - [ ] Automated typecheck/lint/build CI
 - [ ] Tenant-isolation integration tests
-- [ ] Offline-first platform foundation: local durable database, schema/versioning and repository abstraction — **started: IndexedDB v1 + local repository boundary**
-- [ ] Offline mutation/outbox model with durable pending states — **started: shared durable outbox primitives**
-- [ ] Shared sync engine with retry, backoff and idempotency — **started: executor-based engine with durable bounded backoff**
-- [ ] Connectivity/sync status model and application-wide UI treatment — **started: connectivity detection + reconnect/periodic scheduler; visible UI still pending**
+- [ ] Offline-first platform foundation: local durable database, schema/versioning and repository abstraction — **implemented at primitive level; browser verification remains**
+- [ ] Offline mutation/outbox model with durable pending states — **implemented at primitive level; browser verification remains**
+- [ ] Shared sync engine with retry, backoff and idempotency — **implemented at primitive level; browser verification remains**
+- [ ] Connectivity/sync status model and application-wide UI treatment — **implemented at vocabulary + school-workspace UI level; active worker telemetry and browser verification remain**
 
 ## Phase 1 — School configuration
 - [x] Academic session foundation
@@ -91,7 +91,7 @@ This requirement applies across the platform, including school setup, students, 
 - [x] Assessment definitions
 - [x] Score capture — initial roster + per-student save slice
 - [x] Score validation — school/class/session/enrollment/max-score validation
-- [ ] Offline-capable assessment and score capture foundation — **started: local-first save, authenticated executor, scheduler and durable retry backoff**
+- [ ] Offline-capable assessment and score capture foundation — **implemented as local-first reference workflow; reconciliation + browser tests remain**
 - [ ] Result submission
 - [ ] Result approval
 - [ ] Result publication
@@ -161,7 +161,7 @@ This requirement applies across the platform, including school setup, students, 
 5. **Result publication** — after approval.
 6. **Report cards** — derive from trusted published academic records.
 7. **Academic history** — preserve and present results across sessions.
-8. **Offline-first foundation** — browser persistence, repository, durable outbox, sync engine, connectivity scheduler and durable retry backoff are established; next complete authoritative pull/reconciliation, visible sync status and browser reconnect tests before marking the first module offline-ready.
+8. **Offline-first foundation** — local persistence, repository, durable outbox, sync engine, connectivity scheduler, durable retry backoff and school-workspace status UI are established at platform level; next prove browser persistence/reconnect behavior, then complete authoritative pull/reconciliation before marking the first module offline-ready.
 
 ## V1 completion rule
 
