@@ -28,7 +28,7 @@ The business should compound from one codebase. Improvements made for one school
 ## 2. What happens when we visit a new school?
 
 ### Question
-When GREEN BASKET GLOBAL LIMITED approaches a private school, do we build a new system for that school?
+When GREEN BASKET GLOBAL LIMITED approaches a school, do we build a new system for that school?
 
 ### Decision
 **No. We introduce App-School.**
@@ -58,10 +58,10 @@ School operates on App-School
 ## 3. What if a school requests a feature App-School does not have?
 
 ### Question
-Should we build a private feature only for that customer?
+Should we build a one-off feature only for that customer?
 
 ### Decision
-**Do not create one-off private application forks by default.**
+**Do not create one-off application forks by default.**
 
 If the requested capability is useful to other schools, build it as an **App-School module**.
 
@@ -195,6 +195,8 @@ Audit where appropriate
 
 A user must never be able to access another school's records by changing an ID in a URL or request body.
 
+Offline local data must follow the same tenant boundary: a device may keep only the authorized school working set, and queued operations must remain tied to that school context.
+
 ---
 
 ## 8. What are the identity boundaries?
@@ -259,6 +261,8 @@ School configuration
 Staff capabilities
      +
 Audit/history
+     +
+Offline-first platform
      ↓
 Many schools on one product
 ```
@@ -312,7 +316,7 @@ Build small, complete vertical slices instead of attempting the entire school sy
 
 Each slice should establish a real piece of the product and its boundaries before the next dependent feature is built.
 
-Examples already established:
+Examples already established include:
 
 - Identity
 - Authentication
@@ -326,8 +330,10 @@ Examples already established:
 - Attendance history/correction
 - Guardians
 - Student status lifecycle
+- Assessment definitions
+- Initial score capture and validation
 
-The next academic slice is **Assessment Definitions**, followed later by score capture, validation, submission, approval, publication and report cards.
+Every operational slice must also define its offline behavior before it is considered complete.
 
 ---
 
@@ -342,12 +348,16 @@ The product should remain lean while its core architecture becomes strong.
 
 The goal is not to produce the largest feature list quickly. The goal is to produce a platform that can safely absorb new modules later.
 
+Offline-first is not an excuse to prebuild every possible data model. We should build the shared local-data and synchronization foundation, then add offline support to real workflows as they are implemented and verified.
+
 ---
 
 ## 15. What is the source of truth?
 
 ### Decision
-The database is the source of truth for school records.
+PostgreSQL is the **server source of truth** for authoritative school records.
+
+Offline local data is a durable working copy used for continuity, not a second competing authority. A local change may be immediately usable by the school while still being **pending synchronization** until the server accepts it.
 
 AI, dashboards and derived reports may interpret trusted records, but they must not silently replace authoritative records.
 
@@ -375,11 +385,13 @@ This is important for school operations, accountability, support, debugging and 
 
 Examples already implemented include module changes, student creation/status changes, attendance corrections, guardian relationship changes and other configuration actions.
 
+Offline synchronization must not bypass the audit requirement: when a pending operation is accepted by the server, the resulting authoritative change must retain the appropriate audit evidence and actor/context information.
+
 ---
 
 ## 17. What is the long-term product philosophy?
 
-App-School should become the **operating layer for private schools**, rather than merely a collection of CRUD screens.
+App-School should become the **operating layer for schools**, rather than merely a collection of CRUD screens.
 
 The platform should progressively answer:
 
@@ -399,6 +411,16 @@ WHAT HAPPENS NEXT?
 
 This is the foundation for reliable workflows, auditability, automation, reporting and eventually AI assistance.
 
+Offline-first adds one more required question to every operational workflow:
+
+```text
+CAN THE SCHOOL CONTINUE IF THE INTERNET DISAPPEARS?
+WHAT DATA IS AVAILABLE LOCALLY?
+WHAT IS SAVED LOCALLY?
+WHAT IS STILL PENDING SYNCHRONIZATION?
+WHAT HAPPENS WHEN CONNECTIVITY RETURNS?
+```
+
 ---
 
 # Developer Handoff
@@ -416,7 +438,13 @@ A developer joining App-School should understand these rules before adding code:
 9. **Do not add a feature as a customer-specific fork when it can be a reusable module.**
 10. **Do not build subscription tiers prematurely.** Preserve a clean module architecture for the future commercial layer.
 11. **Prefer small vertical slices.** Avoid speculative infrastructure and unused abstractions.
-12. **Read this document and `README.md` before making architectural changes.**
+12. **Offline-first is application-wide.** Do not make internet connectivity a hidden prerequisite for normal supported school workflows when required data is already local.
+13. **Use one shared local-data/outbox/sync foundation.** Modules must not create unrelated offline mechanisms.
+14. **Local save is not server confirmation.** Represent pending, synced, failed and conflict states explicitly.
+15. **Pending operations must be durable and idempotent.** Retries must not create duplicates or duplicate side effects.
+16. **Offline data follows tenant/capability boundaries.** Never expose another school's data through local caches or queued operations.
+17. **Server validation and audit remain authoritative.** Offline support must not weaken authorization, important invariants or audit history.
+18. **Read this document and `README.md` before making architectural changes.**
 
 ---
 
@@ -442,6 +470,8 @@ More valuable App-School product
 More reasons for schools to adopt App-School
 ```
 
+Offline-first is part of the product value rather than a separate paid feature by default: a school should be able to keep working through unreliable connectivity, then synchronize trusted changes safely when the connection returns.
+
 A future tiered subscription model can package modules and advanced capabilities without changing the fundamental product architecture.
 
 The strategic asset is therefore **the App-School platform and its reusable module ecosystem**, not a collection of custom school projects.
@@ -452,7 +482,7 @@ The strategic asset is therefore **the App-School platform and its reusable modu
 
 This history document records product direction and durable decisions. It does not replace the implementation documentation.
 
-For current implementation status and roadmap, see `README.md`.
+For current implementation status and roadmap, see `README.md` and `docs/ROADMAP.md`.
 
 For frozen technical architecture, see `ARCHITECTURE.md`.
 
