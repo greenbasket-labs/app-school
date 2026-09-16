@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { allocateResultRevenue, getCommercialPlan, type CommercialPlanCode } from "./plans";
+import { grantResultAccessEntitlement } from "./result-access-entitlements";
 
 export class ResultAccessTransactionError extends Error {}
 
@@ -65,8 +66,6 @@ export async function recordVerifiedResultPayment(input: VerifiedResultPayment) 
       throw new ResultAccessTransactionError("Verified payment amount or currency does not match the payment attempt.");
     }
 
-    // Snapshot the commercial plan through the same transaction client. This keeps
-    // plan/share selection atomic with the immutable transaction ledger write.
     const existingSubscription = await tx.schoolSubscription.findUnique({
       where: { schoolId: attempt.schoolId },
       select: { planCode: true, status: true },
@@ -120,6 +119,8 @@ export async function recordVerifiedResultPayment(input: VerifiedResultPayment) 
         (${allocationId}::uuid, ${transaction.id}::uuid, ${allocation.grossAmount}, ${allocation.schoolShare}, ${allocation.appSchoolShare}, CURRENT_TIMESTAMP)
       ON CONFLICT ("transactionId") DO NOTHING
     `);
+
+    await grantResultAccessEntitlement({ transactionId: transaction.id }, tx);
 
     await tx.$executeRaw(Prisma.sql`
       UPDATE "ResultPaymentAttempt"
