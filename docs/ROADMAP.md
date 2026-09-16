@@ -220,6 +220,50 @@ Rules:
 - University support should initially be scoped to an authorized department/unit context where appropriate rather than assuming institution-wide administration.
 - Role dashboards must not cause completed V1 modules to be reopened unnecessarily; build them from existing trusted records and current workflows.
 
+## Commercial billing & result access — cross-cutting product layer
+
+The commercial layer is separate from school finance and separate from module/capability authorization.
+
+Initial plans:
+
+| Plan | Monthly | School share of paid result access |
+|---|---:|---:|
+| Free | ₦0 | 0% |
+| Basic | ₦5,000 | 25% |
+| Starter | ₦10,000 | 50% |
+| Pro | ₦20,000 | 75% |
+| Premium | ₦35,000 | 100% |
+| Custom | Negotiated | 100% by default until negotiated terms exist |
+
+Rules:
+
+- [x] Centralized commercial plan configuration — `src/domain/commercial/plans.ts`
+- [x] Deterministic result revenue allocation from any configured result fee
+- [x] Zero result fee normalizes to no payment required
+- [ ] Persist school subscription + plan state
+- [ ] Persist school Result Access setting and configurable fee
+- [ ] Result authorization/entitlement boundary
+- [ ] Verified result payment flow using existing provider infrastructure
+- [ ] Immutable result transaction/revenue allocation ledger
+- [ ] Payment webhook/callback idempotency for result transactions
+- [ ] Result access grant/unlock
+- [ ] School result-revenue dashboard
+- [ ] App-School commercial administration dashboard
+- [ ] Subscription lifecycle: renewal, failure, grace, upgrade, downgrade, cancellation
+- [ ] Refund/chargeback and school settlement operations
+
+Commercial rules:
+
+- Result Access may be free or paid; the fee is school-configured and never hard-coded to ₦200.
+- Historical revenue splits are immutable snapshots of the plan and amount at transaction confirmation time.
+- Payment never bypasses authorization to the student's published result.
+- School finance records remain separate from App-School subscription and result-access revenue records.
+- Existing Paystack/Flutterwave/Monnify provider infrastructure should be reused rather than duplicated.
+- Provider fees must remain separately represented from gross amount and revenue allocation; the final live fee-bearing policy must be confirmed against the chosen provider and commercial agreement.
+- Commercial plan state must not override school module enablement or user capabilities.
+
+The implementation contract is `docs/COMMERCIAL-BILLING-HANDOFF.md`.
+
 ## Current V1 sequence
 
 1. **Assessment definitions** — complete and tested against Greenfield Heritage Academy.
@@ -231,6 +275,7 @@ Rules:
 7. **Academic history** — preserve and present results across sessions.
 8. **Offline-first foundation** — local persistence, repository, durable outbox, sync engine, connectivity scheduler, durable retry backoff and school-workspace status UI are established at platform level; next prove browser persistence/reconnect behavior, then complete authoritative pull/reconciliation before marking the first module offline-ready.
 9. **Role-based workspaces** — cross-cutting product layer after the current V1 sequence is preserved; dashboards should compose existing modules rather than become a new competing product track.
+10. **Commercial billing/result access** — cross-cutting product layer; first configuration slice is established, but subscription/payment/entitlement work remains incremental and must not reorder the core academic V1 sequence.
 
 ## V1 completion rule
 
@@ -243,3 +288,5 @@ Every completed slice must preserve the existing platform boundaries: school-sco
 Do not build reports merely because other school systems have them. Each report must turn trusted school records into a decision or action the school actually needs. Keep reports school-scoped, capability-controlled, module-controlled and derived from authoritative records.
 
 Do not treat offline-first as a later UI enhancement. It is a platform architecture requirement that must shape persistence, mutation handling, synchronization, conflict handling and module design from this point forward.
+
+Do not treat commercial billing as a second school-finance system. Keep platform subscriptions, result-access revenue, school allocations, provider fees and settlements auditable and distinct.
