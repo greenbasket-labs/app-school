@@ -172,6 +172,27 @@ The goal is not the largest feature list. The goal is a strong platform that can
 19. **Commercial plan foundation** — centralized Free/Basic/Starter/Pro/Premium/Custom pricing and deterministic result-access revenue allocation.
 20. **Commercial persistence foundation** — database-backed school subscription and Result Access configuration; new schools initialize to Free/disabled defaults, existing schools are safely materialized on first access, and owner changes are audited.
 21. **Guardian account security foundation** — school-captured Guardian records can bootstrap a linked User through a single-use invitation; the account receives a temporary password, first-login password change is mandatory, email verification is established through the invitation factor, and phone verification has an explicit durable token/state boundary.
+22. **Result lifecycle API foundation** — result submission and approval now have authenticated, school-scoped API boundaries using `RESULT.SUBMIT` and `RESULT.APPROVE`; approval remains server-authoritative and the domain prevents the submitting user from approving the same assessment result. Publication remains separately protected by `RESULT.PUBLISH` and its approved-result gate. End-to-end runtime/CI verification remains pending.
+
+## Academic result lifecycle
+
+The academic workflow is deliberately stateful:
+
+```text
+Score capture
+    ↓
+Validation
+    ↓
+Submission — RESULT.SUBMIT
+    ↓
+Approval — RESULT.APPROVE
+    ↓
+Publication — RESULT.PUBLISH
+    ↓
+Parent/guardian access to the published result
+```
+
+Submission and approval are authenticated server operations and important transitions are audited. The same user cannot approve an assessment result they submitted. Publication remains online/server-authoritative; the school owner can publish through ownership authority, while staff require the owner-assigned `RESULT.PUBLISH` capability.
 
 ## Module model
 
