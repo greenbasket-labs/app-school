@@ -27,7 +27,7 @@ export async function getGuardianAuthorizedStudents(userId: string) {
     schoolId: string;
     relationship: string | null;
     isPrimary: boolean;
-  }>`
+  }>>`
     SELECT sg."studentId", s."admissionNumber", s."firstName", s."middleName", s."lastName",
            sg."schoolId", sg."relationship", sg."isPrimary"
     FROM "StudentGuardian" sg
