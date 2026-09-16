@@ -69,7 +69,12 @@ export async function authorizeGuardianResultAccess(input: {
   const result = await getPublishedReportCard(schoolId, input.studentId, input.academicSessionId, input.academicTermId);
   const resultPublished = result.assessments.length > 0;
   const settings = await getResultAccessPolicy(schoolId);
-  const entitled = await hasResultAccessEntitlement({ schoolId, studentId: input.studentId, academicSessionId: input.academicSessionId, academicTermId: input.academicTermId });
+  const entitled = await hasResultAccessEntitlement({
+    schoolId,
+    studentId: input.studentId,
+    academicSessionId: input.academicSessionId,
+    academicTermId: input.academicTermId,
+  });
   const decision = evaluateResultAccess({
     schoolAuthorized: true,
     studentAuthorized: true,
