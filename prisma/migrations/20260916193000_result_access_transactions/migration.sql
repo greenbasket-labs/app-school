@@ -43,3 +43,7 @@ CREATE TABLE "ResultRevenueAllocation" (
 );
 
 CREATE INDEX "ResultRevenueAllocation_createdAt_idx" ON "ResultRevenueAllocation"("createdAt");
+
+ALTER TABLE "ResultAccessEntitlement"
+  ADD CONSTRAINT "ResultAccessEntitlement_transactionId_fkey"
+  FOREIGN KEY ("transactionId") REFERENCES "ResultAccessTransaction"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
