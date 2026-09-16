@@ -1,53 +1,50 @@
-import { getPendingOutbox, markLocalRecordState, updateOutboxStatus } from "./local-outbox";
-import type { SyncExecutor, SyncExecutorResult } from "./sync-executor";
+import { getIdempotentResult } from "./idempotency";
+import { getPendingOutbox, updateOutboxStatus } from "./local-outbox";
 
-export type SyncRunResult = {
-  attempted: number;
-  acknowledged: number;
-  failed: number;
-  conflicts: number;
+export type SyncExecutorResult = {
+  status: "ACKNOWLEDGED" | "FAILED" | "CONFLICT";
+  serverVersion?: string | null;
+  result?: unknown;
+  error?: string | null;
 };
 
-export async function runPendingSync(schoolId: string, executor: SyncExecutor): Promise<SyncRunResult> {
+export type SyncExecutor = (item: {
+  operationId: string;
+  schoolId: string;
+  actorUserId?: string | null;
+  entityType: string;
+  entityId: string;
+  operationType: string;
+  payload: unknown;
+}) => Promise<SyncExecutorResult>;
+
+export async function syncPendingOperations(schoolId: string, executor: SyncExecutor): Promise<{ processed: number; acknowledged: number; failed: number; conflicts: number }> {
   const pending = await getPendingOutbox(schoolId);
-  const result: SyncRunResult = { attempted: 0, acknowledged: 0, failed: 0, conflicts: 0 };
+  let acknowledged = 0;
+  let failed = 0;
+  let conflicts = 0;
 
   for (const item of pending) {
-    result.attempted += 1;
-    await updateOutboxStatus(item.operationId, "SYNCING", { attemptCount: item.attemptCount + 1 });
+    const nextAttempt = item.attemptCount + 1;
+    await updateOutboxStatus(item.operationId, "SYNCING", { attemptCount: nextAttempt });
 
     try {
-      const response = await executor(item);
-      await applySyncResult(item, response);
-      if (response.status === "ACKNOWLEDGED") result.acknowledged += 1;
-      if (response.status === "FAILED") result.failed += 1;
-      if (response.status === "CONFLICT") result.conflicts += 1;
+      const result = await executor(item);
+      await updateOutboxStatus(item.operationId, result.status, { lastError: result.error ?? null });
+      if (result.status === "ACKNOWLEDGED") acknowledged += 1;
+      else if (result.status === "CONFLICT") conflicts += 1;
+      else failed += 1;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Synchronization failed.";
-      await applySyncResult(item, { status: "FAILED", error: message });
-      result.failed += 1;
+      await updateOutboxStatus(item.operationId, "FAILED", {
+        lastError: error instanceof Error ? error.message : "Synchronization failed.",
+      });
+      failed += 1;
     }
   }
 
-  return result;
+  return { processed: pending.length, acknowledged, failed, conflicts };
 }
 
-async function applySyncResult(
-  item: Awaited<ReturnType<typeof getPendingOutbox>>[number],
-  response: SyncExecutorResult,
-) {
-  if (response.status === "ACKNOWLEDGED") {
-    await updateOutboxStatus(item.operationId, "ACKNOWLEDGED", { lastError: null });
-    await markLocalRecordState(`${item.schoolId}:${item.entityType}:${item.entityId}`, "SYNCED", response.serverVersion ?? null);
-    return;
-  }
-
-  if (response.status === "CONFLICT") {
-    await updateOutboxStatus(item.operationId, "CONFLICT", { lastError: response.error ?? "Server reported a conflict." });
-    await markLocalRecordState(`${item.schoolId}:${item.entityType}:${item.entityId}`, "CONFLICT");
-    return;
-  }
-
-  await updateOutboxStatus(item.operationId, "FAILED", { lastError: response.error ?? "Server rejected synchronization." });
-  await markLocalRecordState(`${item.schoolId}:${item.entityType}:${item.entityId}`, "FAILED");
+export async function serverResultAlreadyRecorded<T>(schoolId: string, operation: string, key: string) {
+  return getIdempotentResult<T>(schoolId, operation, key);
 }
