@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const recordEvent = vi.fn();
 const transitionEvent = vi.fn();
@@ -40,6 +40,12 @@ const verified = {
 };
 
 describe("processResultPaymentProviderEvent", () => {
+  beforeEach(() => {
+    recordEvent.mockReset();
+    transitionEvent.mockReset();
+    recordTransaction.mockReset();
+  });
+
   it("verifies then records the transaction and marks the event processed", async () => {
     recordEvent.mockResolvedValue({
       id: "event-1",
