@@ -55,10 +55,10 @@ This requirement applies across the platform, including school setup, students, 
 - [ ] Production migration baseline and verification
 - [ ] Automated typecheck/lint/build CI
 - [ ] Tenant-isolation integration tests
-- [ ] Offline-first platform foundation: local durable database, schema/versioning and repository abstraction — **started: IndexedDB v1 local store/outbox primitives**
+- [ ] Offline-first platform foundation: local durable database, schema/versioning and repository abstraction — **started: IndexedDB v1 + local repository boundary**
 - [ ] Offline mutation/outbox model with durable pending states — **started: shared durable outbox primitives**
-- [ ] Shared sync engine with retry, backoff and idempotency
-- [ ] Connectivity/sync status model and application-wide UI treatment
+- [ ] Shared sync engine with retry, backoff and idempotency — **started: executor-based pending-operation engine**
+- [ ] Connectivity/sync status model and application-wide UI treatment — **started: connectivity detection + reconnect/periodic scheduler; visible UI still pending**
 
 ## Phase 1 — School configuration
 - [x] Academic session foundation
@@ -161,7 +161,7 @@ This requirement applies across the platform, including school setup, students, 
 5. **Result publication** — after approval.
 6. **Report cards** — derive from trusted published academic records.
 7. **Academic history** — preserve and present results across sessions.
-8. **Offline-first foundation** — shared browser persistence has started; next establish repository/mutation contracts, then synchronization and one real end-to-end reference workflow.
+8. **Offline-first foundation** — browser persistence, repository, outbox, sync-engine and connectivity foundations are being established before the first end-to-end module conversion.
 
 ## V1 completion rule
 
