@@ -81,6 +81,7 @@ export async function enqueueOutbox(item: LocalOutboxItem) {
 
 export async function getPendingOutbox(
   schoolId: string,
+  now = new Date(),
 ): Promise<LocalOutboxItem[]> {
   const db = await openAppSchoolLocalDb();
 
@@ -94,16 +95,24 @@ export async function getPendingOutbox(
       "schoolStatus",
     );
 
-    const rows = await requestResult(
+    const rows = (await requestResult(
       index.getAll(
         IDBKeyRange.bound(
           [schoolId, "PENDING"],
           [schoolId, "PENDING"],
         ),
       ),
-    );
+    )) as LocalOutboxItem[];
 
-    return rows as LocalOutboxItem[];
+    const nowMs = now.getTime();
+
+    return rows
+      .filter(
+        (row) =>
+          !row.nextAttemptAt ||
+          new Date(row.nextAttemptAt).getTime() <= nowMs,
+      )
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   } finally {
     db.close();
   }
@@ -115,6 +124,7 @@ export async function updateOutboxStatus(
   details: {
     attemptCount?: number;
     lastError?: string | null;
+    nextAttemptAt?: string | null;
   } = {},
 ) {
   const db = await openAppSchoolLocalDb();
@@ -138,6 +148,10 @@ export async function updateOutboxStatus(
       status,
       attemptCount: details.attemptCount ?? existing.attemptCount,
       lastError: details.lastError ?? existing.lastError ?? null,
+      nextAttemptAt:
+        details.nextAttemptAt === undefined
+          ? existing.nextAttemptAt ?? null
+          : details.nextAttemptAt,
     });
 
     await transactionDone(transaction);
