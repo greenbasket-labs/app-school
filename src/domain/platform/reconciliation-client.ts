@@ -1,8 +1,8 @@
 import { classifyReconciliation, type AssessmentScoreAuthoritativeRecord } from "./reconciliation";
-import { applyAuthoritativeLocalRecord, getLocalRecordByEntity, markLocalRecordState } from "./local-repository";
+import { applyAuthoritativeLocalRecord, getLocalRecordByEntity, markLocalRecordState, saveLocalRecord } from "./local-repository";
 import { localRecordId } from "./client-operation";
 
-export type AssessmentScorePullResponse = {
+type AssessmentScorePullResponse = {
   ok: boolean;
   assessment: { id: string };
   students: Array<{
@@ -20,6 +20,7 @@ type LocalScore = {
   assessmentId: string;
   studentId: string;
   score: number;
+  updatedAt?: string;
 };
 
 export type ReconcileAssessmentScoresResult = {
@@ -33,7 +34,10 @@ export async function reconcileAssessmentScores(input: {
   schoolId: string;
   assessmentId: string;
   fetchImpl?: typeof fetch;
-  canApplyServerRecord?: (local: Awaited<ReturnType<typeof getLocalRecordByEntity<LocalScore>>>, server: AssessmentScoreAuthoritativeRecord) => boolean;
+  canApplyServerRecord?: (
+    local: Awaited<ReturnType<typeof getLocalRecordByEntity<LocalScore>>>,
+    server: AssessmentScoreAuthoritativeRecord,
+  ) => boolean;
 }): Promise<ReconcileAssessmentScoresResult> {
   const fetchImpl = input.fetchImpl ?? fetch;
   const response = await fetchImpl(
@@ -52,12 +56,15 @@ export async function reconcileAssessmentScores(input: {
     throw new Error(payload.message ?? payload.error ?? `Assessment score reconciliation failed (${response.status}).`);
   }
 
-  const result: ReconcileAssessmentScoresResult = { pulled: 0, applied: 0, ignored: 0, conflicts: 0 };
+  const result: ReconcileAssessmentScoresResult = {
+    pulled: 0,
+    applied: 0,
+    ignored: 0,
+    conflicts: 0,
+  };
 
   for (const student of payload.students) {
-    if (student.scoreId === null || student.score === null || !student.updatedAt || !student.serverVersion) {
-      continue;
-    }
+    if (student.scoreId === null || student.score === null || !student.updatedAt || !student.serverVersion) continue;
 
     result.pulled += 1;
     const entityId = `${input.assessmentId}:${student.studentId}`;
@@ -77,13 +84,9 @@ export async function reconcileAssessmentScores(input: {
       updatedAt: student.updatedAt,
     };
 
-    const decision = classifyReconciliation(
-      local,
-      server,
-      {
-        canApplyServerRecord: input.canApplyServerRecord ?? ((current) => current?.syncState !== "PENDING_SYNC" && current?.syncState !== "SYNCING"),
-      },
-    );
+    const decision = classifyReconciliation(local, server, {
+      canApplyServerRecord: input.canApplyServerRecord ?? ((current) => current?.syncState !== "PENDING_SYNC" && current?.syncState !== "SYNCING"),
+    });
 
     if (decision === "IGNORE") {
       result.ignored += 1;
@@ -104,9 +107,13 @@ export async function reconcileAssessmentScores(input: {
         updatedAt: server.updatedAt,
       });
     } else {
-      await applyAuthoritativeLocalRecord({
+      await saveLocalRecord({
         id: recordId,
+        schoolId: input.schoolId,
+        entityType: "AssessmentScore",
+        entityId,
         data: server.data,
+        syncState: "SYNCED",
         serverVersion: server.serverVersion,
         updatedAt: server.updatedAt,
       });
