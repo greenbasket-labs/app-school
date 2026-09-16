@@ -31,6 +31,7 @@ export type LocalOutboxItem = {
   attemptCount: number;
   status: "PENDING" | "SYNCING" | "FAILED" | "CONFLICT" | "ACKNOWLEDGED";
   lastError?: string | null;
+  nextAttemptAt?: string | null;
 };
 
 export function requireBrowser() {
