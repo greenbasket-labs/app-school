@@ -94,7 +94,7 @@ This requirement applies across the platform, including school setup, students, 
 - [ ] Offline-capable assessment and score capture foundation — **implemented as local-first reference workflow; reconciliation + browser tests remain**
 - [ ] Result submission
 - [ ] Result approval
-- [ ] Result publication
+- [x] Result publication — approved-result gate plus owner/default or owner-assigned `RESULT.PUBLISH` capability; publication remains deliberately online/server-authoritative
 - [ ] Report cards
 - [ ] Academic history
 
@@ -199,6 +199,7 @@ Role workspaces remain a presentation/workflow layer over the same school-scoped
 - Enabled modules still require the user's capabilities.
 - Parent/guardian result access uses the durable guardian identity + student relationship boundary; payment does not bypass result authorization.
 - Government schools and universities remain future deployment contexts, not product forks.
+- Result publication is an explicit capability boundary: the school owner may publish by ownership authority, while non-owner staff require the owner-assigned `RESULT.PUBLISH` capability.
 
 ## Current V1 sequence
 
@@ -206,7 +207,7 @@ Role workspaces remain a presentation/workflow layer over the same school-scoped
 2. Score capture + validation — complete initial slice.
 3. Result submission — next academic slice.
 4. Result approval.
-5. Result publication.
+5. Result publication — authorization route now established; verify end-to-end workflow before treating the academic publication slice as fully production-ready.
 6. Report cards.
 7. Academic history.
 8. Offline-first foundation — platform primitives established; browser/reconciliation verification remains.
