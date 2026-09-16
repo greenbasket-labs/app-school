@@ -96,7 +96,7 @@ This requirement applies across the platform, including school setup, students, 
 - [ ] Result approval — **authenticated API route + domain service implemented; runtime/CI verification remains; submitter cannot approve the same assessment result**
 - [x] Result publication — approved-result gate plus owner/default or owner-assigned `RESULT.PUBLISH` capability; publication remains deliberately online/server-authoritative
 - [ ] Report cards — **published-report-card domain read path + authenticated `STUDENTS.VIEW` API route implemented; runtime/CI verification remains**
-- [ ] Academic history
+- [ ] Academic history — **published academic-history domain read path + authenticated `STUDENTS.VIEW` API route implemented; runtime/CI verification remains**
 
 ## Phase 4 — Finance
 - [x] Fee structures
@@ -209,7 +209,7 @@ Role workspaces remain a presentation/workflow layer over the same school-scoped
 4. Result approval — implemented API/domain boundary; verify runtime behavior before marking complete.
 5. Result publication — authorization route established; verify the complete submit → approve → publish workflow before treating the academic publication slice as fully production-ready.
 6. Report cards — published-report-card domain + authenticated API boundary established; verify runtime behavior before marking complete.
-7. Academic history.
+7. Academic history — published academic-history domain + authenticated API boundary established; verify runtime behavior before marking complete.
 8. Offline-first foundation — platform primitives established; browser/reconciliation verification remains.
 9. Role-based workspaces — cross-cutting layer after core V1 sequence.
 10. Commercial billing/result access — payment-attempt, checkout, verification, transaction, provider-event and entitlement boundaries established incrementally; settlement/subscription lifecycle remain.
