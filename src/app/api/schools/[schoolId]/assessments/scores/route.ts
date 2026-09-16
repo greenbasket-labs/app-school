@@ -62,12 +62,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ sch
           currentState: { assessmentId: score.assessmentId, studentId: score.studentId, score: score.score.toString() },
         },
       });
-      return { score: { ...score, score: score.score.toNumber() } };
+      return { score: { ...score, score: score.score.toNumber() }, created: !existing };
     };
 
     if (!idempotencyKey) {
       const result = await execute();
-      return NextResponse.json({ ok: true, ...result }, { status: result.score.id === "" ? 201 : 200 });
+      return NextResponse.json({ ok: true, score: result.score }, { status: result.created ? 201 : 200 });
     }
 
     const replay = await replayOrRecordIdempotentResult({
@@ -76,7 +76,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sch
       key: idempotencyKey,
       execute,
     });
-    return NextResponse.json({ ok: true, ...replay.result }, { status: replay.replayed ? 200 : 201 });
+    return NextResponse.json({ ok: true, score: replay.result.score }, { status: replay.replayed ? 200 : (replay.result.created ? 201 : 200) });
   } catch (error) {
     if (error instanceof ZodError) return NextResponse.json({ ok: false, error: "INVALID_SCORE", issues: error.issues }, { status: 400 });
     if (error instanceof AssessmentScoreValidationError) return NextResponse.json({ ok: false, error: "INVALID_SCORE", message: error.message }, { status: 400 });
