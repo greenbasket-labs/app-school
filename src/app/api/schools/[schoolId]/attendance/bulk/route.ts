@@ -46,6 +46,18 @@ async function access(schoolId: string, capability: string) {
   return { session, membership };
 }
 
+function attendanceServerVersion(records: Array<{ id: string; status: string; note: string | null; recordedAt: Date }>, input: { academicSessionId: string; classArmId: string; attendanceDate: Date }) {
+  return [
+    "attendance.bulk",
+    input.academicSessionId,
+    input.classArmId,
+    input.attendanceDate.toISOString().slice(0, 10),
+    ...records
+      .map((record) => `${record.id}:${record.status}:${record.note ?? ""}:${record.recordedAt.toISOString()}`)
+      .sort(),
+  ].join(":");
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ schoolId: string }> },
@@ -69,14 +81,42 @@ export async function GET(
         date: url.searchParams.get("date"),
       });
 
-    return NextResponse.json({
-      ok: true,
-      roster: await getAttendanceRoster({
+    const roster = await getAttendanceRoster({
+      schoolId,
+      academicSessionId: input.academicSessionId,
+      classArmId: input.classArmId,
+      attendanceDate: input.date,
+    });
+
+    const versionRows = await db.attendanceRecord.findMany({
+      where: {
         schoolId,
         academicSessionId: input.academicSessionId,
         classArmId: input.classArmId,
         attendanceDate: input.date,
-      }),
+      },
+      select: {
+        id: true,
+        status: true,
+        note: true,
+        recordedAt: true,
+      },
+    });
+
+    const serverVersion = attendanceServerVersion(versionRows, {
+      academicSessionId: input.academicSessionId,
+      classArmId: input.classArmId,
+      attendanceDate: input.date,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      roster,
+      serverVersion,
+    }, {
+      headers: {
+        "X-Server-Version": serverVersion,
+      },
     });
   } catch (error) {
     if (error instanceof ZodError) {
@@ -219,13 +259,11 @@ export async function POST(
           }),
       ]);
 
-      const serverVersion = [
-        "attendance.bulk",
-        input.academicSessionId,
-        input.classArmId,
-        input.attendanceDate.toISOString().slice(0, 10),
-        ...records.map((record) => record.id).sort(),
-      ].join(":");
+      const serverVersion = attendanceServerVersion(records, {
+        academicSessionId: input.academicSessionId,
+        classArmId: input.classArmId,
+        attendanceDate: input.attendanceDate,
+      });
 
       return {
         records: records.map((record) => ({
@@ -254,6 +292,10 @@ export async function POST(
       replayed: result.replayed,
       count: result.result.count,
       serverVersion: result.result.serverVersion,
+    }, {
+      headers: {
+        "X-Server-Version": result.result.serverVersion,
+      },
     });
   } catch (error) {
     if (error instanceof ZodError) {
