@@ -34,7 +34,11 @@ describe("guardian account authorization", () => {
         studentGuardians: {
           some: {
             schoolId: "school-a",
-            guardian: { userId: "user-a", accountVerifiedAt: { not: null } },
+            guardian: {
+              schoolId: "school-a",
+              userId: "user-a",
+              accountVerifiedAt: { not: null },
+            },
           },
         },
       }),
