@@ -19,7 +19,6 @@ type Assessment = {
 };
 
 type AuditEvent = { entityId: string; action: string; actorUserId: string; occurredAt: string };
-
 type Props = { schoolId: string; assessments: Assessment[]; auditEvents: AuditEvent[] };
 
 function stateFor(events: AuditEvent[]) {
@@ -34,7 +33,10 @@ export default function ResultReviewWorkspace({ schoolId, assessments, auditEven
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
 
-  const rows = useMemo(() => assessments.map((assessment) => ({ assessment, state: stateFor(auditEvents.filter((event) => event.entityId === assessment.id)) })), [assessments, auditEvents]);
+  const rows = useMemo(
+    () => assessments.map((assessment) => ({ assessment, state: stateFor(auditEvents.filter((event) => event.entityId === assessment.id)) })),
+    [assessments, auditEvents],
+  );
 
   async function action(assessmentId: string, actionName: "approve" | "publish") {
     setMessage("");
@@ -50,8 +52,8 @@ export default function ResultReviewWorkspace({ schoolId, assessments, auditEven
       if (!response.ok) throw new Error(data.message ?? `Could not ${actionName} result.`);
       const created = actionName === "approve" ? data.approval : data.publication;
       const eventAction = actionName === "approve" ? ACTIONS.APPROVED : ACTIONS.PUBLISHED;
-      const actorUserId = "server-confirmed";
-      setAuditEvents((current) => [...current, { entityId: assessmentId, action: eventAction, actorUserId, occurredAt: created[`${actionName}dAt`] ?? new Date().toISOString() }]);
+      const occurredAt = actionName === "approve" ? created.approvedAt : created.publishedAt;
+      setAuditEvents((current) => [...current, { entityId: assessmentId, action: eventAction, actorUserId: "server-confirmed", occurredAt }]);
       setMessage(actionName === "approve" ? "Result approved. It is ready for publication." : "Result published and the existing parent notification workflow was triggered.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : `Could not ${actionName} result.`);
