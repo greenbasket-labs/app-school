@@ -219,6 +219,14 @@ export async function POST(
           }),
       ]);
 
+      const serverVersion = [
+        "attendance.bulk",
+        input.academicSessionId,
+        input.classArmId,
+        input.attendanceDate.toISOString().slice(0, 10),
+        ...records.map((record) => record.id).sort(),
+      ].join(":");
+
       return {
         records: records.map((record) => ({
           ...record,
@@ -227,6 +235,7 @@ export async function POST(
           score: undefined,
         })),
         count: records.length,
+        serverVersion,
       };
     };
 
@@ -244,6 +253,7 @@ export async function POST(
       records: result.result.records,
       replayed: result.replayed,
       count: result.result.count,
+      serverVersion: result.result.serverVersion,
     });
   } catch (error) {
     if (error instanceof ZodError) {
