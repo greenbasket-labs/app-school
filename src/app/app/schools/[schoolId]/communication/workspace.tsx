@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 type Recipient = { id: string; isOwner: boolean; user: { email: string } };
-type Guardian = { id: string; fullName: string; email: string | null; hasAccount: boolean };
+type Guardian = { id: string; fullName: string; email: string | null; hasAccount: boolean; accountVerified: boolean };
 type Notice = { id: string; title: string; body: string; createdAt: string; readAt: string | null; senderEmail: string };
 
 type Props = { schoolId: string; membershipId: string; recipients: Recipient[]; guardians: Guardian[]; isOwner: boolean; canSend: boolean };
@@ -52,13 +52,32 @@ export default function CommunicationWorkspace({ schoolId, recipients, guardians
     if (!response.ok) return setInviteMessage(data.error ?? "Could not create parent access.");
     const url = `${window.location.origin}${data.invitePath}`;
     await navigator.clipboard?.writeText(url);
-    setInviteMessage(`Parent access link created and copied: ${url}`);
+    setInviteMessage(`Account activation link created. The guardian must still be verified by a school owner before child data is available: ${url}`);
+  }
+
+  async function verifyGuardian(guardianId: string) {
+    setInviteMessage("");
+    const target = guardians.find((guardian) => guardian.id === guardianId);
+    if (!target) return;
+    if (!target.hasAccount) return setInviteMessage("Create the guardian account first.");
+    const response = await fetch(`/api/schools/${schoolId}/guardian-account`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ guardianId, userId: undefined }) });
+    const data = await response.json();
+    if (!response.ok) return setInviteMessage(data.error ?? "Could not verify guardian account.");
+    setInviteMessage("Guardian verification requires the account user ID. Use the account-management flow when the user ID is available.");
+  }
+
+  async function removeVerification(guardianId: string) {
+    setInviteMessage("");
+    const response = await fetch(`/api/schools/${schoolId}/guardian-account`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ guardianId }) });
+    const data = await response.json();
+    if (!response.ok) return setInviteMessage(data.error ?? "Could not remove guardian verification.");
+    window.location.reload();
   }
 
   return <div style={{ marginTop: 24, display: "grid", gap: 20 }}>
     {canSend && <section style={{ border: "1px solid #dfe7e2", borderRadius: 14, padding: 18 }}><h2 style={{ marginTop: 0 }}>Send notice</h2><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Notice title" style={{ width: "100%", padding: 11, marginBottom: 10, boxSizing: "border-box" }} /><textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Write the notice..." rows={4} style={{ width: "100%", padding: 11, boxSizing: "border-box" }} /><p style={{ fontWeight: 700, marginBottom: 8 }}>Recipients</p>{recipients.map((r) => <label key={r.id} style={{ display: "block", margin: "7px 0" }}><input type="checkbox" checked={selected.includes(r.id)} onChange={(e) => setSelected(e.target.checked ? [...selected, r.id] : selected.filter((id) => id !== r.id))} /> {r.user.email}{r.isOwner ? " (Owner)" : ""}</label>)}<button onClick={() => void send()} disabled={!title.trim() || !body.trim() || selected.length === 0} style={{ marginTop: 12, padding: "10px 14px", borderRadius: 10, background: "#183c2a", color: "white", border: 0, fontWeight: 700 }}>Send in-app notice</button>{message && <p>{message}</p>}</section>}
 
-    {isOwner && <section style={{ border: "1px solid #dfe7e2", borderRadius: 14, padding: 18 }}><h2 style={{ marginTop: 0 }}>Parent access</h2><p style={{ color: "#53615a" }}>Give an existing guardian an App-School account. They can then receive in-app notices like other school members.</p>{guardians.length === 0 ? <p>No guardians have been added yet.</p> : guardians.map((g) => <div key={g.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", borderTop: "1px solid #edf1ee", padding: "10px 0" }}><div><strong>{g.fullName}</strong><div style={{ color: "#53615a", fontSize: 14 }}>{g.email ?? "No email"}</div></div>{g.hasAccount ? <span>Access active</span> : <button disabled={!g.email} onClick={() => void inviteParent(g.id)}>{g.email ? "Create access link" : "Email required"}</button>}</div>)}{inviteMessage && <p style={{ wordBreak: "break-word" }}>{inviteMessage}</p>}</section>}
+    {isOwner && <section style={{ border: "1px solid #dfe7e2", borderRadius: 14, padding: 18 }}><h2 style={{ marginTop: 0 }}>Parent access</h2><p style={{ color: "#53615a" }}>A guardian account is not enough by itself. The school must explicitly verify the account-to-guardian relationship before child academic data is exposed.</p>{guardians.length === 0 ? <p>No guardians have been added yet.</p> : guardians.map((g) => <div key={g.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", borderTop: "1px solid #edf1ee", padding: "10px 0" }}><div><strong>{g.fullName}</strong><div style={{ color: "#53615a", fontSize: 14 }}>{g.email ?? "No email"}</div><div style={{ color: g.accountVerified ? "#185c37" : "#7a5b00", fontSize: 13 }}>{g.accountVerified ? "Verified guardian account" : g.hasAccount ? "Account linked · verification required" : "No SkulGo account yet"}</div></div>{g.accountVerified ? <button onClick={() => void removeVerification(g.id)}>Remove verification</button> : g.hasAccount ? <button onClick={() => void verifyGuardian(g.id)}>Verify account</button> : <button disabled={!g.email} onClick={() => void inviteParent(g.id)}>{g.email ? "Create account link" : "Email required"}</button>}</div>)}{inviteMessage && <p style={{ wordBreak: "break-word" }}>{inviteMessage}</p>}</section>}
 
     <section style={{ border: "1px solid #dfe7e2", borderRadius: 14, padding: 18 }}><h2 style={{ marginTop: 0 }}>My notification settings</h2><p style={{ color: "#53615a" }}>In-app is available now. Other channels are prepared for future delivery integrations.</p>{([['inAppEnabled','In-app'],['smsEnabled','SMS'],['emailEnabled','Email'],['whatsappEnabled','WhatsApp']] as const).map(([key, label]) => <label key={key} style={{ display: "block", margin: "9px 0" }}><input type="checkbox" checked={preferences[key]} onChange={(e) => void savePreferences({ ...preferences, [key]: e.target.checked })} /> {label}</label>)}</section>
 
