@@ -6,7 +6,6 @@ import { currentSession } from "@/domain/auth/session-cookie";
 import { getAttendanceRoster, saveBulkAttendance } from "@/domain/attendance/bulk";
 import { ModuleDisabledError, requireSchoolModule } from "@/domain/modules/guard";
 import { db } from "@/lib/db";
-import type { Prisma } from "@prisma/client";
 
 const itemSchema = z.object({ studentId: z.string().uuid(), enrollmentId: z.string().uuid(), status: z.enum(["PRESENT", "ABSENT", "LATE", "EXCUSED"]), note: z.string().trim().max(500).optional() });
 const schema = z.object({ academicSessionId: z.string().uuid(), classArmId: z.string().uuid(), attendanceDate: z.coerce.date(), items: z.array(itemSchema).min(1).max(500) });
@@ -42,7 +41,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sch
       where: { schoolId, academicSessionId: input.academicSessionId, classArmId: input.classArmId, attendanceDate: input.attendanceDate, studentId: { in: input.items.map((item) => item.studentId) } },
       select: { id: true, studentId: true, status: true, note: true, recordedByUserId: true, recordedAt: true },
     });
-    const before = new Map(existing.map((record: Prisma.AttendanceRecordGetPayload<{ select: { id: true; studentId: true; status: true; note: true; recordedByUserId: true; recordedAt: true } }>) => [record.studentId, record]));
+    const before = new Map(existing.map((record) => [record.studentId, record]));
     const records = await saveBulkAttendance({ schoolId, ...input, recordedByUserId: session.user.id });
     await db.$transaction([
       db.auditEvent.create({ data: { schoolId, actorUserId: session.user.id, action: "attendance.bulk_saved", entityType: "AttendanceRecord", entityId: input.classArmId, currentState: { academicSessionId: input.academicSessionId, classArmId: input.classArmId, attendanceDate: input.attendanceDate.toISOString(), count: records.length } } }),
