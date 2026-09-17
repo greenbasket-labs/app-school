@@ -20,6 +20,7 @@ export async function notifyParentsOfPublishedResult(
       JOIN "Guardian" g
         ON g."id" = sg."guardianId"
        AND g."schoolId" = score."schoolId"
+       AND g."accountVerifiedAt" IS NOT NULL
       JOIN "Membership" m
         ON m."userId" = g."userId"
        AND m."schoolId" = score."schoolId"
