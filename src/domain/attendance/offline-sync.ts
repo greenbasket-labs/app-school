@@ -46,6 +46,7 @@ export function attendanceRosterRecordId(input: Pick<AttendanceRosterSnapshot, "
 export async function saveAttendanceRosterLocally(input: {
   schoolId: string;
   snapshot: AttendanceRosterSnapshot;
+  syncState?: "SYNCED" | "PENDING_SYNC";
 }) {
   return saveLocalRecord<AttendanceRosterSnapshot>({
     id: attendanceRosterRecordId({ schoolId: input.schoolId, ...input.snapshot }),
@@ -53,7 +54,7 @@ export async function saveAttendanceRosterLocally(input: {
     entityType: ATTENDANCE_ROSTER_ENTITY,
     entityId: `${input.snapshot.academicSessionId}:${input.snapshot.classArmId}:${input.snapshot.attendanceDate}`,
     data: input.snapshot,
-    syncState: "SYNCED",
+    syncState: input.syncState ?? "SYNCED",
   });
 }
 
@@ -99,6 +100,12 @@ export async function queueAttendanceBulk(input: {
       data: optimisticSnapshot,
       syncState: "PENDING_SYNC",
     },
+  });
+
+  await saveAttendanceRosterLocally({
+    schoolId: input.schoolId,
+    snapshot: optimisticSnapshot,
+    syncState: "PENDING_SYNC",
   });
 
   return { record: record as AttendanceBulkRecord, operationId };
