@@ -4,6 +4,7 @@ import { CAPABILITIES } from "@/domain/auth/capabilities";
 import { currentSession } from "@/domain/auth/session-cookie";
 import { getOperationalSummary } from "@/domain/reports/operational-summary";
 import { db } from "@/lib/db";
+import WorkspaceNav from "../workspace-nav";
 
 export default async function DashboardPage({ params }: { params: Promise<{ schoolId: string }> }) {
   const session = await currentSession();
@@ -26,15 +27,15 @@ export default async function DashboardPage({ params }: { params: Promise<{ scho
   const canManageSchool = capabilitySet.has(CAPABILITIES.MANAGE_SCHOOL);
   const canCreateAssessment = capabilitySet.has(CAPABILITIES.CREATE_ASSESSMENT);
   const summary = await getOperationalSummary(schoolId);
-
   const canSeeSchoolSummary = membership.isOwner || canManageSchool || canViewStudents || canViewAttendance || canManageFinance || canCreateAssessment;
 
   return (
     <main style={{ minHeight: "100vh", padding: 32 }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <Link href={`/app/schools/${schoolId}`} style={{ color: "#53615a" }}>← School workspace</Link>
+        <WorkspaceNav schoolId={schoolId} />
 
-        <section style={{ marginTop: 24 }}>
+        <section style={{ marginTop: 28 }}>
           <p style={{ margin: 0, color: "#53615a", fontSize: 13, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase" }}>School dashboard</p>
           <h1 style={{ margin: "8px 0 6px", fontSize: 38 }}>{membership.school.name}</h1>
           <p style={{ margin: 0, color: "#53615a", lineHeight: 1.6 }}>
