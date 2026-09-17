@@ -13,6 +13,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ scho
     where: { userId: session.user.id, schoolId, status: "ACTIVE" },
     select: {
       school: { select: { name: true } },
+      isOwner: true,
       capabilities: { select: { capability: { select: { code: true } } } },
     },
   });
@@ -23,7 +24,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ scho
   const canViewAttendance = capabilitySet.has(CAPABILITIES.VIEW_ATTENDANCE);
   const canManageFinance = capabilitySet.has(CAPABILITIES.MANAGE_FINANCE);
   const canManageSchool = capabilitySet.has(CAPABILITIES.MANAGE_SCHOOL);
+  const canCreateAssessment = capabilitySet.has(CAPABILITIES.CREATE_ASSESSMENT);
   const summary = await getOperationalSummary(schoolId);
+
+  const canSeeSchoolSummary = membership.isOwner || canManageSchool || canViewStudents || canViewAttendance || canManageFinance || canCreateAssessment;
 
   return (
     <main style={{ minHeight: "100vh", padding: 32 }}>
@@ -33,38 +37,42 @@ export default async function DashboardPage({ params }: { params: Promise<{ scho
         <section style={{ marginTop: 24 }}>
           <p style={{ margin: 0, color: "#53615a", fontSize: 13, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase" }}>School dashboard</p>
           <h1 style={{ margin: "8px 0 6px", fontSize: 38 }}>{membership.school.name}</h1>
-          <p style={{ margin: 0, color: "#53615a", lineHeight: 1.6 }}>Your current school operating picture, based on authoritative records.</p>
+          <p style={{ margin: 0, color: "#53615a", lineHeight: 1.6 }}>
+            {membership.isOwner ? "Manage the school and keep its operational picture in one place." : "Your school workspace and available actions."}
+          </p>
         </section>
 
-        <section aria-label="School metrics" style={{ marginTop: 28, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-          {[
-            ["Students", summary.activeStudents],
-            ["Teachers & staff", summary.activeStaff],
-            ["Attendance today", summary.attendanceRecordedToday],
-            ["Outstanding", `₦${summary.outstandingAmount}`],
-          ].map(([label, value]) => (
-            <div key={String(label)} style={{ border: "1px solid #e0e6e2", borderRadius: 14, padding: 18, background: "white" }}>
-              <strong>{label}</strong>
-              <div style={{ fontSize: 28, marginTop: 8 }}>{value}</div>
-            </div>
-          ))}
-        </section>
+        {canSeeSchoolSummary ? (
+          <>
+            <section aria-label="School metrics" style={{ marginTop: 28, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+              {canViewStudents && <MetricCard label="Students" value={summary.activeStudents} />}
+              {(membership.isOwner || canManageSchool) && <MetricCard label="Teachers & staff" value={summary.activeStaff} />}
+              {canViewAttendance && <MetricCard label="Attendance today" value={summary.attendanceRecordedToday} />}
+              {canManageFinance && <MetricCard label="Outstanding" value={`₦${summary.outstandingAmount}`} />}
+            </section>
 
-        <section style={{ marginTop: 28 }}>
-          <h2 style={{ marginBottom: 12 }}>Today at a glance</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-            <div style={infoCard}><strong>Attendance</strong><p style={sub}>{summary.attendanceRecordedToday} attendance records have been recorded today.</p></div>
-            <div style={infoCard}><strong>Fees</strong><p style={sub}>{summary.openInvoices} open invoices currently have an outstanding balance.</p></div>
-            <div style={infoCard}><strong>Access</strong><p style={sub}>This dashboard only shows data inside your active school membership.</p></div>
-          </div>
-        </section>
+            <section style={{ marginTop: 28 }}>
+              <h2 style={{ marginBottom: 12 }}>Today at a glance</h2>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+                {canViewAttendance && <div style={infoCard}><strong>Attendance</strong><p style={sub}>{summary.attendanceRecordedToday} attendance records have been recorded today.</p></div>}
+                {canManageFinance && <div style={infoCard}><strong>Fees</strong><p style={sub}>{summary.openInvoices} open invoices currently have an outstanding balance.</p></div>}
+                <div style={infoCard}><strong>Access</strong><p style={sub}>This dashboard only shows data inside your active school membership.</p></div>
+              </div>
+            </section>
+          </>
+        ) : (
+          <section style={{ marginTop: 28, ...infoCard }}>
+            <h2 style={{ marginTop: 0 }}>Your workspace</h2>
+            <p style={sub}>Your account is connected to this school, but no dashboard data capability has been assigned yet.</p>
+          </section>
+        )}
 
         <section style={{ marginTop: 28 }}>
           <h2 style={{ marginBottom: 12 }}>Quick actions</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
             {canViewStudents && <Link href={`/app/schools/${schoolId}/students`} style={actionCard}>Students →<span style={sub}>View and manage the school roster.</span></Link>}
             {canViewAttendance && <Link href={`/app/schools/${schoolId}/attendance`} style={actionCard}>Attendance →<span style={sub}>Record or review attendance.</span></Link>}
-            {capabilitySet.has(CAPABILITIES.CREATE_ASSESSMENT) && <Link href={`/app/schools/${schoolId}/assessments`} style={actionCard}>Assessments & Results →<span style={sub}>Capture and manage academic results.</span></Link>}
+            {canCreateAssessment && <Link href={`/app/schools/${schoolId}/assessments`} style={actionCard}>Assessments & Results →<span style={sub}>Capture and manage academic results.</span></Link>}
             {canManageFinance && <Link href={`/app/schools/${schoolId}/finance`} style={actionCard}>Fees & Finance →<span style={sub}>Review fees and financial activity.</span></Link>}
             {canManageSchool && <Link href={`/app/schools/${schoolId}/settings`} style={actionCard}>School Settings →<span style={sub}>Configure school controls and modules.</span></Link>}
             <Link href={`/app/schools/${schoolId}/reports`} style={actionCard}>Reports →<span style={sub}>Open detailed operational reports when enabled.</span></Link>
@@ -72,6 +80,15 @@ export default async function DashboardPage({ params }: { params: Promise<{ scho
         </section>
       </div>
     </main>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div style={{ border: "1px solid #e0e6e2", borderRadius: 14, padding: 18, background: "white" }}>
+      <strong>{label}</strong>
+      <div style={{ fontSize: 28, marginTop: 8 }}>{value}</div>
+    </div>
   );
 }
 
