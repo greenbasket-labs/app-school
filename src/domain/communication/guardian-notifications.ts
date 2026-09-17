@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 
 export type GuardianNotificationPreference = {
@@ -77,8 +78,6 @@ export async function setGuardianNotificationPreference(schoolId: string, userId
 export async function deliverPublishedResultToGuardians(
   schoolId: string,
   assessmentId: string,
-  assessmentName: string,
-  actorUserId: string,
   notificationId: string,
 ) {
   const guardians = await db.$queryRaw<Array<{ guardianId: string }>>`
