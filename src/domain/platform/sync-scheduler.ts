@@ -1,5 +1,6 @@
 import { getConnectivityState } from "./connectivity";
 import { runPendingSync } from "./sync-engine";
+import { emitSyncFinished, emitSyncStarted } from "./sync-events";
 import type { SyncExecutor } from "./sync-executor";
 import type { SyncRunResult } from "./sync-engine";
 
@@ -25,6 +26,7 @@ export function startSyncScheduler(options: SyncSchedulerOptions) {
     }
 
     running = true;
+    emitSyncStarted(options.schoolId);
 
     try {
       const result = await runPendingSync(
@@ -33,12 +35,26 @@ export function startSyncScheduler(options: SyncSchedulerOptions) {
       );
 
       options.onRun?.(result);
+      emitSyncFinished({ schoolId: options.schoolId, result });
     } catch (error) {
-      options.onError?.(
+      const normalizedError =
         error instanceof Error
           ? error
-          : new Error("Synchronization run failed."),
-      );
+          : new Error("Synchronization run failed.");
+
+      options.onError?.(normalizedError);
+      emitSyncFinished({
+        schoolId: options.schoolId,
+        result: {
+          attempted: 0,
+          acknowledged: 0,
+          failed: 0,
+          conflicts: 0,
+          retrying: 0,
+          deferred: 0,
+        },
+        error: normalizedError.message,
+      });
     } finally {
       running = false;
     }
