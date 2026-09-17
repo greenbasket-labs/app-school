@@ -9,10 +9,7 @@ import {
   verifyGuardianAccount,
 } from "@/domain/guardians/account-access";
 
-const verifySchema = z.object({
-  guardianId: z.string().uuid(),
-  userId: z.string().uuid(),
-});
+const verifySchema = z.object({ guardianId: z.string().uuid() });
 const removeSchema = z.object({ guardianId: z.string().uuid() });
 
 async function requireOwner(userId: string, schoolId: string) {
@@ -31,7 +28,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sch
   try {
     await requireOwner(session.user.id, schoolId);
     const input = verifySchema.parse(await request.json());
-    const guardian = await verifyGuardianAccount({ schoolId, ...input, actorUserId: session.user.id });
+    const guardian = await verifyGuardianAccount({ schoolId, guardianId: input.guardianId, actorUserId: session.user.id });
     return NextResponse.json({ ok: true, guardian });
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ ok: false, error: "INVALID_GUARDIAN_ACCOUNT_DATA" }, { status: 400 });
