@@ -31,8 +31,8 @@ When a person leaves, the school disables that school membership. The personal S
 - [ ] School owner can review pending requests.
 - [ ] Owner determines the school relationship and grants the appropriate capabilities.
 - [ ] Approval creates/activates the school membership and required relationship records.
-- [ ] Owner can disable/deactivate a school membership when the person leaves.
-- [ ] Disabled membership cannot access the school while the personal SkulGo account remains intact.
+- [x] Owner can disable/deactivate a school membership when the person leaves.
+- [x] Disabled membership is excluded from active-workspace access while the personal User remains intact.
 - [ ] Login routes one-school users directly to the correct workspace.
 - [ ] Multiple active school relationships show a selector.
 - [ ] No role-selection URL parameters are used.
@@ -93,6 +93,58 @@ When a person leaves, the school disables that school membership. The personal S
 - [ ] Focused assessment conflict handling.
 - [ ] Minimum student/enrollment offline continuity needed for teacher/admin work.
 - [ ] Define and verify safe offline authentication/session behavior.
+
+## Concrete verification scenarios
+
+These are the minimum browser/runtime scenarios to execute before marking the corresponding V1 checks complete. They are verification work, not new product scope.
+
+### Identity / access
+
+```text
+1. Create/login as an existing SkulGo user with no school membership.
+2. Request access to a known school.
+3. Login as the school owner and review the pending request.
+4. Approve it with the intended school relationship/capabilities.
+5. Login as the person and confirm the correct school workspace opens.
+6. Disable the school membership from owner settings.
+7. Confirm the school no longer appears as an active workspace.
+8. Confirm the same SkulGo account can still authenticate and can later join another school.
+```
+
+### Academic lifecycle
+
+```text
+1. Open an assessment for an authorized class/subject.
+2. Enter valid scores and save them.
+3. Submit the result as the authorized submitter.
+4. Approve it as a different authorized actor.
+5. Publish it as the authorized publisher.
+6. Confirm the published result/report card is visible only to authorized users.
+7. Confirm academic history reflects the published result.
+```
+
+### Finance honesty
+
+```text
+1. Create or use a real student fee obligation.
+2. Record a normal confirmed payment.
+3. Verify receipt and balance update.
+4. Exercise any queued/offline payment activity supported by the product.
+5. Confirm the queued item is visibly pending and is never displayed as confirmed payment before server confirmation.
+```
+
+### Offline assessment
+
+```text
+1. Load an authorized assessment while online.
+2. Enter score changes.
+3. Simulate temporary connectivity loss.
+4. Save and reload while offline.
+5. Confirm the working state persists locally.
+6. Restore connectivity.
+7. Confirm the outbox syncs once without duplicate server effects.
+8. Reload and confirm the authoritative server state is shown.
+```
 
 ## Production release gates
 
