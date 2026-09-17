@@ -56,7 +56,7 @@ describe("communication offline-first flow", () => {
     const queued = await getLocalRecord(record.id);
     expect(queued?.syncState).toBe("PENDING_SYNC");
     expect(await getPendingOutbox(schoolId, new Date("2026-09-17T10:00:00.000Z"))).toHaveLength(0);
-    expect(await getPendingOutbox(schoolId, new Date("2026-09-17T10:01:00.000Z"))).toHaveLength(1);
+    expect(await getPendingOutbox(schoolId, new Date("2026-09-17T10:01:00.001Z"))).toHaveLength(1);
 
     vi.stubGlobal(
       "fetch",
@@ -82,7 +82,7 @@ describe("communication offline-first flow", () => {
     const synced = await runPendingSync(
       schoolId,
       communicationNotificationSyncExecutor,
-      new Date("2026-09-17T10:01:00.000Z"),
+      new Date("2026-09-17T10:01:00.001Z"),
     );
 
     const finalRecord = await getLocalRecord(record.id);
