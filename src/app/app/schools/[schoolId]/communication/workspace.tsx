@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { listLocalRecords } from "@/domain/platform/local-repository";
 import { syncLifecycleLabel } from "@/domain/platform/sync-state";
-import { startSyncScheduler } from "@/domain/platform/sync-scheduler";
-import { communicationNotificationSyncExecutor } from "@/domain/communication/communication-sync-executor";
 import { saveCommunicationDraft, type CommunicationDraftRecord } from "@/domain/communication/offline-drafts";
 
 type Recipient = { id: string; isOwner: boolean; user: { email: string } };
@@ -59,8 +57,6 @@ export default function CommunicationWorkspace({ schoolId, recipients, guardians
       window.removeEventListener("offline", onOffline);
     };
   }, [schoolId]);
-
-  useEffect(() => startSyncScheduler({ schoolId, executor: communicationNotificationSyncExecutor }), [schoolId]);
 
   async function send() {
     setMessage("");
