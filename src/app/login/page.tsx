@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -33,11 +34,11 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
+    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24, background: "#f6f8f6" }}>
       <form onSubmit={submit} style={{ width: "100%", maxWidth: 440, background: "white", borderRadius: 20, padding: 32, boxShadow: "0 12px 40px rgba(0,0,0,.08)" }}>
-        <p style={{ margin: 0, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", fontSize: 13 }}>Green Basket School</p>
+        <p style={{ margin: 0, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", fontSize: 13 }}>SkulGo</p>
         <h1 style={{ margin: "12px 0 8px", fontSize: 32 }}>Sign in</h1>
-        <p style={{ color: "#53615a", lineHeight: 1.5 }}>Use your school account to continue.</p>
+        <p style={{ color: "#53615a", lineHeight: 1.5 }}>Use your personal SkulGo account. After sign-in, you will continue to the school space available to your account.</p>
 
         <label style={{ display: "block", marginTop: 24, fontWeight: 700 }}>
           Email
@@ -54,6 +55,10 @@ export default function LoginPage() {
         <button disabled={busy} type="submit" style={{ width: "100%", marginTop: 24, padding: 13, border: 0, borderRadius: 10, background: "#173d2a", color: "white", fontWeight: 700, cursor: busy ? "wait" : "pointer" }}>
           {busy ? "Signing in…" : "Sign in"}
         </button>
+
+        <p style={{ marginTop: 20, color: "#53615a", fontSize: 14 }}>
+          Are you a school owner setting up a new school? <Link href="/register" style={{ color: "#173d2a", fontWeight: 700 }}>Register a school</Link>.
+        </p>
       </form>
     </main>
   );
