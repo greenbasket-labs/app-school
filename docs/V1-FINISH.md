@@ -28,7 +28,10 @@ When a person leaves, the school disables that school membership. The personal S
 - [ ] User can discover a school organization.
 - [ ] Student can submit admission/application request.
 - [ ] Teacher/staff/cashier/etc. can submit an application/request.
-- [ ] School owner can review pending requests.
+- [x] Join-request persistence and authenticated requester APIs exist on the implementation branch.
+- [x] Owner-only pending-request list and review API exist on the implementation branch.
+- [x] Approval path reuses the existing SkulGo `User` and stores the owner's authoritative relationship on `Membership`.
+- [ ] School owner can review pending requests in a real browser/runtime.
 - [ ] Owner determines the school relationship and grants the appropriate capabilities.
 - [ ] Approval creates/activates the school membership and required relationship records.
 - [ ] Owner can disable/deactivate a school membership when the person leaves.
