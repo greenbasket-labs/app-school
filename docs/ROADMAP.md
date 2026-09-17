@@ -55,10 +55,7 @@ This requirement applies across the platform, including school setup, students, 
 - [ ] Production migration baseline and verification
 - [ ] Automated typecheck/lint/build CI
 - [ ] Tenant-isolation integration tests
-- [ ] Offline-first platform foundation: local durable database, schema/versioning and repository abstraction — **implemented at primitive level; browser verification remains**
-- [ ] Offline mutation/outbox model with durable pending states — **implemented at primitive level; browser verification remains**
-- [ ] Shared sync engine with retry, backoff and idempotency — **implemented at primitive level; browser verification remains**
-- [ ] Connectivity/sync status model and application-wide UI treatment — **implemented at vocabulary + school-workspace UI level; active worker telemetry and browser verification remain**
+- [x] Offline-first platform foundation: durable browser persistence, schema/versioning, local repository boundary, durable outbox, shared sync engine, retry/backoff, connectivity scheduling, reconciliation contract, and school-workspace sync status wiring — browser end-to-end verification remains an explicit release gate
 
 ## Phase 1 — School configuration
 - [x] Academic session foundation
@@ -85,13 +82,13 @@ This requirement applies across the platform, including school setup, students, 
 - [x] Parent/guardian records and student relationships — initial slice
 - [x] Student status lifecycle
 - [ ] Offline-capable student and enrollment workflows
-- [ ] Offline-capable attendance workflows and reconciliation
+- [x] Offline-capable attendance workflow, durable sync and pull reconciliation — real-browser offline save → reload → reconnect → sync → reload verification completed; broader production-scale verification remains
 
 ## Phase 3 — Academic engine
 - [x] Assessment definitions
 - [x] Score capture — initial roster + per-student save slice
 - [x] Score validation — school/class/session/enrollment/max-score validation
-- [ ] Offline-capable assessment and score capture foundation — **implemented as local-first reference workflow; reconciliation + browser tests remain**
+- [x] Offline-capable assessment score capture foundation — local-first mutation, central sync registry/executor, durable retry/backoff, authoritative push acknowledgement and pull/reconciliation are implemented; browser end-to-end verification and conflict-resolution UI remain
 - [ ] Result submission — **authenticated API route + domain service implemented; runtime/CI verification remains**
 - [ ] Result approval — **authenticated API route + domain service implemented; runtime/CI verification remains; submitter cannot approve the same assessment result**
 - [x] Result publication — approved-result gate plus owner/default or owner-assigned `RESULT.PUBLISH` capability; publication remains deliberately online/server-authoritative
@@ -118,7 +115,7 @@ This requirement applies across the platform, including school setup, students, 
 - [x] Attendance absence alert — linked parent in-app notification when a student is marked absent
 - [x] Payment confirmation alert — linked parent in-app notification when a payment is recorded
 - [x] Result publication alert — linked parent in-app notification when a result is published
-- [ ] Offline-capable communication drafts and queued outbound actions
+- [x] Offline-capable communication notification mutation and central synchronization executor — broader draft/outbound workflows remain
 - [ ] Staff communication expansion — broaden only when a real workflow requires it
 - [ ] Delivery/status history for external channels
 - [ ] WhatsApp/SMS/email integrations where justified
@@ -136,8 +133,8 @@ This requirement applies across the platform, including school setup, students, 
 - [x] Rules/configuration engine — owner-controlled rule foundation
 - [x] Background jobs — durable queue record and claim primitive
 - [x] Reliable notification processing — idempotent queue foundation
-- [ ] Offline-first platform completion — application-wide module adoption and reconciliation verification
-- [x] Idempotent sync actions — school-scoped idempotency foundation — assessment-score replay path verified by automated sequential-retry coverage; live authenticated runtime and browser-level offline verification remain pending
+- [ ] Offline-first platform completion — application-wide module adoption, browser release-gate verification and reconciliation verification remain
+- [x] Idempotent sync actions — school-scoped idempotency foundation and assessment-score sequential replay coverage
 - [x] Anomaly/delay detection — deterministic operational anomaly checks
 - [x] AI assistance above trusted records, never as the source of truth — deterministic AI-ready management context boundary
 - [ ] Conflict resolution policies and operator-visible reconciliation tools
@@ -210,7 +207,7 @@ Role workspaces remain a presentation/workflow layer over the same school-scoped
 5. Result publication — authorization route established; verify the complete submit → approve → publish workflow before treating the academic publication slice as fully production-ready.
 6. Report cards — published-report-card domain + authenticated API boundary established; verify runtime behavior before marking complete.
 7. Academic history — published academic-history domain + authenticated API boundary established; verify runtime behavior before marking complete.
-8. Offline-first foundation — platform primitives established; browser/reconciliation verification remains.
+8. Offline-first platform foundation — shared platform implementation is established; supported module conversion continues on the same foundation, while browser release-gate and production-scale verification remain.
 9. Role-based workspaces — cross-cutting layer after core V1 sequence.
 10. Commercial billing/result access — payment-attempt, checkout, verification, transaction, provider-event and entitlement boundaries established incrementally; settlement/subscription lifecycle remain.
 
