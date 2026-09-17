@@ -12,8 +12,11 @@ export async function listGuardiansForAccess(schoolId: string) {
     fullName: string;
     email: string | null;
     hasAccount: boolean;
+    accountVerified: boolean;
   }>>`
-    SELECT g."id", g."fullName", g."email", (g."userId" IS NOT NULL) AS "hasAccount"
+    SELECT g."id", g."fullName", g."email",
+      (g."userId" IS NOT NULL) AS "hasAccount",
+      (g."accountVerifiedAt" IS NOT NULL) AS "accountVerified"
     FROM "Guardian" g
     WHERE g."schoolId" = ${schoolId}::uuid
     ORDER BY g."fullName" ASC
@@ -29,18 +32,17 @@ export async function createParentAccessInvitation(
     id: string;
     email: string | null;
     userId: string | null;
-    organizationId: string;
+    accountVerifiedAt: Date | null;
   }>>`
-    SELECT g."id", g."email", g."userId", s."organizationId"
+    SELECT g."id", g."email", g."userId", g."accountVerifiedAt"
     FROM "Guardian" g
-    JOIN "School" s ON s."id" = g."schoolId"
     WHERE g."id" = ${guardianId}::uuid AND g."schoolId" = ${schoolId}::uuid
     LIMIT 1
   `;
   const row = guardian[0];
   if (!row) throw new Error("Guardian not found in this school.");
   if (!row.email) throw new Error("Guardian email is required before parent access can be created.");
-  if (row.userId) throw new Error("This guardian already has parent access.");
+  if (row.userId || row.accountVerifiedAt) throw new Error("This guardian already has an account relationship.");
 
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -69,35 +71,27 @@ export async function acceptParentAccessInvitation(token: string, password: stri
     guardianId: string;
     guardianName: string;
     email: string;
-    organizationId: string;
   }>>`
-    SELECT i."id", i."schoolId", i."guardianId", g."fullName" AS "guardianName", g."email", s."organizationId"
+    SELECT i."id", i."schoolId", i."guardianId", g."fullName" AS "guardianName", g."email"
     FROM "ParentAccessInvitation" i
     JOIN "Guardian" g ON g."id" = i."guardianId"
-    JOIN "School" s ON s."id" = i."schoolId"
     WHERE i."tokenHash" = ${tokenHash(token)}
       AND i."usedAt" IS NULL
       AND i."expiresAt" > now()
+      AND g."schoolId" = i."schoolId"
+      AND g."userId" IS NULL
+      AND g."accountVerifiedAt" IS NULL
     LIMIT 1
   `;
   const invite = rows[0];
   if (!invite) throw new Error("This parent access invitation is invalid or expired.");
 
   const existingUser = await db.user.findUnique({ where: { email: invite.email }, select: { id: true } });
-  if (existingUser) throw new Error("An account already exists for this email.");
+  if (existingUser) throw new Error("An account already exists for this email. Sign in to your existing SkulGo account and ask the school to verify the guardian relationship.");
   const passwordHash = await hash(password, 12);
 
   return db.$transaction(async (tx) => {
     const user = await tx.user.create({ data: { email: invite.email, passwordHash }, select: { id: true, email: true } });
-    const membership = await tx.membership.create({
-      data: {
-        userId: user.id,
-        organizationId: invite.organizationId,
-        schoolId: invite.schoolId,
-        isOwner: false,
-      },
-      select: { id: true },
-    });
     await tx.$executeRaw`
       UPDATE "Guardian"
       SET "userId" = ${user.id}::uuid, "updatedAt" = now()
@@ -112,12 +106,12 @@ export async function acceptParentAccessInvitation(token: string, password: stri
       data: {
         schoolId: invite.schoolId,
         actorUserId: user.id,
-        action: "communication.parent_access_accepted",
+        action: "communication.parent_account_created",
         entityType: "Guardian",
         entityId: invite.guardianId,
-        currentState: { membershipId: membership.id, email: user.email },
+        currentState: { email: user.email, accountLinked: true, accountVerifiedAt: null },
       },
     });
-    return { userId: user.id, schoolId: invite.schoolId };
+    return { userId: user.id, schoolId: invite.schoolId, verificationRequired: true };
   });
 }
