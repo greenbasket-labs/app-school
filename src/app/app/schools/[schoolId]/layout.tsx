@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import SyncRunner from "./sync-runner";
 import SyncStatusIndicator from "./sync-status-indicator";
 
 export default async function SchoolWorkspaceLayout({
@@ -12,6 +13,7 @@ export default async function SchoolWorkspaceLayout({
 
   return (
     <>
+      <SyncRunner schoolId={schoolId} />
       <SyncStatusIndicator schoolId={schoolId} />
       {children}
     </>
