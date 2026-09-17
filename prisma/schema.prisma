@@ -323,7 +323,7 @@ model StudentGuardian {
   student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
   guardian Guardian @relation(fields: [guardianId], references: [id], onDelete: Restrict)
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdAt DateTime @default(now())
   @@id([studentId, guardianId])
   @@index([schoolId, guardianId])
   @@index([schoolId, studentId])
@@ -334,8 +334,8 @@ model Enrollment {
   academicSessionId String @db.Uuid
   classArmId String @db.Uuid
   status EnrollmentStatus @default(ACTIVE)
-  enrolledAt DateTime @default(now())
-  endedAt DateTime?
+  enrolledAt DateTime @default(now()) @db.Timestamptz(6)
+  endedAt DateTime? @db.Timestamptz(6)
   student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
   academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Restrict)
   classArm ClassArm @relation(fields: [classArmId], references: [id], onDelete: Restrict)
