@@ -75,14 +75,26 @@ export async function setGuardianNotificationPreference(schoolId: string, userId
   });
 }
 
-export async function notifyVerifiedGuardiansOfPublishedResult(schoolId: string, assessmentId: string, assessmentName: string, actorUserId: string) {
+export async function notifyVerifiedGuardiansOfPublishedResult(
+  schoolId: string,
+  assessmentId: string,
+  assessmentName: string,
+  actorUserId: string,
+) {
   const guardians = await db.$queryRaw<Array<{ guardianId: string }>>`
     SELECT DISTINCT g."id" AS "guardianId"
     FROM "AssessmentScore" score
-    JOIN "StudentGuardian" sg ON sg."studentId" = score."studentId" AND sg."schoolId" = score."schoolId"
-    JOIN "Guardian" g ON g."id" = sg."guardianId" AND g."schoolId" = score."schoolId"
-      AND g."accountVerifiedAt" IS NOT NULL AND g."userId" IS NOT NULL
-    LEFT JOIN "GuardianNotificationPreference" p ON p."schoolId" = g."schoolId" AND p."guardianId" = g."id"
+    JOIN "StudentGuardian" sg
+      ON sg."studentId" = score."studentId"
+     AND sg."schoolId" = score."schoolId"
+    JOIN "Guardian" g
+      ON g."id" = sg."guardianId"
+     AND g."schoolId" = score."schoolId"
+     AND g."accountVerifiedAt" IS NOT NULL
+     AND g."userId" IS NOT NULL
+    LEFT JOIN "GuardianNotificationPreference" p
+      ON p."schoolId" = g."schoolId"
+     AND p."guardianId" = g."id"
     WHERE score."schoolId" = ${schoolId}::uuid
       AND score."assessmentId" = ${assessmentId}::uuid
       AND COALESCE(p."inAppEnabled", true) = true
@@ -92,15 +104,22 @@ export async function notifyVerifiedGuardiansOfPublishedResult(schoolId: string,
   return db.$transaction(async (tx) => {
     const notification = await tx.$queryRaw<Array<{ id: string }>>`
       INSERT INTO "Notification" ("schoolId", "title", "body", "createdByUserId")
-      VALUES (${schoolId}::uuid, 'Result published', ${`Results for ${assessmentName} are now available for your child in the school portal.`}, ${actorUserId}::uuid)
+      VALUES (
+        ${schoolId}::uuid,
+        'Result published',
+        ${`Results for ${assessmentName} are now available for your child in the school portal.`},
+        ${actorUserId}::uuid
+      )
       RETURNING "id"
     `;
     const notificationId = notification[0].id;
+
     await tx.$executeRaw`
       INSERT INTO "GuardianNotificationRecipient" ("notificationId", "schoolId", "guardianId")
       SELECT ${notificationId}::uuid, g."schoolId", g."id"
       FROM "Guardian" g
-      LEFT JOIN "GuardianNotificationPreference" p ON p."schoolId" = g."schoolId" AND p."guardianId" = g."id"
+      LEFT JOIN "GuardianNotificationPreference" p
+        ON p."schoolId" = g."schoolId" AND p."guardianId" = g."id"
       WHERE g."id" IN (${Prisma.join(guardians.map(({ guardianId }) => Prisma.sql`${guardianId}::uuid`))})
         AND g."schoolId" = ${schoolId}::uuid
         AND g."userId" IS NOT NULL
@@ -108,6 +127,7 @@ export async function notifyVerifiedGuardiansOfPublishedResult(schoolId: string,
         AND COALESCE(p."inAppEnabled", true) = true
       ON CONFLICT ("notificationId", "guardianId") DO NOTHING
     `;
+
     await tx.auditEvent.create({
       data: {
         schoolId,
@@ -115,7 +135,11 @@ export async function notifyVerifiedGuardiansOfPublishedResult(schoolId: string,
         action: "communication.guardian_notification_created",
         entityType: "Notification",
         entityId: notificationId,
-        currentState: { recipientType: "VERIFIED_GUARDIAN", recipientCount: guardians.length, assessmentId },
+        currentState: {
+          recipientType: "VERIFIED_GUARDIAN",
+          recipientCount: guardians.length,
+          assessmentId,
+        },
       },
     });
     return notificationId;
