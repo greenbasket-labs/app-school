@@ -21,7 +21,7 @@ describe("school sync executor", () => {
 
     expect(result).toEqual({
       status: "FAILED",
-      error: "No synchronization executor is registered for UnknownEntity.",
+      error: "No synchronization executor registered for UnknownEntity/UPSERT.",
       retryable: false,
     });
   });
