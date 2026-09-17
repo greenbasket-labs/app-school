@@ -60,10 +60,10 @@ export default function CommunicationWorkspace({ schoolId, recipients, guardians
     const target = guardians.find((guardian) => guardian.id === guardianId);
     if (!target) return;
     if (!target.hasAccount) return setInviteMessage("Create the guardian account first.");
-    const response = await fetch(`/api/schools/${schoolId}/guardian-account`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ guardianId, userId: undefined }) });
+    const response = await fetch(`/api/schools/${schoolId}/guardian-account`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ guardianId }) });
     const data = await response.json();
     if (!response.ok) return setInviteMessage(data.error ?? "Could not verify guardian account.");
-    setInviteMessage("Guardian verification requires the account user ID. Use the account-management flow when the user ID is available.");
+    window.location.reload();
   }
 
   async function removeVerification(guardianId: string) {
