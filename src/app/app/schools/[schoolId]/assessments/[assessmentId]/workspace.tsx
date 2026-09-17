@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { listLocalRecords, saveLocalMutation } from "@/domain/platform/local-repository";
+import { listLocalRecords, saveLocalRecord, saveLocalMutation } from "@/domain/platform/local-repository";
 import { localRecordId } from "@/domain/platform/client-operation";
 import { syncLifecycleLabel } from "@/domain/platform/sync-state";
-import { startSyncScheduler } from "@/domain/platform/sync-scheduler";
-import { assessmentScoreSyncExecutor } from "@/domain/assessments/score-sync-executor";
 import { reconcileAssessmentScores } from "@/domain/platform/reconciliation-client";
 
 type RosterRow = {
@@ -24,6 +22,8 @@ type InitialData = {
   students: RosterRow[];
 };
 
+type LocalScore = { assessmentId: string; studentId: string; score: number };
+
 function studentName(student: RosterRow) {
   return [student.firstName, student.middleName, student.lastName].filter(Boolean).join(" ");
 }
@@ -34,9 +34,35 @@ export default function ScoreCaptureWorkspace({ schoolId, assessmentId, initialD
   const [message, setMessage] = useState("");
   const [online, setOnline] = useState(true);
 
+  async function refreshLocalScores() {
+    const localScores = await listLocalRecords<LocalScore>(schoolId, "AssessmentScore");
+    const relevant = new Map(
+      localScores
+        .filter((record) => record.data.assessmentId === assessmentId)
+        .map((record) => [record.data.studentId, record]),
+    );
+    setStudents((current) => current.map((student) => {
+      const record = relevant.get(student.studentId);
+      return record
+        ? { ...student, score: record.data.score, syncState: record.syncState }
+        : student;
+    }));
+  }
+
+  async function pullAndRefresh() {
+    if (!navigator.onLine) return;
+    await reconcileAssessmentScores({ schoolId, assessmentId });
+    await refreshLocalScores();
+  }
+
   useEffect(() => {
     setOnline(navigator.onLine);
-    const onOnline = () => setOnline(true);
+    const onOnline = () => {
+      setOnline(true);
+      void pullAndRefresh().catch(() => {
+        setMessage("Reconnection completed, but score reconciliation could not finish.");
+      });
+    };
     const onOffline = () => setOnline(false);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
@@ -44,76 +70,44 @@ export default function ScoreCaptureWorkspace({ schoolId, assessmentId, initialD
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
     };
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        for (const student of initialData.students) {
-          const existing = await listLocalRecords<RosterRow>(schoolId, "AssessmentRosterStudent");
-          if (existing.some((record) => record.entityId === student.studentId)) continue;
-          await saveLocalMutation<RosterRow>({
-            schoolId,
-            entityType: "AssessmentRosterStudent",
-            entityId: student.studentId,
-            operationType: "CACHE",
-            payload: student,
-            operationId: `assessment.roster-cache:${schoolId}:${assessmentId}:${student.studentId}`,
-            record: {
-              id: localRecordId(schoolId, "AssessmentRosterStudent", student.studentId),
-              schoolId,
-              entityType: "AssessmentRosterStudent",
-              entityId: student.studentId,
-              data: student,
-              syncState: "SYNCED",
-            },
-          });
-        }
-      } catch {
-        // Best-effort cache only.
-      }
-    })();
-  }, [assessmentId, initialData.students, schoolId]);
-
-  useEffect(() => {
-    const cleanup = startSyncScheduler({ schoolId, executor: assessmentScoreSyncExecutor });
-    return cleanup;
-  }, [schoolId]);
+  }, [assessmentId, schoolId]);
 
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        if (navigator.onLine) {
-          await reconcileAssessmentScores({ schoolId, assessmentId });
+        for (const student of initialData.students) {
+          const existing = await listLocalRecords<RosterRow>(schoolId, "AssessmentRosterStudent");
+          if (existing.some((record) => record.entityId === student.studentId)) continue;
+          await saveLocalRecord({
+            id: localRecordId(schoolId, "AssessmentRosterStudent", student.studentId),
+            schoolId,
+            entityType: "AssessmentRosterStudent",
+            entityId: student.studentId,
+            data: student,
+            syncState: "SYNCED",
+          });
         }
-        const localScores = await listLocalRecords<{ assessmentId: string; studentId: string; score: number }>(schoolId, "AssessmentScore");
-        const relevant = new Map(localScores.filter((record) => record.data.assessmentId === assessmentId).map((record) => [record.data.studentId, record]));
-        if (!active || relevant.size === 0) return;
-        setStudents((current) => current.map((student) => {
-          const record = relevant.get(student.studentId);
-          return record ? { ...student, score: record.data.score, syncState: record.syncState } : student;
-        }));
+        if (active) await refreshLocalScores();
+      } catch {
+        // Best-effort cache only.
+      }
+    })();
+    return () => { active = false; };
+  }, [assessmentId, initialData.students, schoolId]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        if (navigator.onLine) await reconcileAssessmentScores({ schoolId, assessmentId });
+        if (active) await refreshLocalScores();
       } catch {
         // Keep server-provided initial data and local working data when reconciliation is unavailable.
       }
     })();
     return () => { active = false; };
   }, [assessmentId, schoolId]);
-
-  useEffect(() => {
-    if (!online) return;
-    void reconcileAssessmentScores({ schoolId, assessmentId }).then(async () => {
-      const localScores = await listLocalRecords<{ assessmentId: string; studentId: string; score: number }>(schoolId, "AssessmentScore");
-      const relevant = new Map(localScores.filter((record) => record.data.assessmentId === assessmentId).map((record) => [record.data.studentId, record]));
-      setStudents((current) => current.map((student) => {
-        const record = relevant.get(student.studentId);
-        return record ? { ...student, score: record.data.score, syncState: record.syncState } : student;
-      }));
-    }).catch(() => {
-      // Reconnect pull is best-effort; queued pushes remain handled by the scheduler.
-    });
-  }, [assessmentId, online, schoolId]);
 
   const visibleStudents = useMemo(() => students, [students]);
 
@@ -132,7 +126,7 @@ export default function ScoreCaptureWorkspace({ schoolId, assessmentId, initialD
     try {
       const operationId = `assessment.score:${schoolId}:${assessmentId}:${studentId}:${crypto.randomUUID()}`;
       const entityId = `${assessmentId}:${studentId}`;
-      await saveLocalMutation<{ assessmentId: string; studentId: string; score: number }>({
+      await saveLocalMutation<LocalScore>({
         schoolId,
         entityType: "AssessmentScore",
         entityId,
@@ -150,7 +144,6 @@ export default function ScoreCaptureWorkspace({ schoolId, assessmentId, initialD
       });
       setStudents((current) => current.map((student) => student.studentId === studentId ? { ...student, score, syncState: "PENDING_SYNC" } : student));
       setMessage(online ? "Score saved locally and queued for synchronization." : "Score saved locally. It will synchronize when the connection returns.");
-      if (online) void startSyncScheduler({ schoolId, executor: assessmentScoreSyncExecutor })();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not save score locally.");
     } finally {
@@ -176,11 +169,7 @@ export default function ScoreCaptureWorkspace({ schoolId, assessmentId, initialD
               <input aria-label={`Score for ${studentName(student)}`} defaultValue={student.score ?? ""} type="number" min="0" max={initialData.assessment.maxScore} step="0.01" id={`score-${student.studentId}`} style={inputStyle} />
               <div style={{ display: "grid", gap: 6 }}>
                 <button disabled={saving === student.studentId} onClick={() => save(student.studentId, (document.getElementById(`score-${student.studentId}`) as HTMLInputElement).value)} style={buttonStyle}>{saving === student.studentId ? "Saving…" : "Save locally"}</button>
-                {student.syncState ? (
-                  <span style={{ color: "#53615a", fontSize: 12 }}>
-                    {syncLifecycleLabel[student.syncState]}
-                  </span>
-                ) : null}
+                {student.syncState ? <span style={{ color: "#53615a", fontSize: 12 }}>{syncLifecycleLabel[student.syncState]}</span> : null}
               </div>
             </div>
           ))}
