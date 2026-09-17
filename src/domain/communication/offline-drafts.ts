@@ -50,10 +50,7 @@ export async function saveCommunicationDraft(input: {
     entityId: draftId,
     operationType: "UPSERT",
     operationId,
-    payload: {
-      ...draft,
-      draftId,
-    },
+    payload: draft,
     record: {
       id: recordId,
       schoolId: input.schoolId,
