@@ -24,6 +24,11 @@ describe("communication offline-first flow", () => {
     const draftId = "draft-offline-1";
     const operationId = "communication-op-offline-1";
 
+    const offlineFetch = vi.fn(async () => {
+      throw new Error("offline");
+    });
+    vi.stubGlobal("fetch", offlineFetch);
+
     const { record } = await saveCommunicationDraft({
       schoolId,
       actorUserId,
@@ -40,10 +45,6 @@ describe("communication offline-first flow", () => {
     expect(record.syncState).toBe("PENDING_SYNC");
     expect(await getPendingOutbox(schoolId)).toHaveLength(1);
 
-    vi.stubGlobal("fetch", vi.fn(async () => {
-      throw new Error("offline");
-    }));
-
     const failed = await runPendingSync(
       schoolId,
       communicationNotificationSyncExecutor,
@@ -58,24 +59,21 @@ describe("communication offline-first flow", () => {
     expect(await getPendingOutbox(schoolId, new Date("2026-09-17T10:00:00.000Z"))).toHaveLength(0);
     expect(await getPendingOutbox(schoolId, new Date("2026-09-17T10:01:00.001Z"))).toHaveLength(1);
 
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () =>
-        new Response(
-          JSON.stringify({
-            ok: true,
-            notification: {
-              id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
-              title: "School notice",
-              body: "School closes early today.",
-              membershipIds: [membershipId],
-              channel: "IN_APP",
-              createdAt: "2026-09-17T10:02:00.000Z",
-              serverVersion: "dddddddd-dddd-dddd-dddd-dddddddddddd",
-            },
-          }),
-          { status: 201, headers: { "Content-Type": "application/json" } },
-        ),
+    offlineFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          notification: {
+            id: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+            title: "School notice",
+            body: "School closes early today.",
+            membershipIds: [membershipId],
+            channel: "IN_APP",
+            createdAt: "2026-09-17T10:02:00.000Z",
+            serverVersion: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+          },
+        }),
+        { status: 201, headers: { "Content-Type": "application/json" } },
       ),
     );
 
@@ -101,8 +99,8 @@ describe("communication offline-first flow", () => {
     });
     expect(pending).toHaveLength(0);
 
-    expect(fetch).toHaveBeenCalledTimes(2);
-    expect(fetch).toHaveBeenLastCalledWith(
+    expect(offlineFetch).toHaveBeenCalledTimes(2);
+    expect(offlineFetch).toHaveBeenLastCalledWith(
       `/api/schools/${schoolId}/communication/notifications`,
       expect.objectContaining({
         method: "POST",
