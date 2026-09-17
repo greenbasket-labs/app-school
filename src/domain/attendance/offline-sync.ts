@@ -33,7 +33,7 @@ type AttendanceBulkPayload = {
   items: BulkAttendanceItem[];
 };
 
-type AttendanceBulkLocalRecord = LocalRecord<AttendanceRosterSnapshot>;
+export type AttendanceBulkRecord = LocalRecord<AttendanceRosterSnapshot>;
 
 export function attendanceRosterRecordId(input: Pick<AttendanceRosterSnapshot, "academicSessionId" | "classArmId" | "attendanceDate"> & { schoolId: string }) {
   return localRecordId(
@@ -83,7 +83,7 @@ export async function queueAttendanceBulk(input: {
     items: input.items,
   };
 
-  const record = await saveLocalMutation<AttendanceBulkPayload>({
+  const record = await saveLocalMutation<AttendanceBulkPayload, AttendanceRosterSnapshot>({
     schoolId: input.schoolId,
     actorUserId: input.actorUserId,
     entityType: ATTENDANCE_BULK_ENTITY,
@@ -98,8 +98,8 @@ export async function queueAttendanceBulk(input: {
       entityId: `${entityId}:${operationId}`,
       data: optimisticSnapshot,
       syncState: "PENDING_SYNC",
-    } as AttendanceBulkLocalRecord,
+    },
   });
 
-  return { record, operationId };
+  return { record: record as AttendanceBulkRecord, operationId };
 }
