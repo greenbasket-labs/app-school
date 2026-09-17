@@ -36,9 +36,7 @@ export async function putLocalRecord<T>(record: LocalRecord<T>) {
   }
 }
 
-export async function getLocalRecord<T>(
-  id: string,
-): Promise<LocalRecord<T> | null> {
+export async function getLocalRecord<T>(id: string): Promise<LocalRecord<T> | null> {
   const db = await openAppSchoolLocalDb();
 
   try {
@@ -109,6 +107,7 @@ export async function getPendingOutbox(
     return rows
       .filter(
         (row) =>
+          !("nextAttemptAt" in row) ||
           !row.nextAttemptAt ||
           new Date(row.nextAttemptAt).getTime() <= nowMs,
       )
@@ -148,52 +147,12 @@ export async function updateOutboxStatus(
       status,
       attemptCount: details.attemptCount ?? existing.attemptCount,
       lastError: details.lastError ?? existing.lastError ?? null,
-      nextAttemptAt:
-        details.nextAttemptAt === undefined
-          ? existing.nextAttemptAt ?? null
-          : details.nextAttemptAt,
+      ...(details.nextAttemptAt !== undefined
+        ? { nextAttemptAt: details.nextAttemptAt }
+        : {}),
     });
 
     await transactionDone(transaction);
-  } finally {
-    db.close();
-  }
-}
-
-export async function markLocalRecordState(
-  id: string,
-  syncState: LocalSyncState,
-  serverVersion?: string | null,
-) {
-  const db = await openAppSchoolLocalDb();
-
-  try {
-    const transaction = db.transaction(
-      LOCAL_STORES.records,
-      "readwrite",
-    );
-
-    const store = transaction.objectStore(LOCAL_STORES.records);
-
-    const existing = (await requestResult(
-      store.get(id),
-    )) as LocalRecord | undefined;
-
-    if (!existing) return null;
-
-    const next: LocalRecord = {
-      ...existing,
-      syncState,
-      serverVersion:
-        serverVersion ?? existing.serverVersion ?? null,
-      updatedAt: new Date().toISOString(),
-    };
-
-    store.put(next);
-
-    await transactionDone(transaction);
-
-    return next;
   } finally {
     db.close();
   }
