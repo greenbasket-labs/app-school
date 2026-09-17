@@ -1,5 +1,66 @@
 # App-School Roadmap
 
+## Core identity rule — every person has a SkulGo account first
+
+**Every person starts with a personal SkulGo account.** A school relationship is established after that identity exists.
+
+```text
+PERSON
+  ↓
+SkulGo personal account
+  ↓
+school relationship / membership
+  ↓
+workspace + capabilities
+```
+
+This is an identity rule, not a role simulation. Do not create role-only accounts in place of the person's SkulGo account.
+
+### Relationship flows
+
+- **School owner:** personal SkulGo account + school registration → Organization + School + owner membership.
+- **Student:** personal SkulGo account → discover school → submit admission application → school review → admission/acceptance → school membership/student relationship.
+- **Teacher/staff:** personal SkulGo account → discover school → submit job/application → school review → offer/acceptance → school membership/staff relationship.
+- **Parent/guardian:** personal SkulGo account → verified student/guardian relationship → parent access. This is not an admission-style application.
+
+A school membership must never be treated as the prerequisite for the person's SkulGo identity. The current owner registration UX may create the personal account and school together, but the resulting person remains a normal SkulGo user account.
+
+### Workspace routing rule
+
+After login:
+
+- one active school relationship → automatically open that school's dashboard;
+- multiple active school relationships → show a school selector;
+- no active school relationship → show the account/workspace state and available joining paths.
+
+Capabilities remain the authorization boundary. School/module access must not be inferred from URL parameters such as `?role=teacher`.
+
+School setup remains web-only onboarding. Offline-first applies to supported operational workflows, not as a reason to make registration/setup unnecessarily complex.
+
+## V1 goal
+
+App-School V1 is the smallest reliable school operating platform that solves the core daily pains of four groups:
+
+```text
+SCHOOL OWNER
+→ know what is happening, control staff/access, manage money, configure the school,
+  publish trusted results and receive useful management information.
+
+TEACHER
+→ teach/manage students, take attendance, record scores and continue working when
+  connectivity is poor.
+
+PARENT / GUARDIAN
+→ securely access the child's school information, receive important updates,
+  and access published results without unnecessary friction.
+
+STUDENT
+→ have a correct school identity/enrollment record, attendance and academic history,
+  and see the information the school has legitimately published.
+```
+
+Anything that does not materially support these workflows or protect correctness, security, tenancy or recoverability remains outside V1.
+
 ## Cross-cutting product requirement — offline-first
 
 **Offline-first is a core App-School requirement, not a module-specific enhancement.** The entire application should remain operational during loss of internet connectivity for the school workflows and data already available on the device.
@@ -28,21 +89,37 @@ UI → Local durable data → Local outbox / pending changes
 Pending changes → Sync → server validation → audit → acknowledgement
 ```
 
-This requirement applies across the platform, including school setup, students, enrollment, attendance, assessments/results, finance, communication, reports and future modules.
+This requirement applies across the platform, including students, enrollment, attendance, assessments/results, finance, communication, reports and future modules.
 
 ### Offline-first rules
 
-- The UI should read operational data from a local durable store rather than requiring a network request for every screen or action.
-- Important user changes should be written locally first and represented by a durable pending/sync state.
-- Synchronization is responsible for sending pending changes when connectivity returns.
-- Sync actions must be idempotent so retries do not create duplicate records or duplicate effects.
-- Server-side authorization, validation and audit rules remain authoritative when a pending operation reaches the server.
+- Read operational data from a local durable store when that working data already exists on the device.
+- Important user changes are written locally first and represented by an explicit pending/sync state.
+- Synchronization sends pending changes when connectivity returns.
+- Sync actions are idempotent so retries do not create duplicate effects.
+- Server authorization, validation and audit remain authoritative.
 - Local state must never falsely present an unacknowledged server action as server-confirmed.
-- Conflicts must be detected and resolved explicitly for operations where concurrent changes are possible.
-- A failed sync must preserve the local pending work rather than silently discarding it.
-- Offline support must be shared platform infrastructure; individual modules must reuse the same local-data, outbox and synchronization foundation.
-- Online-only operations must be identified deliberately where server authority is required, such as final publication or other actions whose meaning depends on current server state.
-- No module is considered fully production-ready if it becomes unusable merely because connectivity is temporarily unavailable when the needed data is already on the device.
+- Conflicts must be detected and resolved explicitly where concurrent edits matter.
+- Failed sync preserves pending work rather than silently discarding it.
+- Modules reuse the same platform persistence/outbox/sync infrastructure.
+- Server-authoritative actions such as final publication remain intentionally online-only.
+
+## V1 finish line
+
+V1 is complete when:
+
+1. A school can configure and operate its core academic structure.
+2. The owner can manage staff access, school settings, modules and important school information.
+3. Teachers can manage students, attendance and assessment scores with clear saved/sync states.
+4. Parents/guardians can securely access authorized student information and receive important notifications.
+5. Students have correct enrollment and academic records inside the school boundary.
+6. Results can move through capture → submit → approve → publish.
+7. Supported operational data survives temporary connectivity loss and synchronizes safely.
+8. Finance records never present locally queued activity as confirmed payment.
+9. Management has useful operational reports and exports without a large analytics platform.
+10. School tenancy, capabilities, important invariants, audit history and recoverability are protected.
+11. The application can be deployed and operated with verified migrations, backups, observability, security and recovery procedures.
+12. The identity/joining model works from personal SkulGo account → school relationship → correct workspace.
 
 ## Phase 0 — Foundation & trust
 - [x] User / organization / school identity
@@ -55,12 +132,12 @@ This requirement applies across the platform, including school setup, students, 
 - [ ] Production migration baseline and verification
 - [ ] Automated typecheck/lint/build CI
 - [ ] Tenant-isolation integration tests
-- [ ] Offline-first platform foundation: local durable database, schema/versioning and repository abstraction — **started: IndexedDB v1 + shared local repository boundary**
-- [ ] Offline mutation/outbox model with durable pending states — **started: durable school-scoped outbox**
-- [ ] Shared sync engine with retry, backoff and idempotency — **started: executor-based pending-operation processor**
-- [ ] Connectivity/sync status model and application-wide UI treatment — **started: browser connectivity state + reconnect/periodic scheduler; application UI wiring remains**
+- [x] Offline-first platform foundation: durable browser persistence, schema/versioning, local repository boundary, durable outbox, shared sync engine, retry/backoff, connectivity scheduling, reconciliation contract and school-workspace sync status wiring
+- [ ] Offline authentication/session lifecycle policy and hardening
+- [ ] Personal SkulGo account registration independent of school membership
+- [ ] School discovery and relationship/application primitives
 
-## Phase 1 — School configuration
+## Phase 1 — School configuration & owner control
 - [x] Academic session foundation
 - [x] Academic terms configuration UI/API
 - [x] Class levels
@@ -72,10 +149,10 @@ This requirement applies across the platform, including school setup, students, 
 - [x] Backend module enforcement for implemented modules
 - [x] Session lifecycle: draft → active → closed
 - [x] Formal setup readiness calculation
-- [x] School profile/configuration settings — first slice
-- [ ] Offline-capable school setup and configuration workflows
+- [x] School profile/configuration settings — initial slice
+- [ ] Offline-capable school setup workflows where offline continuity materially helps; do not force every configuration action offline
 
-## Phase 2 — Core daily operations
+## Phase 2 — Students, teachers & daily operations
 - [x] Student records
 - [x] Student enrollment
 - [x] Daily attendance
@@ -84,93 +161,209 @@ This requirement applies across the platform, including school setup, students, 
 - [x] Capability assignment UI — initial owner-managed slice
 - [x] Parent/guardian records and student relationships — initial slice
 - [x] Student status lifecycle
-- [ ] Offline-capable student and enrollment workflows
-- [ ] Offline-capable attendance workflows and reconciliation
+- [x] Offline-capable attendance workflow, durable sync and pull reconciliation — real-browser offline save → reload → reconnect → sync → reload verification completed
+- [ ] Offline-capable student and enrollment workflows for core teacher/admin operations
+- [ ] Personal account → school discovery → student admission application
+- [ ] Personal account → school discovery → teacher/staff application
+- [ ] Owner application review → approval/offer → membership creation
 
-## Phase 3 — Academic engine
+## Phase 3 — Assessments, results & academic trust
 - [x] Assessment definitions
 - [x] Score capture — initial roster + per-student save slice
 - [x] Score validation — school/class/session/enrollment/max-score validation
-- [ ] Offline-capable assessment and score capture foundation
-- [ ] Result submission
-- [ ] Result approval
-- [ ] Result publication
-- [ ] Report cards
-- [ ] Academic history
+- [x] Offline-capable assessment score capture foundation — local-first mutation, central sync registry/executor, retry/backoff, authoritative acknowledgement and pull/reconciliation are implemented
+- [ ] Browser end-to-end verification of assessment offline save → reload → reconnect → sync
+- [ ] Assessment conflict-resolution UI
+- [ ] Result submission — authenticated API route + domain service implemented; runtime/CI verification required
+- [ ] Result approval — authenticated API route + domain service implemented; runtime/CI verification required; submitter cannot approve the same assessment result
+- [x] Result publication — approved-result gate plus owner/default or owner-assigned RESULT.PUBLISH capability; deliberately online/server-authoritative
+- [ ] Verify complete submit → approve → publish runtime workflow
+- [ ] Report cards — authenticated published-report-card API/domain boundary implemented; runtime verification required
+- [ ] Academic history — authenticated published-history API/domain boundary implemented; runtime verification required
 
-## Phase 4 — Finance
+## Phase 4 — Parent / guardian value
+- [x] Guardian records + student relationships
+- [x] Guardian account bootstrap/security
+- [x] Guardian result authorization
+- [x] Published result access boundary
+- [x] Attendance absence alert — in-app
+- [x] Payment confirmation alert — in-app
+- [x] Result publication alert — in-app
+- [x] Parent school workspace entry based on Guardian.userId
+- [x] Parent child overview constrained by StudentGuardian + active Enrollment
+- [ ] Verify the complete parent journey: SkulGo account → verified guardian relationship → authorized child → notification → published result → academic history
+- [ ] Only add external SMS/WhatsApp/email delivery when a real V1 operating need is demonstrated; in-app communication is sufficient for the initial V1 surface
+
+## Phase 5 — School finance
 - [x] Fee structures
 - [x] Student fee assignments
 - [x] Invoices / obligations
 - [x] Payment recording
-- [x] Payment provider integration — Paystack, Flutterwave and Monnify foundation
+- [x] Payment provider integration foundation — Paystack, Flutterwave and Monnify
 - [x] Receipts
 - [x] Balances and reconciliation
 - [x] Finance audit trail
-- [ ] Offline-capable finance workflows with explicit server-confirmed payment states
+- [ ] Verify critical finance runtime paths and provider verification before production release
+- [ ] Offline-capable finance capture only where it is safe; queued local records must never masquerade as confirmed payment
+- [ ] Do not expand finance into a full accounting/ERP product in V1
 
-## Phase 5 — Communication
-- [x] In-app notifications — school-scoped notices, selected active-member recipients, read state and inbox
-- [x] Notification channel preferences — in-app, SMS, email and WhatsApp preference controls; only in-app delivery is live
-- [x] Parent/guardian authenticated recipients — one-time owner-created access link for existing guardians with email
-- [x] Attendance absence alert — linked parent in-app notification when a student is marked absent
-- [x] Payment confirmation alert — linked parent in-app notification when a payment is recorded
-- [x] Result publication alert — linked parent in-app notification when a result is published
-- [ ] Offline-capable communication drafts and queued outbound actions
-- [ ] Staff communication expansion — broaden only when a real workflow requires it
-- [ ] Delivery/status history for external channels
-- [ ] WhatsApp/SMS/email integrations where justified
-
-## Phase 6 — Reports & management
-- [x] Attendance report — date-range summary with school-scoped student totals
-- [x] Academic report — published assessment performance by session, term and optional class
-- [x] Finance report — recorded invoices, payments and outstanding obligations
+## Phase 6 — Owner reports & operational visibility
+- [x] Attendance report
+- [x] Academic report
+- [x] Finance report
 - [x] Operational dashboards — initial V1 slice
 - [x] Management summaries — initial V1 slice
-- [x] Export workflows — authenticated management CSV export
-- [ ] Offline-capable report generation from locally available trusted data
+- [x] Authenticated management CSV exports
+- [ ] Verify that reports answer the owner's core operational questions
+- [ ] Offline report access from trusted locally available data only where practical
+- [ ] Do not build a large BI/analytics platform in V1
 
-## Phase 7 — Platform intelligence
-- [x] Rules/configuration engine — owner-controlled rule foundation
-- [x] Background jobs — durable queue record and claim primitive
-- [x] Reliable notification processing — idempotent queue foundation
-- [ ] Offline-first platform completion — application-wide module adoption and reconciliation verification
-- [x] Idempotent sync actions — school-scoped idempotency foundation
-- [x] Anomaly/delay detection — deterministic operational anomaly checks
-- [x] AI assistance above trusted records, never as the source of truth — deterministic AI-ready management context boundary
-- [ ] Conflict resolution policies and operator-visible reconciliation tools
-- [ ] Offline security/session lifecycle hardening
+## Phase 7 — Commercial result access
 
-## Phase 8 — Production platform
-- [ ] PostgreSQL migration/deployment process — migration baseline exists; production verification remains
-- [ ] Object/file storage
-- [ ] Backups and recovery procedures, including recovery of sync/outbox state where required
+The commercial layer supports a simple initial business model without turning V1 into a billing platform.
+
+| Plan | Monthly | School share of paid result access |
+|---|---:|---:|
+| Free | ₦0 | 0% |
+| Basic | ₦5,000 | 25% |
+| Starter | ₦10,000 | 50% |
+| Pro | ₦20,000 | 75% |
+| Premium | ₦35,000 | 100% |
+| Custom | Negotiated | 100% by default until negotiated terms exist |
+
+Already implemented:
+
+- [x] Centralized plan configuration
+- [x] Deterministic result revenue allocation
+- [x] Zero-fee normalization
+- [x] School subscription + plan persistence
+- [x] Result Access setting + configurable fee
+- [x] Result authorization boundary
+- [x] Payment attempt + school-scoped idempotency
+- [x] Paystack/Flutterwave checkout initialization
+- [x] Server-side provider verification
+- [x] Immutable verified transaction + revenue allocation
+- [x] Provider event replay/idempotency boundary
+- [x] Entitlement persistence + lookup
+- [x] Callback adapters with provider verification before entitlement grant
+
+Remain only where directly useful to V1 operations:
+
+- [ ] School transaction/revenue view
+- [ ] Basic commercial administration view
+- [ ] Monnify result-access adapter if required by launch operations
+
+Defer beyond V1:
+
+- [ ] Full subscription lifecycle automation
+- [ ] Settlement/refund operations platform
+- [ ] Commercial analytics/admin suite
+
+## V1 platform safety
+
+These are release gates, not feature expansion:
+
+- [ ] Automated CI for typecheck/lint/test/build
+- [ ] Tenant-isolation integration tests
+- [ ] Production migration/deployment verification
+- [ ] Backup and recovery procedure
 - [ ] Observability and operational alerts
 - [ ] Security hardening
-- [ ] Performance/load testing
-- [ ] Offline/online transition testing at production scale
+- [ ] Performance/load testing appropriate to expected V1 scale
+- [ ] Offline/online transition testing across representative workflows
 - [ ] Render production deployment
-- [ ] Tenant-safe onboarding and support operations
+- [ ] Tenant-safe onboarding/support procedure
 
-## Current V1 sequence
+## Conflict handling
 
-1. **Assessment definitions** — complete and tested against Greenfield Heritage Academy.
-2. **Score capture + validation** — current slice: assessment roster loads from active enrollment and individual scores are validated and saved with audit evidence.
-3. **Result submission** — next.
-4. **Result approval** — after submission.
-5. **Result publication** — after approval.
-6. **Report cards** — derive from trusted published academic records.
-7. **Academic history** — preserve and present results across sessions.
-8. **Offline-first foundation** — browser persistence, repository, outbox, lifecycle, sync processor and connectivity scheduler are started; next establish authoritative pull/reconciliation and application sync-status UI before converting score capture end-to-end.
+The platform already represents `PENDING_SYNC`, `SYNCING`, `SYNCED`, `FAILED` and `CONFLICT`.
+
+V1 only needs focused conflict handling for important workflows such as attendance and assessment scores. Do not build a generalized enterprise reconciliation console unless real operational experience demonstrates the need.
+
+## Workspace rule
+
+Owner, teacher, parent/guardian and student experiences are different views over the same school-scoped platform.
+
+They share the same User identity, school records, authorization model and offline infrastructure. The workspace is derived from the person's approved/verified school relationship, not from a URL role parameter.
+
+Capabilities and school module configuration remain the authorization boundary.
+
+## Current V1 execution order
+
+### Gate A — Identity & school joining
+
+1. Personal SkulGo account creation.
+2. School discovery.
+3. Student admission application.
+4. Teacher/staff application.
+5. Owner review and acceptance/offer.
+6. Membership/workspace creation after approval.
+7. Parent/guardian verified relationship path.
+8. Automatic dashboard routing after login.
+
+### Gate B — Academic trust
+
+9. Verify result submission runtime.
+10. Verify result approval runtime.
+11. Verify submit → approve → publish lifecycle.
+12. Verify report card runtime.
+13. Verify academic history runtime.
+
+### Gate C — Offline platform release gate
+
+14. Verify assessment browser offline lifecycle.
+15. Add focused assessment conflict UI.
+16. Define and implement safe offline authentication/session behavior.
+17. Convert the minimum student/enrollment workflows needed for teacher/admin continuity.
+
+### Gate D — Human value
+
+18. Verify parent journey end-to-end.
+19. Verify teacher daily workflow end-to-end.
+20. Verify owner configuration, finance and reports against real operational questions.
+21. Keep student-facing behavior limited to information and workflows genuinely needed in V1.
+
+### Gate E — Production trust
+
+22. CI.
+23. Tenant-isolation integration coverage.
+24. Migration verification.
+25. Backups/recovery.
+26. Observability.
+27. Security hardening.
+28. Production deployment and representative offline/online transition verification.
+
+## Explicit V1 exclusions — do not build now
+
+Do not expand V1 into:
+
+- a full accounting/ERP suite;
+- a large CRM;
+- a general-purpose messaging/social platform;
+- native mobile applications before the web workflow proves demand;
+- complex timetable/transport/library/hostel systems unless a launch school has a concrete requirement;
+- advanced AI agents making authoritative school decisions;
+- a large BI/data warehouse platform;
+- a generalized multi-domain conflict-management product;
+- dozens of role-specific workflows that duplicate the same underlying records;
+- role-selection URL parameters used to simulate identity;
+- separate user databases for owners, teachers, students or parents.
 
 ## V1 completion rule
 
-Finish the remaining roadmap items before expanding the product beyond V1. Work forward from the current phase; do not reopen completed phases unless verification exposes a real defect. Keep each slice small, production-oriented and tied to an actual school workflow.
+Call V1 complete only when:
 
-Every completed slice must preserve the existing platform boundaries: school-scoped ownership, capability authorization, module enforcement, validation of important invariants, audit evidence for meaningful changes, historical truth, and offline continuity where the workflow is expected to operate offline.
+- every person can have a proper SkulGo account;
+- school relationships are established through the correct workflow;
+- approved members reach the correct school workspace automatically;
+- the core owner, teacher, parent/guardian and student journeys work reliably;
+- the academic result lifecycle is trusted;
+- offline continuity works for supported operational workflows;
+- financial states remain honest;
+- production safety gates are verified.
 
-## Rule
+> **One person → one SkulGo account → one or more legitimate school relationships → the correct workspace.**
 
-Do not build reports merely because other school systems have them. Each report must turn trusted school records into a decision or action the school actually needs. Keep reports school-scoped, capability-controlled, module-controlled and derived from authoritative records.
+## Principle
 
-Do not treat offline-first as a later UI enhancement. It is a platform architecture requirement that must shape persistence, mutation handling, synchronization, conflict handling and module design from this point forward.
+> **Solve the painful daily school problems first. Build the smallest trustworthy platform that can solve them. Stop adding features when the V1 problem is solved.**
