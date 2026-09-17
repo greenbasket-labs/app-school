@@ -10,24 +10,19 @@ export class GuardianAccountAuthorizationError extends Error {
 export async function verifyGuardianAccount(input: {
   schoolId: string;
   guardianId: string;
-  userId: string;
   actorUserId: string;
 }) {
   const guardian = await db.guardian.findFirst({
     where: { id: input.guardianId, schoolId: input.schoolId },
-    select: { id: true, userId: true, accountVerifiedAt: true },
+    select: { id: true, schoolId: true, userId: true, accountVerifiedAt: true },
   });
-  const user = await db.user.findUnique({ where: { id: input.userId }, select: { id: true } });
-  if (!guardian || !user) throw new GuardianAccountAuthorizationError("Guardian and account must exist in the requested context.");
-  if (guardian.userId && guardian.userId !== input.userId) {
-    throw new GuardianAccountAuthorizationError("This guardian is already linked to another account.");
-  }
+  if (!guardian) throw new GuardianAccountAuthorizationError("Guardian not found in this school.");
+  if (!guardian.userId) throw new GuardianAccountAuthorizationError("Guardian account must be linked before verification.");
 
   return db.$transaction(async (tx) => {
     const updated = await tx.guardian.update({
       where: { id: input.guardianId },
       data: {
-        userId: input.userId,
         accountVerifiedAt: new Date(),
         accountVerifiedByUserId: input.actorUserId,
       },
@@ -47,6 +42,7 @@ export async function verifyGuardianAccount(input: {
         currentState: {
           userId: updated.userId,
           accountVerifiedAt: updated.accountVerifiedAt,
+          accountVerifiedByUserId: input.actorUserId,
         },
       },
     });
@@ -68,7 +64,7 @@ export async function removeGuardianAccountVerification(input: {
   return db.$transaction(async (tx) => {
     const updated = await tx.guardian.update({
       where: { id: input.guardianId },
-      data: { userId: null, accountVerifiedAt: null, accountVerifiedByUserId: null },
+      data: { accountVerifiedAt: null, accountVerifiedByUserId: null },
       select: { id: true, schoolId: true, userId: true, accountVerifiedAt: true },
     });
     await tx.auditEvent.create({
@@ -83,7 +79,7 @@ export async function removeGuardianAccountVerification(input: {
           accountVerifiedAt: guardian.accountVerifiedAt,
           accountVerifiedByUserId: guardian.accountVerifiedByUserId,
         },
-        currentState: { userId: null, accountVerifiedAt: null },
+        currentState: { userId: guardian.userId, accountVerifiedAt: null, accountVerifiedByUserId: null },
       },
     });
     return updated;
@@ -98,6 +94,7 @@ export async function listVerifiedGuardianChildren(schoolId: string, userId: str
         some: {
           schoolId,
           guardian: {
+            schoolId,
             userId,
             accountVerifiedAt: { not: null },
           },
