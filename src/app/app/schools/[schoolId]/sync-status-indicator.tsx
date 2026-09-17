@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getConnectivityState } from "@/domain/platform/connectivity";
 import { listLocalRecords } from "@/domain/platform/local-repository";
 import { getPendingOutbox } from "@/domain/platform/local-outbox";
+import { SYNC_FINISHED_EVENT, SYNC_STARTED_EVENT, type SyncFinishedDetail, type SyncStartedDetail } from "@/domain/platform/sync-events";
 import { syncStatusLabel, deriveSyncStatus, type SyncStatus } from "@/domain/platform/sync-status";
 
 export default function SyncStatusIndicator({ schoolId }: { schoolId: string }) {
@@ -12,6 +13,7 @@ export default function SyncStatusIndicator({ schoolId }: { schoolId: string }) 
   const [pending, setPending] = useState(0);
   const [failed, setFailed] = useState(0);
   const [conflicts, setConflicts] = useState(0);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     const refresh = async () => {
@@ -32,7 +34,7 @@ export default function SyncStatusIndicator({ schoolId }: { schoolId: string }) 
           pending: outbox.length,
           failed: failedCount,
           conflicts: conflictCount,
-          syncing: false,
+          syncing,
         }));
       } catch {
         setPending(0);
@@ -43,18 +45,39 @@ export default function SyncStatusIndicator({ schoolId }: { schoolId: string }) 
     };
 
     const onOnline = () => void refresh();
-    const onOffline = () => void refresh();
+    const onOffline = () => {
+      setSyncing(false);
+      void refresh();
+    };
+    const onSyncStarted = (event: Event) => {
+      const detail = (event as CustomEvent<SyncStartedDetail>).detail;
+      if (detail.schoolId !== schoolId) return;
+      setSyncing(true);
+      setConnectivity(getConnectivityState());
+      setStatus("SYNCING");
+    };
+    const onSyncFinished = (event: Event) => {
+      const detail = (event as CustomEvent<SyncFinishedDetail>).detail;
+      if (detail.schoolId !== schoolId) return;
+      setSyncing(false);
+      void refresh();
+    };
+
     const timer = window.setInterval(() => void refresh(), 10_000);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
+    window.addEventListener(SYNC_STARTED_EVENT, onSyncStarted);
+    window.addEventListener(SYNC_FINISHED_EVENT, onSyncFinished);
     void refresh();
 
     return () => {
       window.clearInterval(timer);
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
+      window.removeEventListener(SYNC_STARTED_EVENT, onSyncStarted);
+      window.removeEventListener(SYNC_FINISHED_EVENT, onSyncFinished);
     };
-  }, [schoolId]);
+  }, [schoolId, syncing]);
 
   return (
     <div
