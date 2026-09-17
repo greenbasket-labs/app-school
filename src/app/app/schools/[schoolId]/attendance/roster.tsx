@@ -2,17 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getConnectivityState } from "@/domain/platform/connectivity";
-import { getLocalRecordByEntity, listLocalRecords, saveLocalRecord } from "@/domain/platform/local-repository";
+import { getLocalRecordByEntity } from "@/domain/platform/local-repository";
 import { getPendingOutbox } from "@/domain/platform/local-outbox";
 import { startSyncScheduler } from "@/domain/platform/sync-scheduler";
 import { attendanceBulkSyncExecutor } from "@/domain/attendance/attendance-sync-executor";
 import {
-  attendanceRosterRecordId,
   queueAttendanceBulk,
   saveAttendanceRosterLocally,
   type AttendanceRosterSnapshot,
 } from "@/domain/attendance/offline-sync";
-import type { LocalRecord } from "@/domain/platform/local-store";
 
 type Arm = { id: string; name: string; classLevel: { name: string } };
 type SchoolSession = { id: string; name: string; status: string; classArms: Arm[] };
@@ -94,12 +92,18 @@ export default function AttendanceRoster({ schoolId, canRecord, initialSessionId
     };
   }, [schoolId]);
 
-  useEffect(() => startSyncScheduler({ schoolId, executor: attendanceBulkSyncExecutor, intervalMs: 30_000, onRun: () => {
-    void (async () => {
-      const outbox = await getPendingOutbox(schoolId);
-      setPending(outbox.filter((item) => item.entityType === "AttendanceBulk").length);
-    })();
-  }, onError: (error) => setMessage(`Sync issue: ${error.message}`) }), [schoolId]);
+  useEffect(() => startSyncScheduler({
+    schoolId,
+    executor: attendanceBulkSyncExecutor,
+    intervalMs: 30_000,
+    onRun: () => {
+      void (async () => {
+        const outbox = await getPendingOutbox(schoolId);
+        setPending(outbox.filter((item) => item.entityType === "AttendanceBulk").length);
+      })();
+    },
+    onError: (error) => setMessage(`Sync issue: ${error.message}`),
+  }), [schoolId]);
 
   useEffect(() => {
     if (!sessionId || !classArmId || !date) return;
@@ -158,7 +162,7 @@ export default function AttendanceRoster({ schoolId, canRecord, initialSessionId
     setLoading(true); setMessage("");
     try {
       const snapshot = snapshotFromRows({ academicSessionId: sessionId, classArmId, attendanceDate: date, rows: roster, status });
-      const items = roster.map((row) => ({ studentId: row.studentId, enrollmentId: row.id, status: status[row.studentId] ?? "PRESENT" as Status }));
+      const items = roster.map((row) => ({ studentId: row.studentId, enrollmentId: row.id, status: (status[row.studentId] ?? "PRESENT") as Status }));
       await queueAttendanceBulk({ schoolId, actorUserId, snapshot, items });
       setRoster(rowsFromSnapshot(snapshot));
       setStatus(Object.fromEntries(snapshot.students.map((student) => [student.studentId, student.status])));
