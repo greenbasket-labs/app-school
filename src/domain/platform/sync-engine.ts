@@ -1,50 +1,122 @@
-import { getIdempotentResult } from "./idempotency";
+import { applyAuthoritativeLocalRecord, getLocalRecordByEntity, markLocalRecordState } from "./local-repository";
 import { getPendingOutbox, updateOutboxStatus } from "./local-outbox";
+import { nextRetryAt } from "./retry-policy";
+import type { SyncExecutor, SyncExecutorResult } from "./sync-executor";
 
-export type SyncExecutorResult = {
-  status: "ACKNOWLEDGED" | "FAILED" | "CONFLICT";
-  serverVersion?: string | null;
-  result?: unknown;
-  error?: string | null;
+export type SyncRunResult = {
+  attempted: number;
+  acknowledged: number;
+  failed: number;
+  conflicts: number;
+  retrying: number;
+  deferred: number;
 };
 
-export type SyncExecutor = (item: {
-  operationId: string;
-  schoolId: string;
-  actorUserId?: string | null;
-  entityType: string;
-  entityId: string;
-  operationType: string;
-  payload: unknown;
-}) => Promise<SyncExecutorResult>;
-
-export async function syncPendingOperations(schoolId: string, executor: SyncExecutor): Promise<{ processed: number; acknowledged: number; failed: number; conflicts: number }> {
-  const pending = await getPendingOutbox(schoolId);
-  let acknowledged = 0;
-  let failed = 0;
-  let conflicts = 0;
+export async function runPendingSync(
+  schoolId: string,
+  executor: SyncExecutor,
+  now = new Date(),
+): Promise<SyncRunResult> {
+  const pending = await getPendingOutbox(schoolId, now);
+  const result: SyncRunResult = {
+    attempted: 0,
+    acknowledged: 0,
+    failed: 0,
+    conflicts: 0,
+    retrying: 0,
+    deferred: 0,
+  };
 
   for (const item of pending) {
-    const nextAttempt = item.attemptCount + 1;
-    await updateOutboxStatus(item.operationId, "SYNCING", { attemptCount: nextAttempt });
+    result.attempted += 1;
+    const attemptCount = item.attemptCount + 1;
+    await updateOutboxStatus(item.operationId, "SYNCING", {
+      attemptCount,
+      nextAttemptAt: null,
+    });
 
     try {
-      const result = await executor(item);
-      await updateOutboxStatus(item.operationId, result.status, { lastError: result.error ?? null });
-      if (result.status === "ACKNOWLEDGED") acknowledged += 1;
-      else if (result.status === "CONFLICT") conflicts += 1;
-      else failed += 1;
+      const response = await executor(item);
+      await applySyncResult(item, response, attemptCount, now);
+
+      if (response.status === "ACKNOWLEDGED") result.acknowledged += 1;
+      if (response.status === "FAILED") {
+        if (response.retryable) result.retrying += 1;
+        else result.failed += 1;
+      }
+      if (response.status === "CONFLICT") result.conflicts += 1;
     } catch (error) {
-      await updateOutboxStatus(item.operationId, "FAILED", {
-        lastError: error instanceof Error ? error.message : "Synchronization failed.",
-      });
-      failed += 1;
+      const message = error instanceof Error ? error.message : "Synchronization failed.";
+      await applySyncResult(item, { status: "FAILED", error: message, retryable: true }, attemptCount, now);
+      result.retrying += 1;
     }
   }
 
-  return { processed: pending.length, acknowledged, failed, conflicts };
+  return result;
 }
 
-export async function serverResultAlreadyRecorded<T>(schoolId: string, operation: string, key: string) {
-  return getIdempotentResult<T>(schoolId, operation, key);
+async function applySyncResult(
+  item: Awaited<ReturnType<typeof getPendingOutbox>>[number],
+  response: SyncExecutorResult,
+  attemptCount: number,
+  now: Date,
+) {
+  const local = await getLocalRecordByEntity(item.schoolId, item.entityType, item.entityId);
+
+  if (response.status === "ACKNOWLEDGED") {
+    if (!local) {
+      await updateOutboxStatus(item.operationId, "FAILED", {
+        lastError: "Local record is missing for acknowledged synchronization.",
+        nextAttemptAt: null,
+      });
+      return;
+    }
+
+    const authoritative = response.authoritative;
+    const serverVersion = authoritative?.serverVersion ?? response.serverVersion ?? null;
+    if (!authoritative || !serverVersion) {
+      await updateOutboxStatus(item.operationId, "FAILED", {
+        lastError: "Server acknowledgement did not include authoritative data and version.",
+        nextAttemptAt: null,
+      });
+      await markLocalRecordState(local.id, "FAILED");
+      return;
+    }
+
+    await updateOutboxStatus(item.operationId, "ACKNOWLEDGED", {
+      lastError: null,
+      nextAttemptAt: null,
+    });
+    await applyAuthoritativeLocalRecord({
+      id: local.id,
+      data: authoritative.data,
+      serverVersion,
+      updatedAt: authoritative.updatedAt,
+    });
+    return;
+  }
+
+  if (response.status === "CONFLICT") {
+    await updateOutboxStatus(item.operationId, "CONFLICT", {
+      lastError: response.error ?? "Server reported a synchronization conflict.",
+      nextAttemptAt: null,
+    });
+    if (local) await markLocalRecordState(local.id, "CONFLICT");
+    return;
+  }
+
+  if (response.retryable) {
+    await updateOutboxStatus(item.operationId, "PENDING", {
+      lastError: response.error ?? "Temporary synchronization failure.",
+      nextAttemptAt: nextRetryAt(attemptCount, now),
+    });
+    if (local) await markLocalRecordState(local.id, "PENDING_SYNC");
+    return;
+  }
+
+  await updateOutboxStatus(item.operationId, "FAILED", {
+    lastError: response.error ?? "Server rejected synchronization.",
+    nextAttemptAt: null,
+  });
+  if (local) await markLocalRecordState(local.id, "FAILED");
 }
