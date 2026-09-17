@@ -2,14 +2,14 @@ import { LocalOutboxItem, LocalRecord, LocalSyncState, openAppSchoolLocalDb, LOC
 
 type LocalRecordInput<T> = Omit<LocalRecord<T>, "updatedAt"> & { updatedAt?: string };
 
-type LocalMutation<T> = {
+type LocalMutation<TPayload, TRecord = TPayload> = {
   schoolId: string;
   actorUserId?: string | null;
   entityType: string;
   entityId: string;
   operationType: string;
-  payload: T;
-  record: LocalRecordInput<T>;
+  payload: TPayload;
+  record: LocalRecordInput<TRecord>;
   operationId: string;
 };
 
@@ -65,14 +65,14 @@ export async function saveLocalRecord<T>(record: LocalRecordInput<T>): Promise<L
   }
 }
 
-export async function saveLocalMutation<T>(mutation: LocalMutation<T>): Promise<LocalRecord<T>> {
+export async function saveLocalMutation<TPayload, TRecord = TPayload>(mutation: LocalMutation<TPayload, TRecord>): Promise<LocalRecord<TRecord>> {
   const now = new Date().toISOString();
   const db = await openAppSchoolLocalDb();
   try {
     const transaction = db.transaction([LOCAL_STORES.records, LOCAL_STORES.outbox], "readwrite");
     const recordStore = transaction.objectStore(LOCAL_STORES.records);
-    const existing = (await requestResult(recordStore.get(mutation.record.id))) as LocalRecord<T> | undefined;
-    const record: LocalRecord<T> = {
+    const existing = (await requestResult(recordStore.get(mutation.record.id))) as LocalRecord<TRecord> | undefined;
+    const record: LocalRecord<TRecord> = {
       ...mutation.record,
       serverVersion: mutation.record.serverVersion ?? existing?.serverVersion ?? null,
       updatedAt: mutation.record.updatedAt ?? now,
