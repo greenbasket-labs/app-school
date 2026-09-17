@@ -1,10 +1,12 @@
 import type { SyncExecutor } from "./sync-executor";
 import { attendanceBulkSyncExecutor } from "@/domain/attendance/attendance-sync-executor";
 import { communicationNotificationSyncExecutor } from "@/domain/communication/communication-sync-executor";
+import { assessmentScoreSyncExecutor } from "@/domain/assessments/score-sync-executor";
 
 const executors: SyncExecutor[] = [
   attendanceBulkSyncExecutor,
   communicationNotificationSyncExecutor,
+  assessmentScoreSyncExecutor,
 ];
 
 export const schoolSyncExecutor: SyncExecutor = async (item) => {
