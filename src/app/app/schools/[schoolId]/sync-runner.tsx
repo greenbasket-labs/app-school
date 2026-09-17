@@ -8,6 +8,17 @@ import { startSyncScheduler } from "@/domain/platform/sync-scheduler";
 import { schoolSyncExecutor } from "@/domain/platform/sync-registry";
 import type { AttendanceRosterSnapshot } from "@/domain/attendance/offline-sync";
 
+function isAttendanceRosterSnapshot(value: unknown): value is AttendanceRosterSnapshot {
+  if (!value || typeof value !== "object") return false;
+  const snapshot = value as Partial<AttendanceRosterSnapshot>;
+  return (
+    typeof snapshot.academicSessionId === "string" &&
+    typeof snapshot.classArmId === "string" &&
+    typeof snapshot.attendanceDate === "string" &&
+    Array.isArray(snapshot.students)
+  );
+}
+
 export default function SyncRunner({ schoolId }: { schoolId: string }) {
   useEffect(() => {
     let cancelled = false;
@@ -19,7 +30,7 @@ export default function SyncRunner({ schoolId }: { schoolId: string }) {
         const records = await listLocalRecords<AttendanceRosterSnapshot>(schoolId, "AttendanceRoster");
 
         for (const record of records) {
-          if (cancelled) return;
+          if (cancelled || !isAttendanceRosterSnapshot(record.data)) continue;
           const snapshot = record.data;
           await reconcileAttendanceRoster({
             schoolId,
