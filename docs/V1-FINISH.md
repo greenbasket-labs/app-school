@@ -1,0 +1,160 @@
+# SkulGo V1 Finish Plan
+
+This document is the release checklist for V1. It is intentionally narrower than the full product roadmap.
+
+## V1 product boundary
+
+The V1 product is:
+
+```text
+One person
+  ↓
+One SkulGo personal account
+  ↓
+One or more legitimate school relationships
+  ↓
+Correct school workspace
+```
+
+A school controls the person's relationship inside its organization. The person does not self-assign an authoritative school role.
+
+When a person leaves, the school disables that school membership. The personal SkulGo account remains available for other schools or future relationships.
+
+## Ship-critical gates
+
+### 1. Identity and school joining
+
+- [ ] Personal SkulGo account can be created independently of school membership.
+- [ ] User can discover a school organization.
+- [ ] Student can submit admission/application request.
+- [ ] Teacher/staff/cashier/etc. can submit an application/request.
+- [ ] School owner can review pending requests.
+- [ ] Owner determines the school relationship and grants the appropriate capabilities.
+- [ ] Approval creates/activates the school membership and required relationship records.
+- [ ] Owner can disable/deactivate a school membership when the person leaves.
+- [ ] Disabled membership cannot access the school while the personal SkulGo account remains intact.
+- [ ] Login routes one-school users directly to the correct workspace.
+- [ ] Multiple active school relationships show a selector.
+- [ ] No role-selection URL parameters are used.
+
+### 2. Academic trust
+
+- [x] Assessment definitions.
+- [x] Score capture and validation.
+- [x] Result submission service and authenticated route.
+- [x] Result approval service and authenticated authorization rule.
+- [x] Result publication service and authenticated authorization rule.
+- [ ] Verify capture → submit → approve → publish in a real browser/runtime.
+- [ ] Verify published report card access.
+- [ ] Verify academic history access.
+
+### 3. Daily teacher workflow
+
+- [ ] Teacher can enter the correct school workspace.
+- [ ] Teacher can access the students/classes they are authorized to use.
+- [ ] Teacher can record attendance.
+- [ ] Teacher can enter assessment scores.
+- [ ] Teacher can see clear saved/pending/synced states.
+- [ ] Teacher can continue supported work during temporary connectivity loss.
+- [ ] Reconnection synchronizes pending work without duplicate effects.
+
+### 4. Parent/guardian workflow
+
+- [x] Guardian records and student relationships.
+- [x] Guardian account bootstrap/security.
+- [x] Parent authorization boundary.
+- [x] In-app attendance/payment/result alerts.
+- [ ] Verify SkulGo account → verified guardian relationship → authorized child → notification → published result → academic history.
+- [ ] Verify access remains restricted to linked children and schools.
+
+### 5. Student experience
+
+- [ ] Student has a correct school relationship/enrollment record.
+- [ ] Student can see their authorized school information.
+- [ ] Student can see published academic information/history required for V1.
+- [ ] No student access is inferred from a URL role parameter.
+
+### 6. Finance
+
+- [x] Fee structures, assignments and invoices.
+- [x] Payment recording.
+- [x] Receipts.
+- [x] Balances/reconciliation foundation.
+- [ ] Verify critical finance paths against a real school scenario.
+- [ ] Confirm locally queued activity is never presented as confirmed payment.
+
+### 7. Offline release gate
+
+- [x] Shared durable local store.
+- [x] Shared outbox and synchronization engine.
+- [x] Connectivity-aware synchronization.
+- [x] Attendance offline save → reload → reconnect → sync → reload verified.
+- [ ] Assessment offline save → reload → reconnect → sync verified.
+- [ ] Focused assessment conflict handling.
+- [ ] Minimum student/enrollment offline continuity needed for teacher/admin work.
+- [ ] Define and verify safe offline authentication/session behavior.
+
+## Production release gates
+
+These are required to release V1 but are not new product features:
+
+- [ ] CI: install, typecheck, test and build from a clean checkout.
+- [ ] Tenant-isolation integration tests.
+- [ ] Production migration verification.
+- [ ] Backup and recovery procedure.
+- [ ] Observability and operational alerts.
+- [ ] Security hardening review.
+- [ ] Representative performance/load test.
+- [ ] Offline/online transition test on production-like deployment.
+- [ ] Render production deployment.
+- [ ] Tenant-safe onboarding and support procedure.
+
+## Final end-to-end acceptance
+
+A V1 release candidate must demonstrate this real-school journey:
+
+```text
+Owner registers school
+→ configures school
+→ manages access
+→ person creates SkulGo account
+→ person requests to join
+→ owner approves relationship
+→ membership/capabilities are created
+→ correct workspace opens
+→ teacher works with students
+→ attendance
+→ scores
+→ submit
+→ approve
+→ publish
+→ parent receives notification
+→ parent views authorized child result/history
+→ finance records remain accurate
+→ reports answer core operational questions
+→ supported workflow works offline
+→ reconnect and sync complete safely
+```
+
+## Explicitly deferred
+
+Do not add these before V1 release unless a concrete launch requirement makes one unavoidable:
+
+- SkulGo CV/profile generation.
+- Public professional profiles.
+- Ratings, endorsements, recommendations or experience scoring.
+- Social networking or general-purpose chat.
+- Full accounting/ERP.
+- CRM.
+- Timetable, transport, library or hostel systems.
+- Native mobile applications.
+- Advanced AI making authoritative school decisions.
+- Large BI/data warehouse infrastructure.
+- General-purpose conflict/reconciliation consoles.
+- Large collections of duplicated role-specific workflows.
+
+## Completion rule
+
+V1 is complete when the core owner, teacher, parent/guardian and student journeys are reliable, the academic lifecycle is trusted, supported offline workflows are reliable, financial states remain honest, school tenancy and access controls are protected, and production release gates are verified.
+
+> **Do not keep building because the roadmap has more boxes. Ship when the V1 problem is solved.**
