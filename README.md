@@ -103,7 +103,7 @@ Pending changes → Sync → Server validation/authorization
 
 ## Offline implementation checkpoint
 
-The shared offline platform foundation is being built incrementally. The repository currently contains:
+The repository currently contains the shared App-School offline platform foundation and integrated reference workflows:
 
 - versioned IndexedDB local persistence;
 - shared school-scoped local repository primitives;
@@ -111,11 +111,14 @@ The shared offline platform foundation is being built incrementally. The reposit
 - shared synchronization lifecycle states;
 - executor-based pending-operation sync engine;
 - connectivity/reconnect scheduling primitives;
-- an initial authoritative pull/reconciliation contract using server versions and explicit `APPLY`, `CONFLICT` and `IGNORE` classification;
-- a common sync-status model for application-wide UI semantics;
-- assessment score local-first mutation and an idempotent server-save boundary as the first reference-workflow foundation.
+- authoritative pull/reconciliation using server versions and explicit `APPLY`, `CONFLICT` and `IGNORE` classification;
+- common sync-status model and school-workspace UI wiring;
+- one central school-level sync runner and registry for supported modules;
+- attendance bulk local-first mutation, synchronization and reconciliation;
+- assessment score local-first mutation, synchronization and reconciliation;
+- communication notification local-first mutation and synchronization.
 
-These pieces are **platform foundations, not a claim that App-School is already fully offline-ready**. The remaining work includes real authenticated executor wiring, live pull/reconciliation endpoints, browser persistence/reconnect tests, visible sync UI, offline authentication/session handling, and complete end-to-end adoption by each operational module.
+These pieces are **platform foundations and integrated module slices, not a claim that App-School is already fully offline-ready application-wide**. Remaining work includes broader module adoption, complete conflict/operator tooling, offline authentication/session handling, and production-scale/browser end-to-end verification as additional workflows are converted.
 
 The canonical offline implementation contract is `docs/OFFLINE-FIRST-HANDOFF.md`.
 
@@ -168,7 +171,7 @@ The goal is not the largest feature list. The goal is a strong platform that can
 15. **Parent/guardian records** — school-scoped guardian records plus many-to-many student relationships, with relationship metadata and audited link/unlink actions.
 16. **Student status lifecycle** — controlled active/inactive/withdrawn transitions with terminal withdrawal and audit history.
 17. **Assessment definitions and initial score capture** — assessment roster, per-student score validation and audited score persistence.
-18. **Offline platform foundation** — shared local persistence, outbox, sync lifecycle, scheduler, reconciliation contract, status model and assessment-score idempotency boundary; PostgreSQL UUID casting and sequential replay coverage verified.
+18. **Offline platform foundation** — shared local persistence, outbox, sync lifecycle, scheduler, reconciliation contract, status model and central school-level execution; attendance browser verification plus assessment/communication integration are implemented on the same platform.
 19. **Commercial plan foundation** — centralized Free/Basic/Starter/Pro/Premium/Custom pricing and deterministic result-access revenue allocation.
 20. **Commercial persistence foundation** — database-backed school subscription and Result Access configuration; new schools initialize to Free/disabled defaults, existing schools are safely materialized on first access, and owner changes are audited.
 21. **Guardian account security foundation** — school-captured Guardian records can bootstrap a linked User through a single-use invitation; the account receives a temporary password, first-login password change is mandatory, email verification is established through the invitation factor, and phone verification has an explicit durable token/state boundary.
