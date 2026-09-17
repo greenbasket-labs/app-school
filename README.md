@@ -168,7 +168,7 @@ The goal is not the largest feature list. The goal is a strong platform that can
 15. **Parent/guardian records** — school-scoped guardian records plus many-to-many student relationships, with relationship metadata and audited link/unlink actions.
 16. **Student status lifecycle** — controlled active/inactive/withdrawn transitions with terminal withdrawal and audit history.
 17. **Assessment definitions and initial score capture** — assessment roster, per-student score validation and audited score persistence.
-18. **Offline platform foundation** — shared local persistence, outbox, sync lifecycle, scheduler, reconciliation contract, status model and assessment-score idempotency boundary.
+18. **Offline platform foundation** — shared local persistence, outbox, sync lifecycle, scheduler, reconciliation contract, status model and assessment-score idempotency boundary; PostgreSQL UUID casting and sequential replay coverage verified.
 19. **Commercial plan foundation** — centralized Free/Basic/Starter/Pro/Premium/Custom pricing and deterministic result-access revenue allocation.
 20. **Commercial persistence foundation** — database-backed school subscription and Result Access configuration; new schools initialize to Free/disabled defaults, existing schools are safely materialized on first access, and owner changes are audited.
 21. **Guardian account security foundation** — school-captured Guardian records can bootstrap a linked User through a single-use invitation; the account receives a temporary password, first-login password change is mandatory, email verification is established through the invitation factor, and phone verification has an explicit durable token/state boundary.

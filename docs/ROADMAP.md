@@ -137,7 +137,7 @@ This requirement applies across the platform, including school setup, students, 
 - [x] Background jobs — durable queue record and claim primitive
 - [x] Reliable notification processing — idempotent queue foundation
 - [ ] Offline-first platform completion — application-wide module adoption and reconciliation verification
-- [x] Idempotent sync actions — school-scoped idempotency foundation
+- [x] Idempotent sync actions — school-scoped idempotency foundation — assessment-score replay path verified by automated sequential-retry coverage; live authenticated runtime and browser-level offline verification remain pending
 - [x] Anomaly/delay detection — deterministic operational anomaly checks
 - [x] AI assistance above trusted records, never as the source of truth — deterministic AI-ready management context boundary
 - [ ] Conflict resolution policies and operator-visible reconciliation tools

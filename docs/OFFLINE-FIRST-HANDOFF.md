@@ -274,6 +274,14 @@ The server must recognize a repeated operation identity and avoid applying the s
 
 Reuse the existing school-scoped idempotency foundation rather than creating a second concept. The browser outbox must preserve and resend the same operation identity for the life of that pending edit.
 
+### Current assessment-score checkpoint
+
+The assessment-score server boundary passes the school identifier to PostgreSQL with an explicit `uuid` cast in the shared idempotency lookup and insert operations.
+
+The shared `replayOrRecordIdempotentResult` orchestration is covered by an automated sequential-retry test proving that the first operation executes once and a repeated operation identity replays the stored result without executing the mutation again.
+
+This verifies the idempotency orchestration and SQL typing correction at unit-test level. Concurrent duplicate-request safety, authenticated live HTTP behavior against a populated database, and browser reconnect behavior remain separate verification work.
+
 ## Conflict handling
 
 Conflict strategy is domain-specific.
