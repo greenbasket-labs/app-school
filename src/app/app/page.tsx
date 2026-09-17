@@ -16,9 +16,7 @@ export default async function AppHomePage() {
     orderBy: { createdAt: "asc" },
   });
 
-  if (memberships.length === 1) {
-    redirect(`/app/schools/${memberships[0].schoolId}`);
-  }
+  if (memberships.length === 1) redirect(`/app/schools/${memberships[0].schoolId}`);
 
   return (
     <main style={{ minHeight: "100vh", padding: 32 }}>
@@ -37,14 +35,15 @@ export default async function AppHomePage() {
         </header>
 
         {memberships.length === 0 ? (
-          <section style={{ marginTop: 32, display: "grid", gap: 16 }}>
+          <section style={{ marginTop: 32 }}>
             <div style={{ background: "white", borderRadius: 16, padding: 24, boxShadow: "0 8px 24px rgba(0,0,0,.05)" }}>
               <h2 style={{ margin: 0, fontSize: 22 }}>Your personal account is ready</h2>
               <p style={{ margin: "10px 0 0", color: "#53615a", lineHeight: 1.6 }}>
-                Your account is independent from any school. School discovery and join requests are the next step before a school workspace becomes available.
+                Your account is independent from any school. Find your school and send a join request, or register a new school if you are the owner.
               </p>
-              <div style={{ marginTop: 20 }}>
-                <Link href="/register" style={primaryLink}>Register a school →</Link>
+              <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <Link href="/app/schools/join" style={primaryLink}>Find a school →</Link>
+                <Link href="/register" style={secondaryLink}>Register a school</Link>
               </div>
             </div>
           </section>
@@ -70,3 +69,4 @@ export default async function AppHomePage() {
 }
 
 const primaryLink = { display: "inline-block", padding: "12px 16px", borderRadius: 10, background: "#173d2a", color: "white", textDecoration: "none", fontWeight: 700 };
+const secondaryLink = { display: "inline-block", padding: "12px 16px", borderRadius: 10, border: "1px solid #ccd6d0", background: "white", color: "inherit", textDecoration: "none", fontWeight: 700 };
