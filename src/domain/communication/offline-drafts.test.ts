@@ -49,6 +49,28 @@ describe("offline communication drafts", () => {
     expect(pending[0]?.operationType).toBe("UPSERT");
   });
 
+  it("does not create a second outbox item when the same operation is saved again", async () => {
+    const input = {
+      schoolId: "school-communication",
+      actorUserId: "user-1",
+      draft: {
+        title: "Staff meeting",
+        body: "Meeting starts at 8am.",
+        membershipIds: ["member-1"],
+        channel: "IN_APP" as const,
+      },
+      draftId: "draft-1",
+      operationId: "op-communication-1",
+    };
+
+    await saveCommunicationDraft(input);
+    await saveCommunicationDraft(input);
+
+    const pending = await getPendingOutbox("school-communication", new Date());
+    expect(pending).toHaveLength(1);
+    expect(pending[0]?.operationId).toBe("op-communication-1");
+  });
+
   it("rejects an empty title, body, or recipient set before writing locally", async () => {
     await expect(
       saveCommunicationDraft({
