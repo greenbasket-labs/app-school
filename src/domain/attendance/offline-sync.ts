@@ -33,25 +33,25 @@ type AttendanceBulkPayload = {
   items: BulkAttendanceItem[];
 };
 
-export type AttendanceBulkRecord = LocalRecord<AttendanceRosterSnapshot>;
-
-function rosterEntityId(input: Pick<AttendanceRosterSnapshot, "academicSessionId" | "classArmId" | "attendanceDate">) {
-  return `${input.academicSessionId}:${input.classArmId}:${input.attendanceDate}`;
-}
+type AttendanceBulkLocalRecord = LocalRecord<AttendanceRosterSnapshot>;
 
 export function attendanceRosterRecordId(input: Pick<AttendanceRosterSnapshot, "academicSessionId" | "classArmId" | "attendanceDate"> & { schoolId: string }) {
-  return localRecordId(input.schoolId, ATTENDANCE_ROSTER_ENTITY, rosterEntityId(input));
+  return localRecordId(
+    input.schoolId,
+    ATTENDANCE_ROSTER_ENTITY,
+    `${input.academicSessionId}:${input.classArmId}:${input.attendanceDate}`,
+  );
 }
 
 export async function saveAttendanceRosterLocally(input: {
   schoolId: string;
   snapshot: AttendanceRosterSnapshot;
 }) {
-  return saveLocalRecord({
+  return saveLocalRecord<AttendanceRosterSnapshot>({
     id: attendanceRosterRecordId({ schoolId: input.schoolId, ...input.snapshot }),
     schoolId: input.schoolId,
     entityType: ATTENDANCE_ROSTER_ENTITY,
-    entityId: rosterEntityId(input.snapshot),
+    entityId: `${input.snapshot.academicSessionId}:${input.snapshot.classArmId}:${input.snapshot.attendanceDate}`,
     data: input.snapshot,
     syncState: "SYNCED",
   });
@@ -64,7 +64,7 @@ export async function queueAttendanceBulk(input: {
   items: BulkAttendanceItem[];
   operationId?: string;
 }) {
-  const entityId = rosterEntityId(input.snapshot);
+  const entityId = `${input.snapshot.academicSessionId}:${input.snapshot.classArmId}:${input.snapshot.attendanceDate}`;
   const operationId = input.operationId ?? createClientOperationId("attendance-bulk");
   const recordId = localRecordId(input.schoolId, ATTENDANCE_BULK_ENTITY, `${entityId}:${operationId}`);
   const itemByStudentId = new Map(input.items.map((item) => [item.studentId, item]));
@@ -98,8 +98,8 @@ export async function queueAttendanceBulk(input: {
       entityId: `${entityId}:${operationId}`,
       data: optimisticSnapshot,
       syncState: "PENDING_SYNC",
-    } as never,
+    } as AttendanceBulkLocalRecord,
   });
 
-  return { record: record as AttendanceBulkRecord, operationId };
+  return { record, operationId };
 }
