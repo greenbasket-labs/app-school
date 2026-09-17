@@ -89,6 +89,8 @@ model User {
   memberships Membership[]
   schoolJoinRequests SchoolJoinRequest[]
   reviewedSchoolJoinRequests SchoolJoinRequest[] @relation("SchoolJoinRequestReviewer")
+  guardianRecords Guardian[]
+  verifiedGuardianRecords Guardian[] @relation("GuardianAccountVerifier")
   sessions UserSession[]
   auditEvents AuditEvent[] @relation("AuditActor")
   createdAt DateTime @default(now()) @db.Timestamptz(6)
@@ -307,12 +309,20 @@ model Guardian {
   fullName String
   phone String?
   email String?
+  userId String? @db.Uuid
+  accountVerifiedAt DateTime? @db.Timestamptz(6)
+  accountVerifiedByUserId String? @db.Uuid
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  accountVerifier User? @relation("GuardianAccountVerifier", fields: [accountVerifiedByUserId], references: [id], onDelete: SetNull)
   studentGuardians StudentGuardian[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  @@unique([userId])
   @@index([schoolId, fullName])
   @@index([schoolId, phone])
+  @@index([schoolId, userId, accountVerifiedAt])
+  @@index([accountVerifiedByUserId])
 }
 model StudentGuardian {
   studentId String @db.Uuid
@@ -329,7 +339,7 @@ model StudentGuardian {
   @@index([schoolId, studentId])
 }
 model Enrollment {
-  id String @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @default(uuid()) @db.Uuid
   studentId String @db.Uuid
   academicSessionId String @db.Uuid
   classArmId String @db.Uuid
