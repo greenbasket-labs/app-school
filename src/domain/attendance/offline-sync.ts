@@ -26,6 +26,13 @@ export type AttendanceRosterSnapshot = {
   students: AttendanceRosterStudent[];
 };
 
+type AttendanceBulkPayload = {
+  academicSessionId: string;
+  classArmId: string;
+  attendanceDate: string;
+  items: BulkAttendanceItem[];
+};
+
 export type AttendanceBulkRecord = LocalRecord<AttendanceRosterSnapshot>;
 
 function rosterEntityId(input: Pick<AttendanceRosterSnapshot, "academicSessionId" | "classArmId" | "attendanceDate">) {
@@ -69,19 +76,21 @@ export async function queueAttendanceBulk(input: {
     }),
   };
 
-  const record = await saveLocalMutation({
+  const payload: AttendanceBulkPayload = {
+    academicSessionId: optimisticSnapshot.academicSessionId,
+    classArmId: optimisticSnapshot.classArmId,
+    attendanceDate: optimisticSnapshot.attendanceDate,
+    items: input.items,
+  };
+
+  const record = await saveLocalMutation<AttendanceBulkPayload>({
     schoolId: input.schoolId,
     actorUserId: input.actorUserId,
     entityType: ATTENDANCE_BULK_ENTITY,
     entityId: `${entityId}:${operationId}`,
     operationType: "UPSERT",
     operationId,
-    payload: {
-      academicSessionId: optimisticSnapshot.academicSessionId,
-      classArmId: optimisticSnapshot.classArmId,
-      attendanceDate: optimisticSnapshot.attendanceDate,
-      items: input.items,
-    },
+    payload,
     record: {
       id: recordId,
       schoolId: input.schoolId,
@@ -89,7 +98,7 @@ export async function queueAttendanceBulk(input: {
       entityId: `${entityId}:${operationId}`,
       data: optimisticSnapshot,
       syncState: "PENDING_SYNC",
-    },
+    } as never,
   });
 
   return { record: record as AttendanceBulkRecord, operationId };
