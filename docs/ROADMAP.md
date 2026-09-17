@@ -89,7 +89,24 @@ V1 is complete when these conditions are true:
 - [x] School profile/configuration settings — initial slice
 - [ ] Offline-capable school setup workflows where offline continuity materially helps; do not force every configuration action offline
 
-## Phase 2 — Students, teachers & daily operations
+## Phase 2 — Identity, joining & daily operations
+
+### SkulGo identity model
+
+- [x] School registers as an organization and creates the initial owner account
+- [ ] Personal account registration for teachers, staff, students and guardians
+- [ ] Authenticated school search by school name
+- [ ] Student admission application from personal account
+- [ ] Teacher/staff job application from personal account
+- [ ] Owner application review and decision workflow
+- [ ] Accepted student application creates/links the student's school identity and enrollment
+- [ ] Accepted staff application creates/activates school membership
+- [ ] Staff workspace assignment is explicit; capabilities remain the authorization boundary
+- [ ] Login resolves the authenticated person to the correct active school/workspace automatically
+- [ ] No role-picker query parameter and no generic "switch role" flow
+
+### School operations
+
 - [x] Student records
 - [x] Student enrollment
 - [x] Daily attendance
@@ -228,41 +245,72 @@ user chooses / retries / reloads according to domain rule
 
 Owner, teacher, parent/guardian and student experiences are different views over the same school-scoped platform. They must not create separate databases, duplicate domain rules or separate offline engines.
 
-Capabilities and school module configuration remain the authorization boundary.
+The platform identifies the user's school relationship and assigned workspace after authentication. `Membership.isOwner` identifies the owner relationship; guardian and student identity links identify portal users; staff workspace assignment determines the staff-facing dashboard. Capabilities and school module configuration remain the authorization boundary.
+
+## Dashboard rule
+
+Every authenticated person should land directly in the workspace appropriate to the active school relationship:
+
+```text
+/login
+  ↓
+/authenticated user
+  ↓
+/app
+  ↓
+active school relationship
+  ↓
+assigned workspace
+  ↓
+/dashboard
+```
+
+There is no role picker, no `?role=teacher`, and no generic role-switching control in the V1 product. A multi-school user may choose a school when more than one active relationship exists; that is school selection, not role selection.
+
+The dashboard is a core platform surface and must not require the Reports module to be enabled. Individual cards, metrics and actions remain capability/module-aware.
 
 ## Current V1 execution order
 
-### Gate A — Academic trust
+### Gate A — Product entry and identity
 
-1. Verify result submission runtime.
-2. Verify result approval runtime.
-3. Verify submit → approve → publish lifecycle.
-4. Verify report card runtime.
-5. Verify academic history runtime.
+1. Make the dashboard a core surface independent of Reports.
+2. Implement personal-account registration.
+3. Implement authenticated school search.
+4. Implement student admission application and owner decision flow.
+5. Implement teacher/staff application and owner offer/acceptance flow.
+6. Resolve accepted relationships into the correct school/workspace dashboard automatically.
 
-### Gate B — Offline platform release gate
+### Gate B — Academic trust
 
-6. Verify assessment browser offline lifecycle.
-7. Add focused assessment conflict UI.
-8. Define and implement safe offline authentication/session behavior.
-9. Convert the minimum student/enrollment workflows needed for teacher/admin continuity.
+7. Verify result submission runtime.
+8. Verify result approval runtime.
+9. Verify submit → approve → publish lifecycle.
+10. Verify report card runtime.
+11. Verify academic history runtime.
 
-### Gate C — Human value
+### Gate C — Offline platform release gate
 
-10. Verify the parent journey end-to-end.
-11. Verify teacher daily workflow end-to-end.
-12. Verify owner configuration, finance and reports against real operational questions.
-13. Keep student-facing behavior limited to information and workflows genuinely needed in V1.
+12. Verify assessment browser offline lifecycle.
+13. Add focused assessment conflict UI.
+14. Define and implement safe offline authentication/session behavior.
+15. Convert the minimum student/enrollment workflows needed for teacher/admin continuity.
 
-### Gate D — Production trust
+### Gate D — Human value
 
-14. CI.
-15. Tenant-isolation integration coverage.
-16. Migration verification.
-17. Backups/recovery.
-18. Observability.
-19. Security hardening.
-20. Production deployment and representative offline/online transition verification.
+16. Verify the parent journey end-to-end.
+17. Verify teacher daily workflow end-to-end.
+18. Verify owner configuration, finance and reports against real operational questions.
+19. Keep student-facing behavior limited to information and workflows genuinely needed in V1.
+
+### Gate E — Production trust
+
+20. CI.
+21. Tenant-isolation integration coverage.
+22. Migration verification.
+23. Backups/recovery.
+24. Observability.
+25. Security hardening.
+26. Production deployment and representative offline/online transition verification.
 
 ## Explicit V1 exclusions — do not build now
 
