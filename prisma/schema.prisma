@@ -42,6 +42,13 @@ enum MembershipStatus {
   ENDED
 }
 
+enum SchoolJoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 enum IdentityVerificationStatus {
   SUPPLIED
   VERIFIED
@@ -80,6 +87,8 @@ model User {
   passwordHash String
   status UserStatus @default(ACTIVE)
   memberships Membership[]
+  schoolJoinRequests SchoolJoinRequest[]
+  reviewedSchoolJoinRequests SchoolJoinRequest[] @relation("SchoolJoinRequestReviewer")
   sessions UserSession[]
   auditEvents AuditEvent[] @relation("AuditActor")
   createdAt DateTime @default(now()) @db.Timestamptz(6)
@@ -118,6 +127,7 @@ model School {
   setupStatus SetupStatus @default(NOT_STARTED)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   memberships Membership[]
+  joinRequests SchoolJoinRequest[]
   membershipCapabilities MembershipCapability[]
   modules SchoolModule[]
   academicSessions AcademicSession[]
@@ -384,6 +394,7 @@ model Membership {
   userId String @db.Uuid
   organizationId String @db.Uuid
   schoolId String @db.Uuid
+  relationship String @default("STAFF")
   isOwner Boolean @default(false)
   status MembershipStatus @default(ACTIVE)
   user User @relation(fields: [userId], references: [id], onDelete: Restrict)
@@ -395,6 +406,26 @@ model Membership {
   @@unique([userId, schoolId])
   @@index([organizationId, schoolId])
   @@index([schoolId, isOwner])
+  @@index([schoolId, relationship, status])
+}
+model SchoolJoinRequest {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  userId String @db.Uuid
+  requestedRelationship String
+  requestedCapabilities Json?
+  message String?
+  status SchoolJoinRequestStatus @default(PENDING)
+  reviewedByUserId String? @db.Uuid
+  reviewedAt DateTime? @db.Timestamptz(6)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  reviewedBy User? @relation("SchoolJoinRequestReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  @@index([schoolId, status, createdAt])
+  @@index([userId, status, createdAt])
+  @@index([schoolId, userId, status])
 }
 model Capability {
   id String @id @default(uuid()) @db.Uuid

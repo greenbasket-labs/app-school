@@ -40,11 +40,11 @@ export async function setMembershipDisabled(input: {
     });
     if (!membership) throw new StaffValidationError("School membership not found.");
     if (membership.isOwner) throw new StaffValidationError("The school owner membership cannot be disabled here.");
-    if (membership.status === "DISABLED") return membership;
+    if (membership.status === "ENDED") return membership;
 
     const updated = await tx.membership.update({
       where: { id: membership.id },
-      data: { status: "DISABLED" },
+      data: { status: "ENDED" },
       select: { id: true, userId: true, status: true },
     });
 
