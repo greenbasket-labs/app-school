@@ -40,7 +40,7 @@ export default async function AttendancePage({ params }: { params: Promise<{ sch
           <Link href={`/app/schools/${schoolId}/attendance/history`} style={{ borderRadius: 10, background: "white", padding: "10px 14px", color: "#173d2c", fontWeight: 800, textDecoration: "none", boxShadow: "0 4px 16px rgba(0,0,0,.05)" }}>Attendance history →</Link>
         </div>
         {activeSession ? (
-          <AttendanceRoster schoolId={schoolId} canRecord={capabilities.has(CAPABILITIES.RECORD_ATTENDANCE)} initialSessionId={activeSession.id} sessions={sessionOptions} />
+          <AttendanceRoster schoolId={schoolId} actorUserId={session.user.id} canRecord={capabilities.has(CAPABILITIES.RECORD_ATTENDANCE)} initialSessionId={activeSession.id} sessions={sessionOptions} />
         ) : (
           <div style={{ marginTop: 24, background: "white", borderRadius: 16, padding: 24 }}>Create an academic session and class before recording attendance.</div>
         )}
