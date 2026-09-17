@@ -15,32 +15,41 @@ const CAPABILITIES = [
   "FINANCE.MANAGE",
 ];
 
+const RELATIONSHIPS = ["STUDENT", "TEACHER", "STAFF", "CASHIER"];
+
 function label(code: string) { return code.replaceAll(".", " · ").replaceAll("_", " "); }
 
 export default function StaffSettings({ schoolId, canManage }: { schoolId: string; canManage: boolean }) {
   const [staff, setStaff] = useState<any[]>([]);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [selected, setSelected] = useState<string[]>(["STUDENTS.VIEW", "ATTENDANCE.VIEW"]);
+  const [requests, setRequests] = useState<any[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
   async function load() {
-    const response = await fetch(`/api/schools/${schoolId}/settings/staff`, { cache: "no-store" });
-    const data = await response.json();
-    if (response.ok) setStaff(data.staff ?? []);
+    const [staffResponse, requestResponse] = await Promise.all([
+      fetch(`/api/schools/${schoolId}/settings/staff`, { cache: "no-store" }),
+      fetch(`/api/schools/${schoolId}/settings/join-requests?status=PENDING`, { cache: "no-store" }),
+    ]);
+    const staffData = await staffResponse.json();
+    const requestData = await requestResponse.json();
+    if (staffResponse.ok) setStaff(staffData.staff ?? []);
+    if (requestResponse.ok) setRequests(requestData.requests ?? []);
     setLoading(false);
   }
+
   useEffect(() => { void load(); }, [schoolId]);
 
-  function toggle(code: string) { setSelected((current) => current.includes(code) ? current.filter((item) => item !== code) : [...current, code]); }
-
-  async function createStaff(event: React.FormEvent) {
-    event.preventDefault(); setMessage("");
-    const response = await fetch(`/api/schools/${schoolId}/settings/staff`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password, capabilityCodes: selected }) });
+  async function reviewRequest(requestId: string, decision: "APPROVE" | "REJECT", relationship?: string, capabilityCodes?: string[]) {
+    setMessage("");
+    const response = await fetch(`/api/schools/${schoolId}/settings/join-requests`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ requestId, decision, relationship, capabilityCodes }),
+    });
     const data = await response.json();
-    if (!response.ok) { setMessage(data.error ?? "Could not create staff account."); return; }
-    setMessage(`Staff account created for ${data.staff.email}.`); setEmail(""); setPassword(""); await load();
+    if (!response.ok) { setMessage(data.error ?? "Could not review join request."); return; }
+    setMessage(decision === "APPROVE" ? "Join request approved and school access activated." : "Join request rejected.");
+    await load();
   }
 
   async function saveAccess(membershipId: string, capabilityCodes: string[]) {
@@ -62,21 +71,49 @@ export default function StaffSettings({ schoolId, canManage }: { schoolId: strin
 
   return <section style={{ marginTop: 28, border: "1px solid #dfe5e1", borderRadius: 16, padding: 20 }}>
     <h2 style={{ margin: 0 }}>Staff & access</h2>
-    <p style={{ color: "#53615a", lineHeight: 1.5 }}>School access is controlled here. Disabling a membership removes this school's access without deleting the person's SkulGo account.</p>
-    {canManage ? <form onSubmit={createStaff} style={{ display: "grid", gap: 10, marginTop: 16 }}>
-      <strong>Add staff account</strong>
-      <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="staff@example.com" required style={{ padding: 11 }} />
-      <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" minLength={12} placeholder="Temporary/initial password (12+ characters)" required style={{ padding: 11 }} />
-      <div><strong>Capabilities</strong><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 8, marginTop: 8 }}>{CAPABILITIES.map((code) => <label key={code}><input type="checkbox" checked={selected.includes(code)} onChange={() => toggle(code)} /> {label(code)}</label>)}</div></div>
-      <button type="submit" style={{ padding: 10, width: "fit-content" }}>Create staff account</button>
-    </form> : <p style={{ color: "#53615a" }}>Only the school owner can manage staff accounts and access.</p>}
+    <p style={{ color: "#53615a", lineHeight: 1.5 }}>School access is controlled here. People first create their own SkulGo account and request a school relationship; the owner approves the actual relationship and capabilities.</p>
 
-    {message && <p style={{ marginTop: 12 }}>{message}</p>}
+    {canManage && <div style={{ marginTop: 22 }}>
+      <strong>Pending join requests</strong>
+      {loading ? <p>Loading…</p> : requests.length === 0 ? <p>No pending join requests.</p> : requests.map((request) => <JoinRequestRow key={request.id} request={request} onReview={reviewRequest} />)}
+    </div>}
+    {!canManage && <p style={{ color: "#53615a" }}>Only the school owner can review join requests and manage access.</p>}
+
+    {message && <p role="status" style={{ marginTop: 12 }}>{message}</p>}
     <div style={{ marginTop: 22 }}>
       <strong>Current staff</strong>
       {loading ? <p>Loading…</p> : staff.length === 0 ? <p>No active school staff memberships.</p> : staff.map((member) => <StaffRow key={member.id} member={member} canManage={canManage} onSave={saveAccess} onDisable={disableMembership} />)}
     </div>
   </section>;
+}
+
+function JoinRequestRow({ request, onReview }: { request: any; onReview: (requestId: string, decision: "APPROVE" | "REJECT", relationship?: string, capabilityCodes?: string[]) => Promise<void> }) {
+  const [relationship, setRelationship] = useState(request.requestedRelationship);
+  const [codes, setCodes] = useState<string[]>(request.requestedCapabilities ?? []);
+
+  function toggle(code: string) { setCodes((current) => current.includes(code) ? current.filter((item) => item !== code) : [...current, code]); }
+
+  return <div style={{ borderTop: "1px solid #e7ebe8", padding: "14px 0" }}>
+    <div><strong>{request.user.email}</strong></div>
+    <div style={{ color: "#53615a", marginTop: 6 }}>Requested: {request.requestedRelationship.toLowerCase()}</div>
+    {request.message && <p style={{ margin: "8px 0", color: "#53615a" }}>{request.message}</p>}
+    <label style={{ display: "block", marginTop: 10, fontWeight: 700 }}>
+      Authoritative relationship
+      <select value={relationship} onChange={(e) => setRelationship(e.target.value)} style={{ display: "block", marginTop: 6, padding: 10, borderRadius: 8 }}>
+        {RELATIONSHIPS.map((item) => <option key={item} value={item}>{item.charAt(0) + item.slice(1).toLowerCase()}</option>)}
+      </select>
+    </label>
+    <div style={{ marginTop: 10 }}>
+      <strong>Capabilities</strong>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 6, marginTop: 8 }}>
+        {CAPABILITIES.map((code) => <label key={code}><input type="checkbox" checked={codes.includes(code)} onChange={() => toggle(code)} /> {label(code)}</label>)}
+      </div>
+    </div>
+    <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+      <button onClick={() => void onReview(request.id, "APPROVE", relationship, codes)} style={{ padding: "9px 12px" }}>Approve & activate</button>
+      <button onClick={() => void onReview(request.id, "REJECT")} style={{ padding: "9px 12px" }}>Reject</button>
+    </div>
+  </div>;
 }
 
 function StaffRow({ member, canManage, onSave, onDisable }: { member: any; canManage: boolean; onSave: (id: string, codes: string[]) => Promise<void>; onDisable: (id: string, email: string) => Promise<void> }) {
