@@ -51,7 +51,7 @@ describe("communication offline-first flow", () => {
     );
 
     expect(failed.failed).toBe(0);
-    expect(failed.retryScheduled).toBe(1);
+    expect(failed.retrying).toBe(1);
 
     const queued = await getLocalRecord(record.id);
     expect(queued?.syncState).toBe("PENDING_SYNC");
