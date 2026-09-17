@@ -31,7 +31,32 @@ export async function POST(request: Request, { params }: { params: Promise<{ sch
     await requireCapability(session.user.id, schoolId, "COMMUNICATION.SEND");
     const input = createSchema.parse(await request.json());
     const id = await createNotification(schoolId, session.user.id, input.title, input.body, input.membershipIds);
-    return NextResponse.json({ id }, { status: 201 });
+    const notification = await db.$queryRaw<Array<{ id: string; title: string; body: string; createdAt: Date }>>`
+      SELECT "id", "title", "body", "createdAt"
+      FROM "Notification"
+      WHERE "id" = ${id}::uuid AND "schoolId" = ${schoolId}::uuid
+    `;
+    const row = notification[0];
+    if (!row) return NextResponse.json({ error: "NOTIFICATION_ACKNOWLEDGEMENT_MISSING" }, { status: 500 });
+
+    const recipients = await db.$queryRaw<Array<{ membershipId: string }>>`
+      SELECT "membershipId" FROM "NotificationRecipient"
+      WHERE "notificationId" = ${id}::uuid
+      ORDER BY "membershipId"
+    `;
+
+    return NextResponse.json({
+      ok: true,
+      notification: {
+        id: row.id,
+        title: row.title,
+        body: row.body,
+        membershipIds: recipients.map((r) => r.membershipId),
+        channel: "IN_APP",
+        createdAt: row.createdAt.toISOString(),
+        serverVersion: row.id,
+      },
+    }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "REQUEST_FAILED" }, { status: 400 });
   }
