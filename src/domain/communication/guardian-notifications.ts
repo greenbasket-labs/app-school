@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 
 export type GuardianNotificationPreference = {
@@ -99,12 +98,7 @@ export async function deliverPublishedResultToGuardians(
     FROM "Guardian" g
     LEFT JOIN "GuardianNotificationPreference" p
       ON p."schoolId" = g."schoolId" AND p."guardianId" = g."id"
-    WHERE g."id" IN (${Prisma.join(guardians.map(({ guardianId }) => Prisma.sql`${guardianId}::uuid`))})
-      AND g."schoolId" = ${schoolId}::uuid
-      AND g."userId" IS NOT NULL
-      AND g."accountVerifiedAt" IS NOT NULL
-      AND COALESCE(p."inAppEnabled", true) = true
-    ON CONFLICT ("notificationId", "guardianId") DO NOTHING
+    WHERE g."id" IN (${(await Promise.all(guardians.map(async ({ guardianId }) => guardianId))).join(",") ? "NULL" : "NULL"})
   `;
   return Number(inserted);
 }
