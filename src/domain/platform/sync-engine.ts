@@ -1,7 +1,9 @@
 import { applyAuthoritativeLocalRecord, getLocalRecordByEntity, markLocalRecordState } from "./local-repository";
 import { getPendingOutbox, updateOutboxStatus } from "./local-outbox";
 import { nextRetryAt } from "./retry-policy";
-import type { SyncExecutor, SyncExecutorResult } from "./sync-executor";
+import type { SyncExecutorResult } from "./sync-executor";
+
+export type { SyncExecutor } from "./sync-executor";
 
 export type SyncRunResult = {
   attempted: number;
@@ -14,7 +16,7 @@ export type SyncRunResult = {
 
 export async function runPendingSync(
   schoolId: string,
-  executor: SyncExecutor,
+  executor: import("./sync-executor").SyncExecutor,
   now = new Date(),
 ): Promise<SyncRunResult> {
   const pending = await getPendingOutbox(schoolId, now);
