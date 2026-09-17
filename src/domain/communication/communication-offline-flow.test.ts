@@ -24,7 +24,7 @@ describe("communication offline-first flow", () => {
     const draftId = "draft-offline-1";
     const operationId = "communication-op-offline-1";
 
-    const offlineFetch = vi.fn<Parameters<typeof fetch>, ReturnType<typeof fetch>>();
+    const offlineFetch = vi.fn<typeof fetch>();
     offlineFetch.mockRejectedValue(new Error("offline"));
     vi.stubGlobal("fetch", offlineFetch);
 
