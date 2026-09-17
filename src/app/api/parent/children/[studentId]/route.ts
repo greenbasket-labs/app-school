@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { currentSession } from "@/domain/auth/session-cookie";
 import { getAcademicHistory } from "@/domain/assessments/academic-history";
-import { getReportCard } from "@/domain/assessments/report-card";
 import { GuardianAccountAuthorizationError, requireVerifiedGuardianChildAccess } from "@/domain/guardians/account-access";
 import { db } from "@/lib/db";
 
