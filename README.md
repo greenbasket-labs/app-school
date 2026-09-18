@@ -259,7 +259,18 @@ A future SkulGo CV/profile should distinguish clearly between **school-verified 
 
 ## Verification checkpoint — 18 Sep 2026
 
-The implementation has crossed the basic engineering gate:
+The implementation has crossed the basic engineering gate.
+
+### Product domain checkpoint
+
+- [x] `skulgo.com` registered on 18 Sep 2026.
+- [x] Total charged: $6.99 including ICANN fee.
+- [x] Free Domain Privacy retained.
+- [x] No Namecheap hosting or PremiumDNS purchased.
+- [ ] Production DNS configuration.
+- [ ] Production HTTPS/domain verification.
+
+`skulgo.com` is the public product domain; domain ownership does not mean the production application is deployed yet.
 
 - [x] GitHub Actions clean-checkout verification merged to `main`.
 - [x] CI install, Prisma generation and PostgreSQL migration deployment.
@@ -271,6 +282,12 @@ The implementation has crossed the basic engineering gate:
 - [ ] Local Next.js workspace-root warning caused by multiple lockfiles — cleanup only; not a current build failure.
 
 The next V1 work is therefore focused on **real browser/runtime acceptance, production trust, security/recovery and deployment readiness**, not broad feature expansion.
+
+## Product domain
+
+**SkulGo public domain:** `skulgo.com`
+
+The domain is registered and reserved for the product. DNS should be connected only after the production deployment target is ready. Namecheap is acting as the registrar; it is not the SkulGo application host.
 
 ## Roadmap
 
@@ -372,6 +389,7 @@ The next V1 work is therefore focused on **real browser/runtime acceptance, prod
 - [ ] Offline security/session lifecycle hardening
 
 ### Phase 8 — Production platform
+- [x] Public product domain acquired — `skulgo.com` registered 18 Sep 2026.
 - [ ] PostgreSQL migration/deployment process — migration baseline exists; production verification remains
 - [ ] Object/file storage
 - [ ] Backups and recovery procedures, including recovery of sync/outbox state where required
@@ -380,6 +398,7 @@ The next V1 work is therefore focused on **real browser/runtime acceptance, prod
 - [ ] Performance/load testing
 - [ ] Offline/online transition testing at production scale
 - [ ] Render production deployment
+- [ ] Connect `skulgo.com` / `www.skulgo.com` to production and verify HTTPS
 - [ ] Tenant-safe onboarding and support operations
 
 ## Current V1 sequence
@@ -567,6 +586,6 @@ Run the same request again with a different email but the same CAC. Expected res
 
 ## Important current boundary
 
-This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, setup readiness, school profile, students, enrollment, attendance, attendance history/correction, parent/guardian records, student status lifecycle, module configuration/enforcement, academic session lifecycle, initial staff/access management, assessment definitions and initial score capture/validation. Migration verification, automated tests, application-wide offline-first infrastructure and the remaining operational workflows are still required before production launch.
+This is an actively developed school platform, not yet a production-ready complete school application. The basic engineering gate has passed, and the public product domain `skulgo.com` has now been acquired. Remaining release work includes browser/runtime verification, tenant/security testing, production migration and recovery, observability, production deployment, DNS/HTTPS configuration, and representative offline/online verification.
 
 See `docs/PRODUCT-DECISION-HISTORY.md` for the product reasoning and durable decisions. See `ARCHITECTURE.md` for frozen technical architecture. See `docs/ROADMAP.md` for the current implementation sequence and offline-first work.
