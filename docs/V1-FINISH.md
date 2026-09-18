@@ -177,6 +177,26 @@ These are the minimum browser/runtime scenarios to execute before marking the co
 8. Reload and confirm the authoritative server state is shown.
 ```
 
+## Engineering verification toolbox
+
+The V1 handover uses the following tool plan:
+
+| Tool | Timing | Handover expectation |
+|---|---|---|
+| Playwright | Now | Browser E2E for identity, academic lifecycle, parent access and critical runtime/API checks |
+| Testcontainers | Now | Real PostgreSQL integration tests, especially tenant-isolation and authorization invariants |
+| CodeQL | Now | GitHub security scanning for the application code |
+| Dependabot | Now | Dependency vulnerability/update visibility |
+| Sentry | Soon | Production runtime error capture |
+| Managed PostgreSQL/Render backups | Before launch | Backup/recovery evidence |
+| Better Uptime / UptimeRobot | Before launch | Availability monitoring |
+| k6 | Later | Representative load/performance testing |
+| OpenTelemetry | Later | Add when operational complexity warrants deeper tracing |
+
+### Tooling rule for handoff
+
+A new developer or AI should first inspect the existing scripts/workflows before adding another tool. Prefer one shared mechanism for each concern, keep the modular-monolith architecture intact, and do not add infrastructure whose operational value has not been demonstrated.
+
 ## Production release gates
 
 These are required to release V1 but are not new product features:
