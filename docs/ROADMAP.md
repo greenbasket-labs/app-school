@@ -22,13 +22,27 @@ This is an identity rule, not a role simulation. Do not create role-only account
 
 The next implementation slice makes the existing personal-account model concrete without adding separate role account systems:
 
-- [ ] Make **Find a school** the universal school-discovery page for all users.
-- [ ] Separate the action after school discovery into worker join request, student admission request, and parent/guardian student-connection request.
-- [ ] Make **Register a school** reuse the existing personal SkulGo account when the person is already signed in.
-- [ ] Keep school registration as school information + the person's relationship; do not create a second school-specific person login.
-- [ ] Use **← Account** to return from a school workspace to the personal account page; remove the role-switching navigation concept.
+- [x] Make **Find a school** the universal school-discovery page for all users.
+- [x] Keep one existing page for the relationship-driven flow after a school is selected.
+- [x] Teacher / staff / cashier use the existing application/request flow.
+- [x] Student uses the existing admission-request flow.
+- [x] Parent / Guardian is added only to the existing **Requested relationship** dropdown and appears only when selected.
+- [ ] Connect Parent / Guardian submission to the existing verified Guardian + StudentGuardian backend flow.
+- [x] Make **Register a school** reuse the existing personal SkulGo account when the person is already signed in.
+- [x] Keep school registration as school information + the person's relationship; do not create a second school-specific person login.
+- [x] Use **← Account** to return from a school workspace to the personal account page; remove the role-switching navigation concept.
 
 These are UX/workflow changes to the existing identity architecture, not new identity layers.
+
+### Engineering method for remaining V1 work
+
+```text
+Inspect current implementation → define one narrow slice → preserve working behavior
+→ implement → typecheck + focused browser/runtime verification
+→ document actual status → commit → next slice
+```
+
+Do not redesign a working flow while adding a new relationship. Reuse existing domain/security/audit infrastructure. Do not mark UI-only behavior as backend-complete.
 - **School owner:** personal SkulGo account + school registration → Organization + School + owner membership.
 - **Student:** personal SkulGo account → discover school → submit admission application → school review → admission/acceptance → school membership/student relationship.
 - **Teacher/staff:** personal SkulGo account → discover school → submit job/application → school review → offer/acceptance → school membership/staff relationship.
@@ -236,9 +250,10 @@ V1 is complete when:
 - [ ] Offline authentication/session lifecycle policy and hardening
 - [x] Personal SkulGo account registration independent of school membership
 - [x] School discovery and relationship/application primitives
-- [ ] Universal school discovery UX with distinct worker/student/guardian request paths
-- [ ] Existing personal account reused for school registration
-- [ ] School workspace returns to personal account through ← Account rather than role switching
+- [x] Universal school discovery UX with relationship-driven worker/student/parent paths
+- [x] Existing personal account reused for school registration
+- [x] School workspace returns to personal account through ← Account rather than role switching
+- [ ] Parent/Guardian verified connection backend and school verification path
 
 ## Phase 1 — School configuration & owner control
 - [x] Academic session foundation
@@ -266,9 +281,12 @@ V1 is complete when:
 - [x] Student status lifecycle
 - [x] Offline-capable attendance workflow, durable sync and pull reconciliation — real-browser offline save → reload → reconnect → sync → reload verification completed
 - [ ] Offline-capable student and enrollment workflows for core teacher/admin operations
-- [ ] Personal account → school discovery → student admission application
-- [ ] Personal account → school discovery → teacher/staff application
+- [x] Personal account → school discovery → student admission UI slice verified
+- [x] Personal account → school discovery → teacher/staff application UI slice verified
+- [x] Parent/Guardian relationship option + conditional UI slice verified
+- [ ] Register a school from the existing personal SkulGo account — **NEXT SLICE**
 - [ ] Owner application review → approval/offer → membership creation
+- [ ] Parent/Guardian self-service request → school verification → Guardian.userId/StudentGuardian linkage
 
 ## Phase 3 — Assessments, results & academic trust
 - [x] Assessment definitions
@@ -464,6 +482,24 @@ Do not expand V1 into:
 `skulgo.com` is the public product domain. DNS configuration belongs to the deployment/release phase; domain ownership alone is not evidence that a production app is live. The application remains authoritative in GitHub + the production PostgreSQL environment, while the domain is the public entry point.
 
 ## V1 completion rule
+
+### Immediate engineering sequence
+
+```text
+CURRENT: Find a school relationship UX
+  ✓ worker application UI
+  ✓ student admission UI
+  ✓ Parent/Guardian dropdown + conditional UI
+
+NEXT: Register a school
+  → reuse existing personal SkulGo account
+  → collect school information + relationship
+  → create Organization + School + owner Membership
+  → verify workspace routing and ← Account
+
+THEN: Owner review / acceptance
+THEN: Parent/Guardian verified connection backend
+```
 
 Call V1 complete only when:
 
