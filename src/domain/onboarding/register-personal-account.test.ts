@@ -30,7 +30,7 @@ describe("registerPersonalAccount", () => {
     });
 
     const result = await registerPersonalAccount({
-      email: " Person@Example.COM ",
+      email: " Person+test@example.com ",
       password: "long-enough-password",
     });
 
@@ -52,7 +52,7 @@ describe("registerPersonalAccount", () => {
     );
 
     await expect(
-      registerPersonalAccount({ email: "person@example.com", password: "long-enough-password" }),
+      registerPersonalAccount({ email: "person+test@example.com", password: "long-enough-password" }),
     ).rejects.toBeInstanceOf(PersonalRegistrationConflictError);
   });
 });
