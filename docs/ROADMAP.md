@@ -147,6 +147,52 @@ A future SkulGo CV/profile should distinguish clearly between **school-verified 
 **This is intentionally deferred. Do not build the portable CV/profile, public profiles, ratings, endorsements, recommendations or cross-school portable-history layer during current V1.**
 
 
+## Engineering toolchain
+
+The project will adopt a deliberately small verification/operations toolbox. Tools are introduced when they close a real release or reliability gap; they are not requirements to add every service immediately.
+
+| Area | Tool | Status | Purpose |
+|---|---|---|---|
+| Browser E2E | Playwright | Planned — Now | Verify real owner, teacher, student and parent journeys in a browser |
+| Database integration | Testcontainers | Planned — Now | Run integration tests against real disposable PostgreSQL, including tenant isolation |
+| Security scanning | GitHub CodeQL | Planned — Now | Static security analysis for the TypeScript/JavaScript codebase |
+| Dependency security | GitHub Dependabot | Planned — Now | Detect dependency vulnerabilities and stale dependencies |
+| Error monitoring | Sentry | Planned — Soon | Capture production runtime failures with useful request/context data |
+| Runtime/API checks | Playwright API + browser checks | Planned — Now | Exercise authorization, module enforcement, tenant boundaries and important API contracts |
+| Load testing | k6 | Planned — Later | Validate representative V1 scale before production growth |
+| Database backup | Managed PostgreSQL/Render backups | Planned — Before launch | Backup and recovery protection for authoritative records |
+| Uptime monitoring | Better Uptime or UptimeRobot | Planned — Before launch | Detect production availability failures |
+| Distributed observability | OpenTelemetry | Planned — Later | Adopt only when service/runtime complexity justifies it |
+
+### Tool adoption rule
+
+1. Prefer GitHub-native controls for repository security and dependency hygiene.
+2. Prefer Playwright for real browser acceptance and API/runtime verification rather than maintaining separate overlapping E2E stacks.
+3. Prefer real PostgreSQL integration coverage for tenant/security invariants; unit tests remain useful but are not sufficient evidence for database behavior.
+4. Keep production observability proportional to the current modular-monolith architecture.
+5. Do not add Redis, Kafka, Kubernetes, a data warehouse or microservices merely to satisfy a tooling checklist.
+
+### Recommended adoption sequence
+
+```text
+NOW
+Playwright
+Testcontainers
+CodeQL
+Dependabot
+  ↓
+SOON
+Sentry
+backup/recovery
+uptime monitoring
+  ↓
+LATER
+k6
+OpenTelemetry
+```
+
+These tools are engineering infrastructure. Their presence never overrides the product requirement that school tenancy, authorization, audit, server truth and offline state remain correct.
+
 ## V1 finish line
 
 V1 is complete when:
@@ -306,10 +352,16 @@ Defer beyond V1:
 
 These are release gates, not feature expansion:
 
-- [ ] Automated CI for typecheck/lint/test/build
+- [x] Automated CI for typecheck/test/build from a clean checkout
+- [ ] Playwright browser/API acceptance suite
+- [ ] Testcontainers-based PostgreSQL integration coverage
+- [ ] CodeQL security analysis
+- [ ] Dependabot dependency updates
 - [ ] Tenant-isolation integration tests
 - [ ] Production migration/deployment verification
-- [ ] Backup and recovery procedure
+- [ ] Backup and recovery procedure (managed PostgreSQL/Render)
+- [ ] Sentry production error monitoring
+- [ ] Uptime monitoring
 - [ ] Observability and operational alerts
 - [ ] Security hardening
 - [ ] Performance/load testing appropriate to expected V1 scale
