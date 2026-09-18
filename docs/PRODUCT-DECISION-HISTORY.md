@@ -389,6 +389,40 @@ Offline synchronization must not bypass the audit requirement: when a pending op
 
 ---
 
+## 19. What should SkulGo become in the long term?
+
+### Product vision — a transparent and secure record of a person's school journey
+
+**Recorded for future product direction; do not build this now.**
+
+SkulGo is intended to become more than a school-management application. Over time, it should become a trusted, user-centered record of a person's verifiable school history across legitimate school relationships.
+
+The long-term idea is that a person's SkulGo account can accumulate trusted records from participating schools over time, while each school remains the authoritative source for the records it creates.
+
+Examples may eventually include:
+
+- verified school identity and enrollment history;
+- attendance and participation records where appropriate;
+- academic results and achievement history;
+- school-issued certificates or other verified records;
+- other authenticated educational history that a user is legitimately entitled to carry forward.
+
+The guiding principle is:
+
+> **Transparent and Secure Records.**
+
+This means the future system should make the provenance and status of important records understandable: who issued a record, which school it belongs to, when it was created or changed, what is verified, and who is authorized to see it.
+
+The long-term record model should preserve the existing trust boundaries:
+
+`Person/SkulGo User → legitimate school relationship → authoritative school records → verified portable history`
+
+A future portable profile/CV must **not** become a free-form self-claimed résumé that silently turns claims into facts. School-issued records should remain distinguishable from user-entered information, and corrections/revocations should preserve appropriate history.
+
+This is a future product direction only. **Do not add public CV/profile, ratings, endorsements, recommendations or cross-school portable-history features during the current V1 work unless a concrete launch requirement makes one unavoidable.**
+
+---
+
 ## 17. What is the long-term product philosophy?
 
 App-School should become the **operating layer for schools**, rather than merely a collection of CRUD screens.
