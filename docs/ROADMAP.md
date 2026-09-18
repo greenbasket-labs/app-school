@@ -108,6 +108,19 @@ This requirement applies across the platform, including students, enrollment, at
 
 **Engineering gate:** passed.
 
+### Domain checkpoint — SkulGo identity acquired
+
+- [x] `skulgo.com` registered for 1 year through Namecheap on 18 Sep 2026.
+- [x] Promotional registration price: $6.79.
+- [x] ICANN fee: $0.20.
+- [x] Total charged: $6.99.
+- [x] Free Domain Privacy retained.
+- [x] No Namecheap hosting, PremiumDNS or paid add-ons purchased.
+- [ ] Configure DNS for the production application.
+- [ ] Verify `skulgo.com` and `www.skulgo.com` against the production deployment.
+
+The domain is an acquired product asset; it does not by itself mean the application is deployed or production-ready.
+
 - [x] GitHub Actions clean-checkout CI merged to `main`.
 - [x] CI install + Prisma generation + PostgreSQL migrations.
 - [x] CI typecheck.
@@ -301,7 +314,8 @@ These are release gates, not feature expansion:
 - [ ] Security hardening
 - [ ] Performance/load testing appropriate to expected V1 scale
 - [ ] Offline/online transition testing across representative workflows
-- [ ] Render production deployment
+- [ ] Render production deployment.
+- [ ] Connect `skulgo.com` / `www.skulgo.com` to the production deployment and verify HTTPS.
 - [ ] Tenant-safe onboarding/support procedure
 
 ## Conflict handling
@@ -378,6 +392,10 @@ Do not expand V1 into:
 - dozens of role-specific workflows that duplicate the same underlying records;
 - role-selection URL parameters used to simulate identity;
 - separate user databases for owners, teachers, students or parents.
+
+## Domain and production boundary
+
+`skulgo.com` is the public product domain. DNS configuration belongs to the deployment/release phase; domain ownership alone is not evidence that a production app is live. The application remains authoritative in GitHub + the production PostgreSQL environment, while the domain is the public entry point.
 
 ## V1 completion rule
 
