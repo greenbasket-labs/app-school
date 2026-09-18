@@ -130,12 +130,12 @@ V1 is complete when:
 - [x] Password authentication
 - [x] Database-backed sessions
 - [ ] Production migration baseline and verification
-- [ ] Automated typecheck/lint/build CI
+- [ ] Automated typecheck/lint/build CI (workflow exists; current PR CI still has a remaining typecheck error)
 - [ ] Tenant-isolation integration tests
 - [x] Offline-first platform foundation: durable browser persistence, schema/versioning, local repository boundary, durable outbox, shared sync engine, retry/backoff, connectivity scheduling, reconciliation contract and school-workspace sync status wiring
 - [ ] Offline authentication/session lifecycle policy and hardening
-- [ ] Personal SkulGo account registration independent of school membership
-- [ ] School discovery and relationship/application primitives
+- [x] Personal SkulGo account registration independent of school membership
+- [x] School discovery and relationship/application primitives
 
 ## Phase 1 — School configuration & owner control
 - [x] Academic session foundation
@@ -165,7 +165,7 @@ V1 is complete when:
 - [ ] Offline-capable student and enrollment workflows for core teacher/admin operations
 - [ ] Personal account → school discovery → student admission application
 - [ ] Personal account → school discovery → teacher/staff application
-- [ ] Owner application review → approval/offer → membership creation
+- [x] Owner application review → approval/offer → membership creation
 
 ## Phase 3 — Assessments, results & academic trust
 - [x] Assessment definitions
@@ -174,12 +174,12 @@ V1 is complete when:
 - [x] Offline-capable assessment score capture foundation — local-first mutation, central sync registry/executor, retry/backoff, authoritative acknowledgement and pull/reconciliation are implemented
 - [ ] Browser end-to-end verification of assessment offline save → reload → reconnect → sync
 - [ ] Assessment conflict-resolution UI
-- [ ] Result submission — authenticated API route + domain service implemented; runtime/CI verification required
-- [ ] Result approval — authenticated API route + domain service implemented; runtime/CI verification required; submitter cannot approve the same assessment result
+- [x] Result submission — authenticated API route + domain service implemented
+- [x] Result approval — authenticated API route + domain service implemented; submitter cannot approve the same assessment result
 - [x] Result publication — approved-result gate plus owner/default or owner-assigned RESULT.PUBLISH capability; deliberately online/server-authoritative
 - [ ] Verify complete submit → approve → publish runtime workflow
-- [ ] Report cards — authenticated published-report-card API/domain boundary implemented; runtime verification required
-- [ ] Academic history — authenticated published-history API/domain boundary implemented; runtime verification required
+- [x] Report cards — authenticated published-report-card API/domain boundary implemented
+- [x] Academic history — authenticated published-history API/domain boundary implemented
 
 ## Phase 4 — Parent / guardian value
 - [x] Guardian records + student relationships
@@ -189,9 +189,9 @@ V1 is complete when:
 - [x] Attendance absence alert — in-app
 - [x] Payment confirmation alert — in-app
 - [x] Result publication alert — in-app
-- [x] Parent school workspace entry based on Guardian.userId
+- [x] Parent school workspace entry based on verified Guardian → User relationship
 - [x] Parent child overview constrained by StudentGuardian + active Enrollment
-- [ ] Verify the complete parent journey: SkulGo account → verified guardian relationship → authorized child → notification → published result → academic history
+- [ ] Verify the complete parent journey: SkulGo account → verified guardian relationship → authorized child → notification → published result → academic history (implementation complete; runtime E2E remains)
 - [ ] Only add external SMS/WhatsApp/email delivery when a real V1 operating need is demonstrated; in-app communication is sufficient for the initial V1 surface
 
 ## Phase 5 — School finance
