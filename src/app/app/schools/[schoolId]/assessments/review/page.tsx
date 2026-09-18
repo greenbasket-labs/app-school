@@ -51,6 +51,19 @@ export default async function AssessmentReviewPage({ params }: { params: Promise
       })
     : [];
 
+  const serializedAssessments = assessments.map((assessment) => ({
+    ...assessment,
+    maxScore: assessment.maxScore.toNumber(),
+  }));
+  const serializedAuditEvents = auditEvents
+    .filter((event) => event.entityId !== null)
+    .map((event) => ({
+      entityId: event.entityId!,
+      action: event.action,
+      actorUserId: event.actorUserId ?? "",
+      occurredAt: event.occurredAt.toISOString(),
+    }));
+
   return (
     <main style={{ minHeight: "100vh", padding: 24 }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
@@ -60,7 +73,7 @@ export default async function AssessmentReviewPage({ params }: { params: Promise
           <h1 style={{ margin: "8px 0 6px", fontSize: 34 }}>{membership.school.name}</h1>
           <p style={{ margin: 0, color: "#53615a" }}>Review submitted results and publish only after approval.</p>
         </div>
-        <ResultReviewWorkspace schoolId={schoolId} assessments={assessments} auditEvents={auditEvents} />
+        <ResultReviewWorkspace schoolId={schoolId} assessments={serializedAssessments} auditEvents={serializedAuditEvents} />
       </div>
     </main>
   );
