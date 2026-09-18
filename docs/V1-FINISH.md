@@ -20,6 +20,20 @@ A school controls the person's relationship inside its organization. The person 
 
 When a person leaves, the school disables that school membership. The personal SkulGo account remains available for other schools or future relationships.
 
+## Current verification checkpoint — 18 Sep 2026
+
+The basic engineering gate is complete:
+
+- [x] GitHub Actions clean-checkout verification merged to `main`.
+- [x] CI install, Prisma generation and migrations.
+- [x] CI typecheck.
+- [x] CI tests: 16/16.
+- [x] CI production build.
+- [x] Local tests: 16/16.
+- [x] Local production build: 28/28 static pages generated.
+
+The remaining checklist below is intentionally focused on **runtime acceptance and production trust**.
+
 ## Ship-critical gates
 
 ### 1. Identity and school joining
@@ -153,7 +167,7 @@ These are the minimum browser/runtime scenarios to execute before marking the co
 
 These are required to release V1 but are not new product features:
 
-- [ ] CI: install, typecheck, test and build from a clean checkout.
+- [x] CI: install, typecheck, test and build from a clean checkout — merged to `main`
 - [ ] Tenant-isolation integration tests.
 - [ ] Production migration verification.
 - [ ] Backup and recovery procedure.
