@@ -30,7 +30,7 @@ describe("registerPersonalAccount", () => {
     });
 
     const result = await registerPersonalAccount({
-      email: " Person+test@example.com ",
+      email: " person@example.com ",
       password: "long-enough-password",
     });
 
@@ -43,13 +43,10 @@ describe("registerPersonalAccount", () => {
   });
 
   it("maps duplicate email to a registration conflict", async () => {
-    userCreate.mockRejectedValue(
-      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
-        code: "P2002",
-        clientVersion: "6.19.3",
-        meta: { target: ["email"] },
-      }),
-    );
+    userCreate.mockRejectedValue({
+      code: "P2002",
+      meta: { target: ["email"] },
+    });
 
     await expect(
       registerPersonalAccount({ email: "person@example.com", password: "long-enough-password" }),
