@@ -54,6 +54,39 @@ School data  → organized, persistent and auditable
 This is especially important in an economically constrained environment: **the goal is not to make schools buy more technology; it is to make existing technology economically accessible through shared infrastructure and reusable software.**
 
 ## Product direction
+## Personal account and school relationship model
+
+
+**Every person starts with a personal SkulGo account.** The personal account is independent from any school and remains the person's identity even when the person belongs to one or more schools.
+
+```text
+Personal SkulGo account
+        ↓
+Find a school OR Register a school
+        ↓
+School relationship
+        ↓
+School workspace + capabilities
+```
+
+### Find a school
+
+The school-discovery page is shared by all users. Finding a school does not mean every person sends the same kind of request:
+
+- **Teacher / staff / cashier / other worker:** send a request to join the school; the school reviews and decides the relationship and access.
+- **Student:** submit an admission request; the school handles admission/acceptance and creates the appropriate school relationship.
+- **Parent / guardian:** request or complete a verified connection to a student; this is not a worker join request or student admission.
+
+### Register a school
+
+A person who registers a school uses their existing personal SkulGo account when one already exists. Registration collects the school information and the person's relationship to the school, then creates the school relationship. It must not create a separate person-only school login.
+
+This keeps identity stable when a person changes schools or has more than one legitimate school relationship.
+
+### School workspace return
+
+Inside a school workspace, **← Account** returns the person to the personal SkulGo account page. It replaces role-switching as the navigation concept. The workspace is derived from the person's approved school relationship and capabilities; role-selection URL parameters are not an identity mechanism.
+
 
 The product is intentionally built as a configurable school operating platform rather than a collection of separate school apps.
 
