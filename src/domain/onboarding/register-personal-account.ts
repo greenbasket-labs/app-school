@@ -19,11 +19,6 @@ export class PersonalRegistrationConflictError extends Error {
 }
 
 function isEmailUniqueConstraintError(error: unknown): boolean {
-  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-    const target = Array.isArray(error.meta?.target) ? error.meta.target.join(",") : String(error.meta?.target ?? "");
-    return target.includes("email");
-  }
-
   if (!error || typeof error !== "object") return false;
 
   const candidate = error as { code?: unknown; meta?: { target?: unknown } };
@@ -35,7 +30,6 @@ function isEmailUniqueConstraintError(error: unknown): boolean {
 
   return target.includes("email");
 }
-
 export async function registerPersonalAccount(raw: RegisterPersonalAccountInput) {
   const input = inputSchema.parse(raw);
   const email = normalizeEmail(input.email);
