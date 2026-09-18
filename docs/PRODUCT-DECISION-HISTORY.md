@@ -8,6 +8,33 @@
 
 ---
 
+## 0. Product domain acquisition
+
+### Decision
+**`skulgo.com` is the public product domain for SkulGo.**
+
+The domain was registered through Namecheap on **18 Sep 2026** for one year at a total charge of **$6.99** ($6.79 registration + $0.20 ICANN fee). Free Domain Privacy was retained. No Namecheap hosting or PremiumDNS was purchased.
+
+### Architectural meaning
+
+The domain is a public addressing layer, not the application itself:
+
+```text
+skulgo.com
+   ↓
+DNS
+   ↓
+SkulGo production deployment
+   ↓
+Next.js application
+   ↓
+PostgreSQL source of truth
+```
+
+DNS, HTTPS and production deployment remain release work and must not be treated as complete merely because the domain has been registered.
+
+---
+
 ## 1. What are we actually building?
 
 ### Question
