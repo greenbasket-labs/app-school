@@ -272,7 +272,27 @@ A connected user enters a school workspace from the personal account. The school
 These changes simplify the existing identity model; they do not introduce separate databases or role-specific identities.
 
 ---
-## 9. Who owns the school's data?
+
+## 8B. Engineering method — preserve, slice, verify, document
+
+### Decision
+App-School is developed through small verified vertical slices.
+
+For each slice:
+1. Inspect the current code, schema, APIs and working UX.
+2. Define one narrow product change.
+3. Preserve working behavior and existing architectural boundaries.
+4. Implement only that slice.
+5. Run typecheck and focused runtime/browser verification.
+6. Record what is complete, UI-only, blocked or intentionally deferred.
+7. Update roadmap, README and decision history, then commit.
+8. Move to the next dependent slice.
+
+The latest application of this method is the Find a school relationship UX: Parent/Guardian was added only to the existing Requested relationship dropdown. The parent UI appears only when selected. Its backend is intentionally not connected to the generic worker join-request endpoint yet.
+
+**Next slice: Register a school from the existing personal SkulGo account.**
+
+## 9. Who owns the school's data?## 9. Who owns the school's data?
 
 ### Decision
 School operational records belong to the **School tenant**.
