@@ -1,9 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const validateAssessmentScores = vi.fn();
-const assessmentFindFirst = vi.fn();
-const auditFindFirst = vi.fn();
-const auditCreate = vi.fn();
+const { validateAssessmentScores, assessmentFindFirst, auditFindFirst, auditCreate } = vi.hoisted(() => ({
+  validateAssessmentScores: vi.fn(),
+  assessmentFindFirst: vi.fn(),
+  auditFindFirst: vi.fn(),
+  auditCreate: vi.fn(),
+}));
 
 vi.mock("@/lib/db", () => ({
   db: {
