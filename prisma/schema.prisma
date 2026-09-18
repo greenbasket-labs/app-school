@@ -87,13 +87,17 @@ model User {
   passwordHash String
   status UserStatus @default(ACTIVE)
   memberships Membership[]
+  createdNotifications Notification[]
   schoolJoinRequests SchoolJoinRequest[]
   reviewedSchoolJoinRequests SchoolJoinRequest[] @relation("SchoolJoinRequestReviewer")
+  guardianRecords Guardian[]
+  verifiedGuardianRecords Guardian[] @relation("GuardianAccountVerifier")
   sessions UserSession[]
   auditEvents AuditEvent[] @relation("AuditActor")
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
+
 model Organization {
   id String @id @default(uuid()) @db.Uuid
   name String
@@ -105,6 +109,7 @@ model Organization {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
+
 model OrganizationIdentity {
   id String @id @default(uuid()) @db.Uuid
   organizationId String @unique @db.Uuid
@@ -115,6 +120,7 @@ model OrganizationIdentity {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
+
 model School {
   id String @id @default(uuid()) @db.Uuid
   organizationId String @db.Uuid
@@ -140,12 +146,16 @@ model School {
   assessments AssessmentDefinition[]
   assessmentScores AssessmentScore[]
   feeStructures FeeStructure[]
+  guardianNotificationPreferences GuardianNotificationPreference[]
+  guardianNotificationRecipients GuardianNotificationRecipient[]
+  notifications Notification[]
   auditEvents AuditEvent[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@index([organizationId])
   @@index([normalizedName])
 }
+
 model Module {
   id String @id @default(uuid()) @db.Uuid
   code String @unique
@@ -157,18 +167,20 @@ model Module {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
+
 model SchoolModule {
   schoolId String @db.Uuid
   moduleId String @db.Uuid
   enabled Boolean @default(false)
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   module Module @relation(fields: [moduleId], references: [id], onDelete: Restrict)
-  enabledAt DateTime? @db.Timestamptz(6)
-  disabledAt DateTime? @db.Timestamptz(6)
+  enabledAt DateTime?
+  disabledAt DateTime?
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@id([schoolId, moduleId])
   @@index([schoolId, enabled])
 }
+
 model AcademicSession {
   id String @id @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
@@ -189,6 +201,7 @@ model AcademicSession {
   @@unique([schoolId, name])
   @@index([schoolId, startsAt])
 }
+
 model AcademicTerm {
   id String @id @default(uuid()) @db.Uuid
   name String
@@ -205,6 +218,7 @@ model AcademicTerm {
   @@unique([academicSessionId, name])
   @@index([academicSessionId, startsAt])
 }
+
 model ClassLevel {
   id String @id @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
@@ -218,6 +232,7 @@ model ClassLevel {
   @@unique([schoolId, order])
   @@index([schoolId, order])
 }
+
 model ClassArm {
   id String @id @default(uuid()) @db.Uuid
   classLevelId String @db.Uuid
@@ -233,6 +248,7 @@ model ClassArm {
   @@unique([classLevelId, name])
   @@index([classLevelId])
 }
+
 model Subject {
   id String @id @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
@@ -248,6 +264,7 @@ model Subject {
   @@unique([schoolId, code])
   @@index([schoolId, name])
 }
+
 model ClassSubject {
   id String @id @default(uuid()) @db.Uuid
   academicSessionId String @db.Uuid
@@ -261,6 +278,7 @@ model ClassSubject {
   @@index([academicSessionId, classArmId])
   @@index([academicSessionId, subjectId])
 }
+
 model AssessmentDefinition {
   id String @id @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
@@ -282,6 +300,7 @@ model AssessmentDefinition {
   @@index([schoolId, academicSessionId, academicTermId])
   @@index([schoolId, classArmId, subjectId])
 }
+
 model Student {
   id String @id @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
@@ -301,19 +320,30 @@ model Student {
   @@unique([schoolId, admissionNumber])
   @@index([schoolId, lastName, firstName])
 }
+
 model Guardian {
   id String @id @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
   fullName String
   phone String?
   email String?
+  userId String? @db.Uuid
+  accountVerifiedAt DateTime? @db.Timestamptz(6)
+  accountVerifiedByUserId String? @db.Uuid
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  accountVerifier User? @relation("GuardianAccountVerifier", fields: [accountVerifiedByUserId], references: [id], onDelete: SetNull)
   studentGuardians StudentGuardian[]
+  notificationPreferences GuardianNotificationPreference[]
+  notificationRecipients GuardianNotificationRecipient[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@index([schoolId, fullName])
   @@index([schoolId, phone])
+  @@index([schoolId, userId, accountVerifiedAt])
+  @@index([accountVerifiedByUserId])
 }
+
 model StudentGuardian {
   studentId String @db.Uuid
   guardianId String @db.Uuid
@@ -328,6 +358,34 @@ model StudentGuardian {
   @@index([schoolId, guardianId])
   @@index([schoolId, studentId])
 }
+
+model GuardianNotificationPreference {
+  schoolId String @db.Uuid
+  guardianId String @db.Uuid
+  inAppEnabled Boolean @default(true)
+  smsEnabled Boolean @default(false)
+  emailEnabled Boolean @default(false)
+  whatsappEnabled Boolean @default(false)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  guardian Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+  @@id([schoolId, guardianId])
+  @@index([schoolId, guardianId])
+}
+
+model GuardianNotificationRecipient {
+  notificationId String @db.Uuid
+  schoolId String @db.Uuid
+  guardianId String @db.Uuid
+  readAt DateTime?
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  guardian Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+  @@id([notificationId, guardianId])
+  @@index([schoolId, guardianId, readAt])
+}
+
 model Enrollment {
   id String @id @default(uuid()) @db.Uuid
   studentId String @db.Uuid
@@ -345,6 +403,7 @@ model Enrollment {
   @@index([academicSessionId, classArmId, status])
   @@index([studentId, status])
 }
+
 model AssessmentScore {
   id String @id @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
@@ -368,6 +427,7 @@ model AssessmentScore {
   @@index([schoolId, academicSessionId, classArmId, subjectId])
   @@index([schoolId, studentId])
 }
+
 model AttendanceRecord {
   id String @id @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
@@ -389,6 +449,7 @@ model AttendanceRecord {
   @@index([schoolId, attendanceDate, classArmId])
   @@index([academicSessionId, attendanceDate])
 }
+
 model Membership {
   id String @id @default(uuid()) @db.Uuid
   userId String @db.Uuid
@@ -401,6 +462,8 @@ model Membership {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   capabilities MembershipCapability[]
+  notificationRecipients NotificationRecipient[]
+  notificationPreference NotificationPreference?
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([userId, schoolId])
@@ -408,6 +471,7 @@ model Membership {
   @@index([schoolId, isOwner])
   @@index([schoolId, relationship, status])
 }
+
 model SchoolJoinRequest {
   id String @id @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
@@ -427,6 +491,7 @@ model SchoolJoinRequest {
   @@index([userId, status, createdAt])
   @@index([schoolId, userId, status])
 }
+
 model Capability {
   id String @id @default(uuid()) @db.Uuid
   code String @unique
@@ -434,6 +499,7 @@ model Capability {
   memberships MembershipCapability[]
   createdAt DateTime @default(now())
 }
+
 model MembershipCapability {
   membershipId String @db.Uuid
   capabilityId String @db.Uuid
@@ -445,6 +511,7 @@ model MembershipCapability {
   @@id([membershipId, capabilityId])
   @@index([schoolId, capabilityId])
 }
+
 model UserSession {
   id String @id @default(uuid()) @db.Uuid
   userId String @db.Uuid
@@ -456,6 +523,7 @@ model UserSession {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   @@index([userId, expiresAt])
 }
+
 model AuditEvent {
   id String @id @default(uuid()) @db.Uuid
   schoolId String? @db.Uuid
@@ -473,6 +541,31 @@ model AuditEvent {
   @@index([actorUserId, occurredAt])
   @@index([entityType, entityId])
 }
+
+model Notification {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  title String
+  body String
+  createdByUserId String @db.Uuid
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  createdByUser User @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  recipients NotificationRecipient[]
+  guardianRecipients GuardianNotificationRecipient[]
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model NotificationRecipient {
+  notificationId String @db.Uuid
+  membershipId String @db.Uuid
+  readAt DateTime?
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+  @@id([notificationId, membershipId])
+  @@index([membershipId, readAt])
+}
+
 model FeeStructure {
   id String @id @default(uuid()) @db.Uuid
   schoolId String @db.Uuid
@@ -486,9 +579,17 @@ model FeeStructure {
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Restrict)
   academicTerm AcademicTerm @relation(fields: [academicTermId], references: [id], onDelete: Restrict)
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([schoolId, academicTermId, name])
   @@index([schoolId, academicSessionId, academicTermId])
   @@index([schoolId, isActive])
+}
+
+model NotificationPreference {
+  membershipId String @id @db.Uuid
+  inAppEnabled Boolean @default(true)
+  smsEnabled Boolean @default(false)
+  emailEnabled Boolean @default(false)
+  whatsappEnabled Boolean @default(false)
+  updatedAt DateTime @updatedAt
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
 }

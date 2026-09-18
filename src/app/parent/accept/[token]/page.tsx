@@ -19,9 +19,9 @@ export default function ParentAcceptPage() {
     });
     const data = await response.json();
     setBusy(false);
-    if (!response.ok) return setMessage(data.error ?? "Could not activate parent access.");
-    window.location.href = `/app/schools/${data.schoolId}/communication`;
+    if (!response.ok) return setMessage(data.error ?? "Could not activate the SkulGo account.");
+    window.location.href = "/parent";
   }
 
-  return <main style={{ minHeight: "100vh", padding: 32 }}><div style={{ maxWidth: 520, margin: "80px auto", background: "white", padding: 28, borderRadius: 16, boxShadow: "0 8px 28px rgba(0,0,0,.06)" }}><p style={{ fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", fontSize: 13 }}>App-School</p><h1>Activate parent access</h1><p style={{ color: "#53615a" }}>Create your password to access your school account and receive in-app notices.</p><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password (minimum 12 characters)" style={{ width: "100%", boxSizing: "border-box", padding: 12, marginTop: 12 }} /><button onClick={() => void accept()} disabled={busy || password.length < 12} style={{ marginTop: 14, padding: "11px 16px", border: 0, borderRadius: 10, background: "#183c2a", color: "white", fontWeight: 700 }}>{busy ? "Activating…" : "Activate access"}</button>{message && <p style={{ color: "#9a2d2d" }}>{message}</p>}</div></main>;
+  return <main style={{ minHeight: "100vh", padding: 32 }}><div style={{ maxWidth: 520, margin: "80px auto", background: "white", padding: 28, borderRadius: 16, boxShadow: "0 8px 28px rgba(0,0,0,.06)" }}><p style={{ fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", fontSize: 13 }}>SkulGo</p><h1>Create your personal account</h1><p style={{ color: "#53615a" }}>This creates your SkulGo personal account and links it to the school guardian record. The school must still verify the guardian relationship before child academic data becomes available.</p><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password (minimum 12 characters)" style={{ width: "100%", boxSizing: "border-box", padding: 12, marginTop: 12 }} /><button onClick={() => void accept()} disabled={busy || password.length < 12} style={{ marginTop: 14, padding: "11px 16px", border: 0, borderRadius: 10, background: "#183c2a", color: "white", fontWeight: 700 }}>{busy ? "Creating…" : "Create account"}</button>{message && <p style={{ color: "#9a2d2d" }}>{message}</p>}</div></main>;
 }
