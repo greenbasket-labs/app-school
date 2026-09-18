@@ -22,7 +22,21 @@ When a person leaves, the school disables that school membership. The personal S
 
 ## Current verification checkpoint — 18 Sep 2026
 
-The basic engineering gate is complete:
+The basic engineering gate is complete.
+
+### Domain checkpoint
+
+- [x] `skulgo.com` purchased and registered for 1 year on 18 Sep 2026.
+- [x] Total charged: $6.99 including the $0.20 ICANN fee.
+- [x] Free Domain Privacy retained.
+- [x] No Namecheap hosting or PremiumDNS was purchased.
+- [ ] DNS configuration.
+- [ ] Production deployment connected to the domain.
+- [ ] HTTPS and `www` behavior verified.
+
+The domain purchase is a production-readiness prerequisite, not completion of the deployment gate.
+
+
 
 - [x] GitHub Actions clean-checkout verification merged to `main`.
 - [x] CI install, Prisma generation and migrations.
@@ -176,7 +190,25 @@ These are required to release V1 but are not new product features:
 - [ ] Representative performance/load test.
 - [ ] Offline/online transition test on production-like deployment.
 - [ ] Render production deployment.
+- [ ] Connect `skulgo.com` and `www.skulgo.com` to production and verify HTTPS.
 - [ ] Tenant-safe onboarding and support procedure.
+
+## Domain / deployment acceptance
+
+Before public release:
+
+```text
+GitHub main
+→ production build/deploy
+→ production PostgreSQL
+→ DNS: skulgo.com
+→ HTTPS
+→ login / signup
+→ school workspace
+→ core V1 flows
+```
+
+The domain is the public entry point only. Academic, identity, authorization and payment truth continue to come from the application and PostgreSQL source of truth.
 
 ## Final end-to-end acceptance
 
