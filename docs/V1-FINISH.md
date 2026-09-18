@@ -36,9 +36,9 @@ When a person leaves, the school disables that school membership. The personal S
 - [ ] Approval creates/activates the school membership and required relationship records.
 - [x] Owner can disable/deactivate a school membership when the person leaves.
 - [x] Disabled membership is excluded from active-workspace access while the personal User remains intact.
-- [ ] Login routes one-school users directly to the correct workspace.
-- [ ] Multiple active school relationships show a selector.
-- [ ] No role-selection URL parameters are used.
+- [x] Login routes one-school users directly to the correct workspace.
+- [x] Multiple active school relationships show a selector.
+- [x] No role-selection URL parameters are used.
 
 ### 2. Academic trust
 
@@ -47,7 +47,7 @@ When a person leaves, the school disables that school membership. The personal S
 - [x] Result submission service and authenticated route.
 - [x] Result approval service and authenticated authorization rule.
 - [x] Result publication service and authenticated authorization rule.
-- [ ] Verify capture → submit → approve → publish in a real browser/runtime.
+- [ ] Verify capture → submit → approve → publish in a real browser/runtime. (Implementation is complete; runtime verification remains.)
 - [ ] Verify published report card access.
 - [ ] Verify academic history access.
 
@@ -67,7 +67,7 @@ When a person leaves, the school disables that school membership. The personal S
 - [x] Guardian account bootstrap/security.
 - [x] Parent authorization boundary.
 - [x] In-app attendance/payment/result alerts.
-- [ ] Verify SkulGo account → verified guardian relationship → authorized child → notification → published result → academic history.
+- [ ] Verify SkulGo account → verified guardian relationship → authorized child → notification → published result → academic history. (Implementation is complete; end-to-end runtime verification remains.)
 - [ ] Verify access remains restricted to linked children and schools.
 
 ### 5. Student experience
@@ -153,7 +153,7 @@ These are the minimum browser/runtime scenarios to execute before marking the co
 
 These are required to release V1 but are not new product features:
 
-- [ ] CI: install, typecheck, test and build from a clean checkout.
+- [ ] CI: install, typecheck, test and build from a clean checkout. (Workflow exists; latest run still has a typecheck failure.)
 - [ ] Tenant-isolation integration tests.
 - [ ] Production migration verification.
 - [ ] Backup and recovery procedure.
