@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { currentSession } from "@/domain/auth/session-cookie";
 import {
   registerSchoolOwner,
   RegistrationConflictError,
@@ -7,8 +8,19 @@ import {
 
 export async function POST(request: Request) {
   try {
+    const session = await currentSession();
+    if (!session) {
+      return NextResponse.json(
+        { ok: false, error: "AUTHENTICATION_REQUIRED", message: "Sign in to your SkulGo account before registering a school." },
+        { status: 401 },
+      );
+    }
+
     const body = await request.json();
-    const result = await registerSchoolOwner(body);
+    const result = await registerSchoolOwner({
+      ...body,
+      existingUserId: session.user.id,
+    });
 
     return NextResponse.json(
       {
@@ -17,7 +29,7 @@ export async function POST(request: Request) {
         organizationId: result.organization.id,
         schoolId: result.school.id,
         schoolCreatedAt: result.school.createdAt,
-        next: "AUTHENTICATE_AND_CONTINUE_SETUP",
+        next: "SCHOOL_WORKSPACE",
       },
       { status: 201 },
     );
@@ -31,12 +43,12 @@ export async function POST(request: Request) {
 
     if (error instanceof RegistrationConflictError) {
       return NextResponse.json(
-        { ok: false, error: "IDENTITY_ALREADY_REGISTERED", message: error.message },
+        { ok: false, error: "REGISTRATION_CONFLICT", message: error.message },
         { status: 409 },
       );
     }
 
-    console.error("registration failed", error);
+    console.error("school registration failed", error);
     return NextResponse.json(
       { ok: false, error: "REGISTRATION_FAILED" },
       { status: 500 },
