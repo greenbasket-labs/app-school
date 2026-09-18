@@ -26,6 +26,7 @@ export default async function ParentPage() {
     notifications: (await listParentNotifications(schoolId, session.user.id)).map((notification) => ({
       ...notification,
       createdAt: notification.createdAt.toISOString(),
+      readAt: notification.readAt ? notification.readAt.toISOString() : null,
     })),
   })));
 
