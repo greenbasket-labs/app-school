@@ -18,6 +18,17 @@ This is an identity rule, not a role simulation. Do not create role-only account
 
 ### Relationship flows
 
+### Current identity/joining UX slice
+
+The next implementation slice makes the existing personal-account model concrete without adding separate role account systems:
+
+- [ ] Make **Find a school** the universal school-discovery page for all users.
+- [ ] Separate the action after school discovery into worker join request, student admission request, and parent/guardian student-connection request.
+- [ ] Make **Register a school** reuse the existing personal SkulGo account when the person is already signed in.
+- [ ] Keep school registration as school information + the person's relationship; do not create a second school-specific person login.
+- [ ] Use **← Account** to return from a school workspace to the personal account page; remove the role-switching navigation concept.
+
+These are UX/workflow changes to the existing identity architecture, not new identity layers.
 - **School owner:** personal SkulGo account + school registration → Organization + School + owner membership.
 - **Student:** personal SkulGo account → discover school → submit admission application → school review → admission/acceptance → school membership/student relationship.
 - **Teacher/staff:** personal SkulGo account → discover school → submit job/application → school review → offer/acceptance → school membership/staff relationship.
@@ -225,6 +236,9 @@ V1 is complete when:
 - [ ] Offline authentication/session lifecycle policy and hardening
 - [x] Personal SkulGo account registration independent of school membership
 - [x] School discovery and relationship/application primitives
+- [ ] Universal school discovery UX with distinct worker/student/guardian request paths
+- [ ] Existing personal account reused for school registration
+- [ ] School workspace returns to personal account through ← Account rather than role switching
 
 ## Phase 1 — School configuration & owner control
 - [x] Academic session foundation
