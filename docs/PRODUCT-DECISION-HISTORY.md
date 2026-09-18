@@ -243,6 +243,35 @@ Keeping these concepts separate prevents future problems when one person owns mu
 
 ---
 
+## 8A. What is the user's entry point to school relationships?
+
+### Decision
+**Every person starts from a personal SkulGo account.** The account exists independently of any school relationship.
+
+The personal account is the stable identity when a person joins a school, registers a school, changes schools, or has multiple legitimate school relationships.
+
+The universal school-discovery flow is:
+
+```text
+Personal account
+      ↓
+Find a school
+      ↓
+Choose the correct relationship flow
+      ├── worker → join request
+      ├── student → admission request
+      └── parent/guardian → verified student connection
+```
+
+School registration follows the same identity boundary: an already-authenticated person reuses their personal SkulGo account and supplies school information plus their relationship to that school. It does not create a second person identity.
+
+### Navigation decision
+
+A connected user enters a school workspace from the personal account. The school workspace uses **← Account** to return to the personal account page. A role-switching URL is not an identity mechanism and must not be used to simulate a different user or role.
+
+These changes simplify the existing identity model; they do not introduce separate databases or role-specific identities.
+
+---
 ## 9. Who owns the school's data?
 
 ### Decision
