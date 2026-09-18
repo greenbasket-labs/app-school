@@ -242,6 +242,21 @@ This catalog will grow as new product modules are implemented. A module can be a
 - Student records are never deleted as part of lifecycle management.
 - Existing enrollment history remains preserved; inactive/withdrawn students are not offered as new enrollment candidates by the current student workspace.
 
+## Long-term vision — Transparent and Secure Records
+
+**Recorded for future direction only — not part of current V1 implementation.**
+
+SkulGo is intended to eventually become a trusted record of a person's verifiable school journey across legitimate school relationships. The long-term product can evolve from a school operating platform into a user-centered educational record that carries verified history forward between participating schools.
+
+> **Transparent and Secure Records.**
+
+Future records could include school identity/enrollment history, attendance and participation where appropriate, academic results and achievements, certificates, and other school-issued educational records. The authoritative source remains the school that created the record.
+
+A future SkulGo CV/profile should distinguish clearly between **school-verified records** and **user-entered claims**. It should expose provenance and record status—such as who issued a record, which school it belongs to, when it was created or changed, and who is authorized to see it—without turning self-claims into verified facts.
+
+**This is intentionally deferred. Do not build the portable CV/profile, public profiles, ratings, endorsements, recommendations or cross-school portable-history layer during current V1.**
+
+
 ## Verification checkpoint — 18 Sep 2026
 
 The implementation has crossed the basic engineering gate:
