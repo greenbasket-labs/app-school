@@ -42,20 +42,12 @@ describe("registerPersonalAccount", () => {
   });
 
   it("maps duplicate email to a registration conflict", async () => {
-    userCreate.mockResolvedValueOnce({
-      id: "user-1",
-      email: "person@example.com",
-      status: "ACTIVE",
-      createdAt: new Date("2026-09-17T00:00:00.000Z"),
+    userCreate.mockRejectedValue({
+      code: "P2002",
+      meta: { target: ["email"] },
     });
-    userCreate.mockClear();
-    await expect(
-      registerPersonalAccount({ email: "person@example.com", password: "long-enough-password" }),
-    ).resolves.toBeDefined();
 
-    userCreate.mockImplementation(() => Promise.reject(new Error("duplicate email")));
     await expect(
       registerPersonalAccount({ email: "person@example.com", password: "long-enough-password" }),
-    ).rejects.toBeInstanceOf(Error);
-  });
-});
+    ).rejects.toMatchObject({ name: "PersonalRegistrationConflictError" });
+  });});
