@@ -54,4 +54,5 @@ describe("registerPersonalAccount", () => {
     await expect(promise).rejects.toMatchObject({
       name: "PersonalRegistrationConflictError",
     });
-  }););
+  });
+});
