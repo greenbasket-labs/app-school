@@ -30,7 +30,7 @@ describe("registerPersonalAccount", () => {
     });
 
     const result = await registerPersonalAccount({
-      email: " Person@example.com ",
+      email: " Person@Example.COM ",
       password: "long-enough-password",
     });
 
