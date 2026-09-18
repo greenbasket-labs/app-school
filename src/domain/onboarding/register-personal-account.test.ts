@@ -2,7 +2,9 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { Prisma } from "@prisma/client";
 import { registerPersonalAccount, PersonalRegistrationConflictError } from "./register-personal-account";
 
-const userCreate = vi.fn();
+const { userCreate } = vi.hoisted(() => ({
+  userCreate: vi.fn(),
+}));
 
 vi.mock("@/lib/db", () => ({
   db: {
