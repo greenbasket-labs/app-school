@@ -289,6 +289,22 @@ The next V1 work is therefore focused on **real browser/runtime acceptance, prod
 
 The domain is registered and reserved for the product. DNS should be connected only after the production deployment target is ready. Namecheap is acting as the registrar; it is not the SkulGo application host.
 
+## Engineering toolchain
+
+SkulGo uses a deliberately small engineering toolbox. The current repository already has clean-checkout GitHub Actions CI; the next additions are Playwright, real PostgreSQL integration coverage, CodeQL and Dependabot. Sentry, backup/recovery monitoring and uptime monitoring are production-readiness additions; k6 and OpenTelemetry remain later-stage tools.
+
+| Area | Tool | Timing |
+|---|---|---|
+| Browser E2E | Playwright | Now |
+| Database integration | Testcontainers | Now |
+| Security scanning | CodeQL | Now |
+| Dependency security | Dependabot | Now |
+| Production errors | Sentry | Soon |
+| Backups/recovery | Managed PostgreSQL/Render backups | Before launch |
+| Uptime | Better Uptime / UptimeRobot | Before launch |
+| Load testing | k6 | Later |
+| Deep tracing | OpenTelemetry | Later |
+
 ## Roadmap
 
 ### Phase 0 — Foundation & trust
