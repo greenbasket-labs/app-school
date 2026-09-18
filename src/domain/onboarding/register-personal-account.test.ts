@@ -24,7 +24,7 @@ describe("registerPersonalAccount", () => {
   it("creates only a personal User identity", async () => {
     userCreate.mockResolvedValue({
       id: "user-1",
-      email: "person@example.com",
+      email: "person+test@example.com",
       status: "ACTIVE",
       createdAt: new Date("2026-09-17T00:00:00.000Z"),
     });
@@ -37,7 +37,7 @@ describe("registerPersonalAccount", () => {
     expect(result.id).toBe("user-1");
     expect(userCreate).toHaveBeenCalledTimes(1);
     expect(userCreate).toHaveBeenCalledWith({
-      data: { email: "person@example.com", passwordHash: "hashed-password" },
+      data: { email: "person+test@example.com", passwordHash: "hashed-password" },
       select: { id: true, email: true, status: true, createdAt: true },
     });
   });
