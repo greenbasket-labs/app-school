@@ -42,12 +42,16 @@ describe("registerPersonalAccount", () => {
   });
 
   it("maps duplicate email to a registration conflict", async () => {
-    userCreate.mockRejectedValue({
-      code: "P2002",
-      meta: { target: ["email"] },
+    userCreate.mockImplementationOnce(async () => {
+      throw { code: "P2002", meta: { target: ["email"] } };
     });
 
-    await expect(
-      registerPersonalAccount({ email: "person@example.com", password: "long-enough-password" }),
-    ).rejects.toMatchObject({ name: "PersonalRegistrationConflictError" });
-  });});
+    const promise = registerPersonalAccount({
+      email: "person@example.com",
+      password: "long-enough-password",
+    });
+
+    await expect(promise).rejects.toMatchObject({
+      name: "PersonalRegistrationConflictError",
+    });
+  }););
