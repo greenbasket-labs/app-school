@@ -34,17 +34,22 @@ async function validateContext(input: FeeStructureInput) {
   if (!term) throw new FeeStructureValidationError("Academic term must belong to the selected academic session.");
 }
 
-export async function listFeeStructures(schoolId: string) {
-  const records = await db.feeStructure.findMany({
-    where: { schoolId },
-    include: {
-      academicSession: { select: { id: true, name: true } },
-      academicTerm: { select: { id: true, name: true, order: true } },
-    },
-    orderBy: [{ academicSession: { startsAt: "desc" } }, { academicTerm: { order: "asc" } }, { name: "asc" }],
-  });
+type FeeStructureRecord = {
+  id: string;
+  schoolId: string;
+  academicSessionId: string;
+  academicTermId: string;
+  name: string;
+  amount: Prisma.Decimal;
+  description: string | null;
+  dueDate: Date | null;
+  isActive: boolean;
+  academicSession: { id: string; name: string };
+  academicTerm: { id: string; name: string; order: number };
+};
 
-  return records.map((record) => ({
+function serializeFeeStructure(record: FeeStructureRecord) {
+  return {
     id: record.id,
     schoolId: record.schoolId,
     academicSessionId: record.academicSessionId,
@@ -56,9 +61,20 @@ export async function listFeeStructures(schoolId: string) {
     description: record.description,
     dueDate: record.dueDate ? record.dueDate.toISOString().slice(0, 10) : null,
     isActive: record.isActive,
-    createdAt: record.createdAt,
-    updatedAt: record.updatedAt,
-  }));
+  };
+}
+
+export async function listFeeStructures(schoolId: string) {
+  const records = await db.feeStructure.findMany({
+    where: { schoolId },
+    include: {
+      academicSession: { select: { id: true, name: true } },
+      academicTerm: { select: { id: true, name: true, order: true } },
+    },
+    orderBy: [{ academicSession: { startsAt: "desc" } }, { academicTerm: { order: "asc" } }, { name: "asc" }],
+  });
+
+  return records.map(serializeFeeStructure);
 }
 
 export async function getFeeStructureOptions(schoolId: string) {
@@ -120,21 +136,7 @@ export async function createFeeStructure(input: FeeStructureInput, actorUserId: 
         },
       });
 
-      return {
-        id: fee.id,
-        schoolId: fee.schoolId,
-        academicSessionId: fee.academicSessionId,
-        academicTermId: fee.academicTermId,
-        sessionName: fee.academicSession.name,
-        termName: fee.academicTerm.name,
-        name: fee.name,
-        amount: fee.amount.toNumber(),
-        description: fee.description,
-        dueDate: fee.dueDate ? fee.dueDate.toISOString().slice(0, 10) : null,
-        isActive: fee.isActive,
-        createdAt: fee.createdAt,
-        updatedAt: fee.updatedAt,
-      };
+      return serializeFeeStructure(fee);
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
