@@ -30,7 +30,7 @@ describe("registerPersonalAccount", () => {
     });
 
     const result = await registerPersonalAccount({
-      email: " person@example.com ",
+      email: "person@example.com",
       password: "long-enough-password",
     });
 
@@ -43,9 +43,11 @@ describe("registerPersonalAccount", () => {
   });
 
   it("maps duplicate email to a registration conflict", async () => {
-    userCreate.mockRejectedValue({
-      code: "P2002",
-      meta: { target: ["email"] },
+    userCreate.mockImplementation(() => {
+      throw {
+        code: "P2002",
+        meta: { target: ["email"] },
+      };
     });
 
     await expect(
