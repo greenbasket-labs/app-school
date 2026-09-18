@@ -104,6 +104,21 @@ This requirement applies across the platform, including students, enrollment, at
 - Modules reuse the same platform persistence/outbox/sync infrastructure.
 - Server-authoritative actions such as final publication remain intentionally online-only.
 
+## Verification checkpoint — 18 Sep 2026
+
+**Engineering gate:** passed.
+
+- [x] GitHub Actions clean-checkout CI merged to `main`.
+- [x] CI install + Prisma generation + PostgreSQL migrations.
+- [x] CI typecheck.
+- [x] CI tests: 16/16.
+- [x] CI production build.
+- [x] Local tests: 16/16.
+- [x] Local production build: 28/28 static pages.
+- [ ] Local multiple-lockfile warning cleanup; non-blocking.
+
+Remaining work is now primarily **browser/runtime acceptance, tenant/security/recovery verification, and production deployment readiness**.
+
 ## V1 finish line
 
 V1 is complete when:
@@ -130,12 +145,12 @@ V1 is complete when:
 - [x] Password authentication
 - [x] Database-backed sessions
 - [ ] Production migration baseline and verification
-- [ ] Automated typecheck/lint/build CI
+- [x] Automated typecheck/lint/build CI — GitHub Actions merged to `main`
 - [ ] Tenant-isolation integration tests
 - [x] Offline-first platform foundation: durable browser persistence, schema/versioning, local repository boundary, durable outbox, shared sync engine, retry/backoff, connectivity scheduling, reconciliation contract and school-workspace sync status wiring
 - [ ] Offline authentication/session lifecycle policy and hardening
-- [ ] Personal SkulGo account registration independent of school membership
-- [ ] School discovery and relationship/application primitives
+- [x] Personal SkulGo account registration independent of school membership
+- [x] School discovery and relationship/application primitives
 
 ## Phase 1 — School configuration & owner control
 - [x] Academic session foundation
@@ -171,15 +186,15 @@ V1 is complete when:
 - [x] Assessment definitions
 - [x] Score capture — initial roster + per-student save slice
 - [x] Score validation — school/class/session/enrollment/max-score validation
-- [x] Offline-capable assessment score capture foundation — local-first mutation, central sync registry/executor, retry/backoff, authoritative acknowledgement and pull/reconciliation are implemented
+- [x] Offline-capable assessment score capture foundation — local-first mutation, central sync registry/executor, retry/backoff, authoritative acknowledgement and pull/reconciliation are implemented; browser E2E remains
 - [ ] Browser end-to-end verification of assessment offline save → reload → reconnect → sync
 - [ ] Assessment conflict-resolution UI
-- [ ] Result submission — authenticated API route + domain service implemented; runtime/CI verification required
-- [ ] Result approval — authenticated API route + domain service implemented; runtime/CI verification required; submitter cannot approve the same assessment result
-- [x] Result publication — approved-result gate plus owner/default or owner-assigned RESULT.PUBLISH capability; deliberately online/server-authoritative
+- [x] Result submission — authenticated API route + domain service implemented; runtime verification remains
+- [x] Result approval — authenticated API route + domain service implemented; runtime verification remains; submitter cannot approve the same assessment result
+- [x] Result publication — approved-result gate plus owner/default or owner-assigned RESULT.PUBLISH capability; deliberately online/server-authoritative; runtime verification remains
 - [ ] Verify complete submit → approve → publish runtime workflow
-- [ ] Report cards — authenticated published-report-card API/domain boundary implemented; runtime verification required
-- [ ] Academic history — authenticated published-history API/domain boundary implemented; runtime verification required
+- [x] Report cards — authenticated published-report-card API/domain boundary implemented; runtime verification remains
+- [x] Academic history — authenticated published-history API/domain boundary implemented; runtime verification remains
 
 ## Phase 4 — Parent / guardian value
 - [x] Guardian records + student relationships
