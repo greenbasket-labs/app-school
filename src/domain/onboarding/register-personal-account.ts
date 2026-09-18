@@ -18,6 +18,18 @@ export class PersonalRegistrationConflictError extends Error {
   }
 }
 
+function isEmailUniqueConstraintError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const candidate = error as { code?: unknown; meta?: { target?: unknown } };
+  if (candidate.code !== "P2002") return false;
+
+  const target = Array.isArray(candidate.meta?.target)
+    ? candidate.meta.target.join(",")
+    : String(candidate.meta?.target ?? "");
+
+  return target.includes("email");
+}
 export async function registerPersonalAccount(raw: RegisterPersonalAccountInput) {
   const input = inputSchema.parse(raw);
   const email = normalizeEmail(input.email);
@@ -29,9 +41,8 @@ export async function registerPersonalAccount(raw: RegisterPersonalAccountInput)
       select: { id: true, email: true, status: true, createdAt: true },
     });
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      const target = Array.isArray(error.meta?.target) ? error.meta.target.join(",") : String(error.meta?.target ?? "");
-      if (target.includes("email")) throw new PersonalRegistrationConflictError();
+    if (isEmailUniqueConstraintError(error)) {
+      throw new PersonalRegistrationConflictError();
     }
     throw error;
   }

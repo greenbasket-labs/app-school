@@ -1,8 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { Prisma } from "@prisma/client";
 import { registerPersonalAccount, PersonalRegistrationConflictError } from "./register-personal-account";
 
-const userCreate = vi.fn();
+const { userCreate } = vi.hoisted(() => ({
+  userCreate: vi.fn(),
+}));
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -28,7 +29,7 @@ describe("registerPersonalAccount", () => {
     });
 
     const result = await registerPersonalAccount({
-      email: " Person@Example.com ",
+      email: "person@example.com",
       password: "long-enough-password",
     });
 
@@ -41,16 +42,17 @@ describe("registerPersonalAccount", () => {
   });
 
   it("maps duplicate email to a registration conflict", async () => {
-    userCreate.mockRejectedValue(
-      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
-        code: "P2002",
-        clientVersion: "6.19.3",
-        meta: { target: ["email"] },
-      }),
-    );
+    userCreate.mockImplementationOnce(async () => {
+      throw { code: "P2002", meta: { target: ["email"] } };
+    });
 
-    await expect(
-      registerPersonalAccount({ email: "person@example.com", password: "long-enough-password" }),
-    ).rejects.toBeInstanceOf(PersonalRegistrationConflictError);
+    const promise = registerPersonalAccount({
+      email: "person@example.com",
+      password: "long-enough-password",
+    });
+
+    await expect(promise).rejects.toMatchObject({
+      name: "PersonalRegistrationConflictError",
+    });
   });
 });

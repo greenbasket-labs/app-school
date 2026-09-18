@@ -149,7 +149,7 @@ The goal is not the largest feature list. The goal is a strong platform that can
 14. **Attendance history & correction** — historical attendance search plus capability-controlled corrections with previous/current state audit evidence.
 15. **Parent/guardian records** — school-scoped guardian records plus many-to-many student relationships, with relationship metadata and audited link/unlink actions.
 16. **Student status lifecycle** — controlled active/inactive/withdrawn transitions with terminal withdrawal and audit history.
-17. **Assessments & results** — assessment definitions, score capture/validation, result submission, separate-user approval, server-authoritative publication, published-result reporting/history, and verified guardian result notifications.
+17. **Assessment definitions and initial score capture** — assessment roster, per-student score validation and audited score persistence.
 
 ## Module model
 
@@ -536,6 +536,6 @@ Run the same request again with a different email but the same CAC. Expected res
 
 ## Important current boundary
 
-This is an actively developed school platform, not yet a production-ready complete school application. The current implementation includes the identity/auth foundation, school configuration and readiness, school profile, students/enrollment, attendance and correction, staff/access management, verified guardian authorization, assessment definitions and score capture/validation, result submission/approval/publication, published academic reporting/history surfaces, finance foundations, and guardian result notifications. Clean-checkout CI is now defined, while final runtime verification, tenant-isolation coverage, production migration/recovery/observability/security checks, and remaining offline release gates are still required before production launch.
+This is an actively developed school platform, not yet a production-ready complete school application. The current implementation has the identity/auth foundation, school configuration, setup readiness, school profile, students, enrollment, attendance, attendance history/correction, parent/guardian records, student status lifecycle, module configuration/enforcement, academic session lifecycle, initial staff/access management, assessment definitions and initial score capture/validation. Migration verification, automated tests, application-wide offline-first infrastructure and the remaining operational workflows are still required before production launch.
 
 See `docs/PRODUCT-DECISION-HISTORY.md` for the product reasoning and durable decisions. See `ARCHITECTURE.md` for frozen technical architecture. See `docs/ROADMAP.md` for the current implementation sequence and offline-first work.
