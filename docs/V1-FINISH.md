@@ -50,12 +50,38 @@ The remaining checklist below is intentionally focused on **runtime acceptance a
 
 ## Ship-critical gates
 
+### Engineering method for completing the gates
+
+V1 is completed through narrow, verified vertical slices. Preserve working UX; do not turn one release gate into a broad redesign.
+
+```text
+Inspect evidence → define one slice → implement smallest change
+→ typecheck → focused browser/runtime verification
+→ document status → commit → next slice
+```
+
+UI-only work must be clearly separated from server/domain completion. Reuse existing Guardian, authorization, membership and audit infrastructure before creating new systems.
+
+### Immediate next slice: Register a school
+
+```text
+Personal SkulGo account
+→ Register a school
+→ school information + relationship
+→ Organization + School + owner Membership
+→ correct school workspace
+→ ← Account returns to personal account
+```
+
 ### 1. Identity and school joining
 
 - [ ] Personal SkulGo account can be created independently of school membership.
-- [ ] User can discover a school organization.
-- [ ] Student can submit admission/application request.
-- [ ] Teacher/staff/cashier/etc. can submit an application/request.
+- [x] User can discover a school organization — UI/browser slice verified.
+- [x] Student admission-request UI works from the existing relationship flow.
+- [x] Teacher/staff/cashier application UI works from the existing relationship flow.
+- [x] Parent/Guardian exists only as an option in the existing Requested relationship dropdown; its conditional UI works.
+- [ ] Parent/Guardian backend request → school verification → Guardian/StudentGuardian linkage.
+- [ ] Register a school from the existing personal SkulGo account — **NEXT SLICE**.
 - [x] Join-request persistence and authenticated requester APIs exist on the implementation branch.
 - [x] Owner-only pending-request list and review API exist on the implementation branch.
 - [x] Approval path reuses the existing SkulGo `User` and stores the owner's authoritative relationship on `Membership`.
@@ -275,6 +301,17 @@ Do not add these before V1 release unless a concrete launch requirement makes on
 - Large collections of duplicated role-specific workflows.
 
 ## Completion rule
+
+### Current sequence
+
+```text
+1. Register a school from existing personal account
+2. Verify owner workspace + ← Account routing
+3. Owner review/acceptance
+4. Membership + capabilities
+5. Parent/Guardian verified connection backend
+6. Remaining V1 runtime and production gates
+```
 
 V1 is complete when the core owner, teacher, parent/guardian and student journeys are reliable, the academic lifecycle is trusted, supported offline workflows are reliable, financial states remain honest, school tenancy and access controls are protected, and production release gates are verified.
 
