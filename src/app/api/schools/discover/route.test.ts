@@ -1,7 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const currentSession = vi.fn();
-const schoolFindMany = vi.fn();
+const { currentSession, schoolFindMany } = vi.hoisted(() => ({
+  currentSession: vi.fn(),
+  schoolFindMany: vi.fn(),
+}));
 
 vi.mock("@/domain/auth/session-cookie", () => ({ currentSession }));
 vi.mock("@/lib/db", () => ({ db: { school: { findMany: schoolFindMany } } }));
