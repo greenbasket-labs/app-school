@@ -4,7 +4,7 @@ function suffix() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-test("school owner can complete academic foundation setup", async ({ page }) => {
+test("school owner can complete academic foundation and enroll a student", async ({ page }) => {
   const s = suffix();
   const email = `setup-${s}@example.test`;
   const password = "E2E-Strong-Password-123";
@@ -68,4 +68,24 @@ test("school owner can complete academic foundation setup", async ({ page }) => 
 
   await expect(page.getByText("6 of 6 foundation checks complete.", { exact: true })).toBeVisible();
   await expect(page.getByText("READY", { exact: true })).toBeVisible();
+
+  const studentsUrl = (await page.url()).replace(/\/setup$/, "/students");
+  await page.goto(studentsUrl);
+  await expect(page.getByRole("heading", { name: school })).toBeVisible();
+  await page.getByRole("button", { name: "+ Add student" }).click();
+  await page.getByPlaceholder("Admission number").fill("ADM-001");
+  await page.getByPlaceholder("First name").fill("Aisha");
+  await page.getByPlaceholder("Last name").fill("Bello");
+  await page.getByRole("button", { name: "Create student" }).click();
+  await expect(page.getByRole("status")).toHaveText("Student record created.");
+  await expect(page.getByText("Aisha Bello", { exact: true })).toBeVisible();
+
+  const enrollment = page.getByRole("form").filter({ hasText: "Enroll student" });
+  await enrollment.getByRole("combobox").nth(0).selectOption({ label: "Aisha Bello — ADM-001" });
+  await enrollment.getByRole("combobox").nth(1).selectOption({ label: "2026/2027 (Active)" });
+  await enrollment.getByRole("combobox").nth(2).selectOption({ label: "JSS 1 — A" });
+  await enrollment.getByRole("button", { name: "Enroll" }).click();
+  await expect(page.getByRole("status")).toHaveText("Student enrolled successfully.");
+  await expect(page.getByText("JSS 1 — A", { exact: true })).toBeVisible();
+  await expect(page.getByText("2026/2027", { exact: true })).toBeVisible();
 });
