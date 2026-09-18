@@ -1,5 +1,4 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { Prisma } from "@prisma/client";
 import { registerPersonalAccount, PersonalRegistrationConflictError } from "./register-personal-account";
 
 const { userCreate } = vi.hoisted(() => ({
@@ -44,10 +43,10 @@ describe("registerPersonalAccount", () => {
 
   it("maps duplicate email to a registration conflict", async () => {
     userCreate.mockImplementation(() => {
-      throw {
+      return Promise.reject({
         code: "P2002",
         meta: { target: ["email"] },
-      };
+      });
     });
 
     await expect(
