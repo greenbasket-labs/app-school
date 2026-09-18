@@ -24,7 +24,7 @@ describe("registerPersonalAccount", () => {
   it("creates only a personal User identity", async () => {
     userCreate.mockResolvedValue({
       id: "user-1",
-      email: "person+test@example.com",
+      email: "person@example.com",
       status: "ACTIVE",
       createdAt: new Date("2026-09-17T00:00:00.000Z"),
     });
@@ -37,7 +37,7 @@ describe("registerPersonalAccount", () => {
     expect(result.id).toBe("user-1");
     expect(userCreate).toHaveBeenCalledTimes(1);
     expect(userCreate).toHaveBeenCalledWith({
-      data: { email: "person+test@example.com", passwordHash: "hashed-password" },
+      data: { email: "person@example.com", passwordHash: "hashed-password" },
       select: { id: true, email: true, status: true, createdAt: true },
     });
   });
@@ -52,7 +52,7 @@ describe("registerPersonalAccount", () => {
     );
 
     await expect(
-      registerPersonalAccount({ email: "person+test@example.com", password: "long-enough-password" }),
+      registerPersonalAccount({ email: "person@example.com", password: "long-enough-password" }),
     ).rejects.toBeInstanceOf(PersonalRegistrationConflictError);
   });
 });
