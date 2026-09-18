@@ -7,6 +7,7 @@ const describeDatabase = process.env.DATABASE_URL ? describe : describe.skip;
 describeDatabase("authorization tenant isolation — real PostgreSQL", () => {
   const suffix = `authz-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   let userId = "";
+  let organizationId = "";
   let schoolAId = "";
   let schoolBId = "";
   let membershipAId = "";
@@ -21,6 +22,7 @@ describeDatabase("authorization tenant isolation — real PostgreSQL", () => {
       await db.school.deleteMany({ where: { id: { in: [schoolAId, schoolBId].filter(Boolean) } } });
     }
     if (userId) await db.user.delete({ where: { id: userId } }).catch(() => undefined);
+    if (organizationId) await db.organization.delete({ where: { id: organizationId } }).catch(() => undefined);
     if (capabilityId) await db.capability.delete({ where: { id: capabilityId } }).catch(() => undefined);
     await db.$disconnect();
   });
@@ -56,6 +58,7 @@ describeDatabase("authorization tenant isolation — real PostgreSQL", () => {
       }),
     ]);
 
+    organizationId = org.id;
     userId = user.id;
     schoolAId = schoolA.id;
     schoolBId = schoolB.id;
