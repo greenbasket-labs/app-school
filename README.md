@@ -138,6 +138,26 @@ Pending changes → Sync → server validation/authorization
 
 App-School is **problem-first, not feature-first**.
 
+### Engineering method — one verified vertical slice at a time
+
+We build through small, evidence-driven vertical slices:
+
+```text
+Inspect current implementation → define ONE slice → preserve working UX
+→ implement → typecheck + focused runtime/browser test
+→ document actual status → commit → next slice
+```
+
+Rules:
+- Do not redesign working screens while adding a new flow unless the product decision explicitly changes the UX.
+- Add one relationship/workflow at a time and verify it before dependent work.
+- Reuse existing domain models, services, authorization and audit infrastructure before creating new systems.
+- Clearly distinguish UI-only work from completed server/domain behavior.
+- Use evidence from tests/runtime behavior; do not change product code merely to satisfy an unrelated test.
+- Finish and document a slice before starting the next one.
+
+**Current next slice: Register a school using the existing personal SkulGo account.**
+
 Do not copy another school application and rename its features. Start from the real school problem, understand the people and workflow involved, identify what the software should prevent/detect/remember/calculate/connect/communicate, then design the smallest reliable mechanism that solves it.
 
 The development loop is:
@@ -184,6 +204,7 @@ The goal is not the largest feature list. The goal is a strong platform that can
 16. **Student status lifecycle** — controlled active/inactive/withdrawn transitions with terminal withdrawal and audit history.
 17. **Assessment definitions and initial score capture** — assessment roster, per-student score validation and audited score persistence.
 18. **Result lifecycle & parent delivery** — result submission/approval/publication, published-result access, guardian authorization and parent in-app notification path.
+19. **Personal account → school relationship UX** — relationship-driven school discovery with worker application, student admission, and Parent/Guardian available only through the existing relationship dropdown. Parent/Guardian UI remains pending backend verification integration.
 
 ## Module model
 
@@ -314,7 +335,9 @@ The implementation has crossed the basic engineering gate.
 - [x] Local production build: 28/28 static pages generated.
 - [ ] Local Next.js workspace-root warning caused by multiple lockfiles — cleanup only; not a current build failure.
 
-The next V1 work is therefore focused on **real browser/runtime acceptance, production trust, security/recovery and deployment readiness**, not broad feature expansion.
+The next product slice is **Register a school from the existing personal SkulGo account**, followed by owner review/acceptance and membership/workspace verification. Parent/Guardian backend connection remains a separate dependent slice.
+
+We continue with: **one small slice → test → document → commit → next slice**.
 
 ## Product domain
 
