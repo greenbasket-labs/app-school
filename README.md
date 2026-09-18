@@ -150,6 +150,7 @@ The goal is not the largest feature list. The goal is a strong platform that can
 15. **Parent/guardian records** — school-scoped guardian records plus many-to-many student relationships, with relationship metadata and audited link/unlink actions.
 16. **Student status lifecycle** — controlled active/inactive/withdrawn transitions with terminal withdrawal and audit history.
 17. **Assessment definitions and initial score capture** — assessment roster, per-student score validation and audited score persistence.
+18. **Result lifecycle & parent delivery** — result submission/approval/publication, published-result access, guardian authorization and parent in-app notification path.
 
 ## Module model
 
@@ -241,6 +242,21 @@ This catalog will grow as new product modules are implemented. A module can be a
 - Student records are never deleted as part of lifecycle management.
 - Existing enrollment history remains preserved; inactive/withdrawn students are not offered as new enrollment candidates by the current student workspace.
 
+## Verification checkpoint — 18 Sep 2026
+
+The implementation has crossed the basic engineering gate:
+
+- [x] GitHub Actions clean-checkout verification merged to `main`.
+- [x] CI install, Prisma generation and PostgreSQL migration deployment.
+- [x] CI typecheck.
+- [x] CI automated tests: 16/16 passing.
+- [x] CI production build.
+- [x] Local automated tests: 16/16 passing.
+- [x] Local production build: 28/28 static pages generated.
+- [ ] Local Next.js workspace-root warning caused by multiple lockfiles — cleanup only; not a current build failure.
+
+The next V1 work is therefore focused on **real browser/runtime acceptance, production trust, security/recovery and deployment readiness**, not broad feature expansion.
+
 ## Roadmap
 
 ### Phase 0 — Foundation & trust
@@ -251,13 +267,13 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [x] Audit history
 - [x] Password authentication
 - [x] Database-backed sessions
-- [ ] Production migration baseline and verification
-- [ ] Automated typecheck/lint/build CI
+- [ ] Production migration baseline and verification — CI migration deployment passes; production environment verification remains
+- [x] Automated typecheck/lint/build CI — GitHub Actions clean-checkout verification merged to `main`
 - [ ] Tenant-isolation integration tests
-- [ ] Offline-first platform foundation: local durable database, schema/versioning and repository abstraction
-- [ ] Offline mutation/outbox model with durable pending states
-- [ ] Shared sync engine with retry, backoff and idempotency
-- [ ] Connectivity/sync status model and application-wide UI treatment
+- [x] Offline-first platform foundation: local durable persistence, schema/versioning, repository abstraction
+- [x] Offline mutation/outbox model with durable pending states
+- [x] Shared sync engine with retry, backoff and idempotency
+- [x] Connectivity/sync status model and application-wide UI treatment — initial workspace wiring
 
 ### Phase 1 — School configuration
 - [x] Academic session foundation
@@ -290,12 +306,12 @@ This catalog will grow as new product modules are implemented. A module can be a
 - [x] Assessment definitions
 - [x] Score capture — initial roster + per-student save slice
 - [x] Score validation — school/class/session/enrollment/max-score validation
-- [ ] Offline-capable assessment and score capture foundation
-- [ ] Result submission
-- [ ] Result approval
-- [ ] Result publication
-- [ ] Report cards
-- [ ] Academic history
+- [x] Offline-capable assessment and score capture foundation — shared local/outbox/sync path implemented; browser E2E remains
+- [x] Result submission — implementation complete; browser/runtime verification remains
+- [x] Result approval — implementation complete; browser/runtime verification remains
+- [x] Result publication — implementation complete; browser/runtime verification remains
+- [x] Report cards — implementation complete; browser/runtime verification remains
+- [x] Academic history — implementation complete; browser/runtime verification remains
 
 ### Phase 4 — Finance
 - [x] Fee structures
