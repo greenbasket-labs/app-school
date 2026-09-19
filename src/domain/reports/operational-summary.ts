@@ -144,7 +144,13 @@ export async function getOperationalSummary(schoolId: string) {
       ? ((attendance.present + attendance.late) / attendanceRecorded) * 100
       : 0;
 
-  // Finance invoice/payment models are not part of the current Prisma schema yet.\n  const finance = { invoiced: "0", paid: "0", outstanding: "0", invoiceCount: 0n, paymentCount: 0n };
+  // Finance invoice/payment models are not part of the current Prisma schema yet.\n  const finance = {
+    invoiced: "0",
+    paid: "0",
+    outstanding: "0",
+    invoiceCount: 0n,
+    paymentCount: 0n,
+  };
 
   const assessments = Number(
     termAssessmentSummary[0]?.assessments ?? 0,
