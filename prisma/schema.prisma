@@ -136,6 +136,9 @@ model School {
   organizationId                  String                           @db.Uuid
   name                            String
   normalizedName                  String
+  schoolType                      String                           @default("CUSTOM")
+  admissionPrefix                 String?
+  admissionSequence               Int                              @default(0)
   address                         String?
   phone                           String?
   email                           String?
