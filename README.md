@@ -178,7 +178,7 @@ Rules:
 - Use evidence from tests/runtime behavior; do not change product code merely to satisfy an unrelated test.
 - Finish and document a slice before starting the next one.
 
-**Current next slice: Owner/Admin operational dashboard after school setup.** The personal-account → school-registration relationship flow is implemented; focused browser/runtime acceptance remains tracked in the roadmap.
+**Current execution slice: Student admissions end-to-end.** The Owner/Admin operational dashboard, Students workspace admission-request surface, admission application schema/service/API, review page and approval flow are implemented and typechecked. The remaining slice is to connect the applicant/parent submission path, complete edit/reject actions, verify the approval flow in a real browser, and then retire the old manual student-creation path.
 
 Do not copy another school application and rename its features. Start from the real school problem, understand the people and workflow involved, identify what the software should prevent/detect/remember/calculate/connect/communicate, then design the smallest reliable mechanism that solves it.
 
@@ -227,6 +227,7 @@ The goal is not the largest feature list. The goal is a strong platform that can
 17. **Assessment definitions and initial score capture** — assessment roster, per-student score validation and audited score persistence.
 18. **Result lifecycle & parent delivery** — result submission/approval/publication, published-result access, guardian authorization and parent in-app notification path.
 19. **Personal account → school relationship UX** — relationship-driven school discovery with worker application, student admission, and Parent/Guardian available only through the existing relationship dropdown. Parent/Guardian UI remains pending backend verification integration.
+20. **Student admission workflow foundation** — school-scoped admission applications with lifecycle states, applicant ownership, requested session/class, owner review, editable application data, audited approval/rejection/status changes, and transactional approval into an official Student + Enrollment record. Applicant submission UI and full browser verification remain pending.
 
 ## Module model
 
