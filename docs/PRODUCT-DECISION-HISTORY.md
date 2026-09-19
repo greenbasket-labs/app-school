@@ -168,6 +168,73 @@ Operational capabilities can be delegated to staff, but ownership-level configur
 
 ---
 
+## 5A. Personal account is the clean school doorway
+
+### Decision
+
+The personal SkulGo account is the central doorway to all legitimate school relationships.
+
+```text
+Personal SkulGo account
+        ↓
+Your schools
+        ↓
+School + relationship
+        ↓
+Open school
+        ↓
+Authorized role workspace
+```
+
+Owner, Principal/Headmaster, Teacher, Cashier, Staff, Student and Parent/Guardian do not need separate person identities. A person may have multiple legitimate school relationships, and the same personal account remains stable across them.
+
+The public visitor page is intentionally minimal:
+
+> **SkulGo — Transparent and Secure Records**
+
+with only **Sign in** and **Register**. School-specific registration language belongs after entering the personal account.
+
+### Decision
+
+The school workspace is the operational environment. The previous demo concept of **Switch role** is replaced by **← Account**. Role query parameters are not an identity or authorization mechanism.
+
+### Owner setup
+
+A newly registered owner may temporarily see a school setup/continuation entry while required school configuration is incomplete. After setup is complete, the school is presented like the owner's other connected school relationship, with **Open school** leading to the operational owner dashboard.
+
+The setup/backend page remains a configuration surface rather than the permanent operational dashboard.
+
+## 5B. Role assignment and dashboard routing
+
+The confirmed role model is:
+
+| Relationship / role | Workspace |
+|---|---|
+| Owner / Admin | Owner operational dashboard |
+| Principal / Headmaster | Principal dashboard |
+| Teacher | Teacher dashboard |
+| Cashier / Accountant | Cashier dashboard |
+| Staff | Staff dashboard |
+| Student | Student dashboard |
+| Parent / Guardian | Parent dashboard |
+
+A Principal/Headmaster does not require a separate identity-creation flow. A person may first join through the teacher/staff path. The school owner can later assign Principal/Headmaster through Users & Roles. The same SkulGo account and school membership remain; the authorized workspace changes with the role/capabilities.
+
+The five currently supplied GB School demo dashboards—Owner/Admin, Teacher, Cashier/Accountant, Parent and Student—are reference designs. Principal and Staff dashboards should be defined only when concrete product requirements/samples are available.
+
+## 5C. Find a school versus Applications
+
+### Decision
+
+**Find a school** is for establishing a legitimate school relationship.
+
+- Teacher / Staff / Cashier → application/request.
+- Student → admission request.
+- Parent / Guardian → verified student connection.
+- Existing active school relationships must not be offered inappropriate duplicate relationships for the same school.
+
+The school-side **Applications** area is where authorized school management reviews incoming requests. The backend must enforce relationship and capability rules even when the UI hides an option.
+
 ## 6. Is module enablement the same as staff permission?
 
 ### Question
