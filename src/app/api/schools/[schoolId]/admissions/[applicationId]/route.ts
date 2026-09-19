@@ -166,7 +166,6 @@ export async function PATCH(
         schoolId: membership.schoolId,
         applicationId,
         reviewedByUserId: session.user.id,
-        });
       });
 
       await db.auditEvent.create({
