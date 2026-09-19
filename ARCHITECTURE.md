@@ -75,7 +75,7 @@ A human User can have Memberships. An Organization represents the customer/legal
 
 ## Decision: CAC is a one-time organization identity claim
 
-`OrganizationIdentity.normalizedCacNumber` is globally unique. CAC is mandatory for initial organization creation and can be claimed by only one organization in Green Basket Global. The raw value is retained while a canonical normalized value enforces uniqueness.
+`OrganizationIdentity.normalizedCacNumber` is globally unique when a CAC is supplied. CAC is optional during current organization/school onboarding. When supplied, the raw value is retained while a canonical normalized value enforces uniqueness.
 
 A supplied CAC number is not represented as externally verified. `verificationStatus=SUPPLIED` means the customer supplied it. A future legitimate verification integration may move that state to VERIFIED.
 
@@ -112,9 +112,19 @@ Initial owner + organization + CAC identity + school + owner membership + creati
 
 The database unique constraint on normalized CAC is the final concurrency barrier against two requests claiming the same CAC.
 
+## Current implementation handoff checkpoint — 19 Sep 2026
+
+The identity architecture is now implemented beyond the initial foundation: personal accounts, school relationships, owner registration, school discovery, capability-based membership and the Owner/Admin operational dashboard exist in the current branch.
+
+Current runtime verification is focused on school discovery/search. The discovery API filters by eligible school status and normalized school name. Before changing this query or test data, verify the stored school `name`, `normalizedName`, `status`, and `setupStatus`. A separate join-request list route mismatch is tracked independently.
+
+The current dashboard intentionally does not fabricate finance totals when authoritative invoice/payment records are unavailable in the current schema. Derived dashboards must remain schema-backed and truthful.
+
+CAC is optional at onboarding; supplied CAC identity remains globally unique.
+
 ## Current vertical slice
 
-The first vertical slice is intentionally small:
+The first vertical slice was intentionally small:
 
 - User
 - Organization
@@ -126,7 +136,7 @@ The first vertical slice is intentionally small:
 - AuditEvent
 - atomic owner/school registration API
 
-Authentication UI, active session issuance, setup UI and later school operations are not claimed as implemented yet.
+The current implementation has progressed beyond this initial slice; use README.md and docs/ROADMAP.md for the live product status. Do not use this historical section as a claim that later authentication, setup or school operations are unimplemented.
 
 ## Implementation consequence for new modules
 
