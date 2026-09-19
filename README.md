@@ -178,7 +178,7 @@ Rules:
 - Use evidence from tests/runtime behavior; do not change product code merely to satisfy an unrelated test.
 - Finish and document a slice before starting the next one.
 
-**Current next slice: Register a school using the existing personal SkulGo account.**
+**Current next slice: Owner/Admin operational dashboard after school setup.** The personal-account → school-registration relationship flow is implemented; focused browser/runtime acceptance remains tracked in the roadmap.
 
 Do not copy another school application and rename its features. Start from the real school problem, understand the people and workflow involved, identify what the software should prevent/detect/remember/calculate/connect/communicate, then design the smallest reliable mechanism that solves it.
 
@@ -357,7 +357,7 @@ The implementation has crossed the basic engineering gate.
 - [x] Local production build: 28/28 static pages generated.
 - [ ] Local Next.js workspace-root warning caused by multiple lockfiles — cleanup only; not a current build failure.
 
-The next product slice is **Register a school from the existing personal SkulGo account**, followed by owner review/acceptance and membership/workspace verification. Parent/Guardian backend connection remains a separate dependent slice.
+The current product sequence has moved beyond the initial personal-account registration implementation. The next slice is **Owner/Admin operational dashboard after school setup**, followed by core daily operations, people/relationships/communication, role-specific workspaces, and production readiness. Focused browser/runtime acceptance for registration, owner routing, owner application review, and Parent/Guardian verification remains explicitly tracked in docs/ROADMAP.md.
 
 We continue with: **one small slice → test → document → commit → next slice**.
 
@@ -495,16 +495,19 @@ SkulGo uses a deliberately small engineering toolbox. The current repository alr
 - [ ] Connect `skulgo.com` / `www.skulgo.com` to production and verify HTTPS
 - [ ] Tenant-safe onboarding and support operations
 
-## Current V1 sequence
+## Current V1 execution sequence
 
-1. **Assessment definitions** — complete and tested against Greenfield Heritage Academy.
-2. **Score capture + validation** — current slice: assessment roster loads from active enrollment and individual scores are validated and saved with audit evidence.
-3. **Result submission** — next.
-4. **Result approval** — after submission.
-5. **Result publication** — after approval.
-6. **Report cards** — derive from trusted published academic records.
-7. **Academic history** — preserve and present results across sessions.
-8. **Offline-first foundation** — before expanding many more operational workflows, establish the shared local-data/outbox/sync architecture and then migrate existing modules onto it.
+The detailed functional phases remain the product capability map. The active implementation order is now:
+
+1. **Owner/Admin operational dashboard** — replace the basic dashboard with the real school control center and verify setup-complete → owner dashboard routing.
+2. **Core daily operations** — Students, Classes, Attendance, Fees & Payments, Results and Reports, using real school-scoped records.
+3. **People and communication** — Staff & Teachers, Parents, Applications, Users & Roles and Announcements.
+4. **Role-specific workspaces** — Teacher, Cashier, Parent and Student experiences over the same school-scoped data and capabilities.
+5. **Production readiness** — browser acceptance, tenant/security testing, migrations, backups/recovery, observability, deployment and skulgo.com verification.
+
+Do not build these as five giant projects. Each item is a sequence of small vertical slices. Complete and verify one slice before starting the next.
+
+The existing academic/finance/result foundations remain valuable implementation assets and should be reused rather than rebuilt.
 
 ## V1 completion rule
 
@@ -682,4 +685,4 @@ Run the same request again with a different email but the same CAC. Expected res
 
 This is an actively developed school platform, not yet a production-ready complete school application. The basic engineering gate has passed, and the public product domain `skulgo.com` has now been acquired. Remaining release work includes browser/runtime verification, tenant/security testing, production migration and recovery, observability, production deployment, DNS/HTTPS configuration, and representative offline/online verification.
 
-See `docs/PRODUCT-DECISION-HISTORY.md` for the product reasoning and durable decisions. See `ARCHITECTURE.md` for frozen technical architecture. See `docs/ROADMAP.md` for the current implementation sequence and offline-first work.
+See `docs/PRODUCT-DECISION-HISTORY.md` for the product reasoning and durable decisions. See `ARCHITECTURE.md` for frozen technical architecture. See `docs/ROADMAP.md` for the current execution roadmap, detailed capability phases, verification status and offline-first work.
