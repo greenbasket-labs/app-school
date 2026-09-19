@@ -129,16 +129,12 @@ export default async function AppHomePage() {
             </p>
 
             {memberships.map(({ school, isOwner }) => (
-              <Link
+              <div
                 key={school.id}
-                href={`/app/schools/${school.id}/dashboard`}
                 style={{
-                  display: "block",
                   background: "white",
                   borderRadius: 16,
                   padding: 24,
-                  color: "inherit",
-                  textDecoration: "none",
                   boxShadow: "0 8px 24px rgba(0,0,0,.05)",
                 }}
               >
@@ -165,11 +161,41 @@ export default async function AppHomePage() {
                     </p>
                   </div>
 
-                  <span style={{ fontWeight: 700 }}>
-                    Open school →
-                  </span>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <Link
+                      href={`/app/schools/${school.id}/dashboard`}
+                      style={{
+                        display: "inline-block",
+                        padding: "10px 14px",
+                        borderRadius: 10,
+                        background: "#173d2a",
+                        color: "white",
+                        textDecoration: "none",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Open school →
+                    </Link>
+                    {!isOwner && (
+                      <Link
+                        href={`/app/schools/${school.id}/students/admissions/apply`}
+                        style={{
+                          display: "inline-block",
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          border: "1px solid #ccd6d0",
+                          background: "white",
+                          color: "#173d2a",
+                          textDecoration: "none",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Apply for admission
+                      </Link>
+                    )}
+                  </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </section>
         )}
