@@ -9,6 +9,8 @@ import { currentSession } from "@/domain/auth/session-cookie";
 import {
   createAdmissionApplication,
   getAdmissionApplications,
+  getAdmissionOptions,
+  getApplicantAdmissionApplications,
   AdmissionConflictError,
   AdmissionNotFoundError,
 } from "@/domain/admissions/service";
@@ -47,6 +49,27 @@ async function access(schoolId: string, capability: string) {
     session,
     membership,
   };
+}
+
+async function applicantAccess(schoolId: string) {
+  const session = await currentSession();
+
+  if (!session) {
+    throw new AuthorizationError("Authentication required.");
+  }
+
+  const school = await db.school.findUnique({
+    where: { id: schoolId },
+    select: { id: true, name: true, status: true },
+  });
+
+  if (!school) {
+    throw new AdmissionNotFoundError("School not found.");
+  }
+
+  await requireSchoolModule(school.id, "STUDENTS");
+
+  return { session, school };
 }
 
 export async function GET(
@@ -130,6 +153,75 @@ export async function GET(
 }
 
 export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ schoolId: string }> }
+) {
+  try {
+    const { schoolId } = await params;
+    const { session, school } = await applicantAccess(schoolId);
+    const input = schema.parse(await request.json());
+
+    const application = await createAdmissionApplication({
+      schoolId: school.id,
+      applicantUserId: session.user.id,
+      ...input,
+    });
+
+    await db.auditEvent.create({
+      data: {
+        schoolId: school.id,
+        actorUserId: session.user.id,
+        action: "admission_application.created",
+        entityType: "AdmissionApplication",
+        entityId: application.id,
+        currentState: {
+          status: application.status,
+          firstName: application.firstName,
+          lastName: application.lastName,
+          academicSessionId: application.academicSessionId,
+          classLevelId: application.classLevelId,
+          classArmId: application.classArmId,
+        },
+      },
+    });
+
+    return NextResponse.json({ ok: true, application }, { status: 201 });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { ok: false, error: "INVALID_ADMISSION_DATA", issues: error.issues },
+        { status: 400 }
+      );
+    }
+
+    if (error instanceof AdmissionConflictError) {
+      return NextResponse.json(
+        { ok: false, error: "ADMISSION_CONFLICT", message: error.message },
+        { status: 409 }
+      );
+    }
+
+    if (error instanceof AdmissionNotFoundError) {
+      return NextResponse.json(
+        { ok: false, error: "ADMISSION_REFERENCE_NOT_FOUND", message: error.message },
+        { status: 404 }
+      );
+    }
+
+    if (error instanceof AuthorizationError || error instanceof ModuleDisabledError) {
+      return NextResponse.json(
+        { ok: false, error: "FORBIDDEN", message: error.message },
+        { status: 403 }
+      );
+    }
+
+    console.error("admission application create failed", error);
+    return NextResponse.json(
+      { ok: false, error: "REQUEST_FAILED" },
+      { status: 500 }
+    );
+  }
+}port async function POST(
   request: Request,
   { params }: { params: Promise<{ schoolId: string }> }
 ) {
