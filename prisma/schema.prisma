@@ -139,6 +139,7 @@ model School {
   schoolType                      String                           @default("CUSTOM")
   admissionPrefix                 String?
   admissionSequence               Int                              @default(0)
+  admissionSequences              AdmissionSequence[]
   address                         String?
   phone                           String?
   email                           String?
@@ -169,6 +170,17 @@ model School {
 
   @@index([organizationId])
   @@index([normalizedName])
+}
+
+model AdmissionSequence {
+  schoolId       String @db.Uuid
+  admissionYear  Int
+  sectionCode    String
+  sequence       Int    @default(0)
+  school         School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@id([schoolId, admissionYear, sectionCode])
+  @@index([schoolId, admissionYear])
 }
 
 model Module {
