@@ -476,8 +476,25 @@ export async function updateAdmissionApplication(input: {
   });
 }
 
-function generatedAdmissionNumber(year: number, sequence: number) {
-  return `ADM-${year}-${String(sequence).padStart(4, "0")}`;
+function generatedAdmissionNumber(prefix: string, sequence: number) {
+  return `${prefix}-${String(sequence).padStart(4, "0")}`;
+}
+
+function fallbackSchoolPrefix(schoolType: string) {
+  const normalized = schoolType.trim().toUpperCase();
+
+  const known = {
+    NURSERY: "NUR",
+    PRIMARY: "PRI",
+    JSS: "JSS",
+    SS: "SS",
+  } as const;
+
+  if (normalized in known) {
+    return known[normalized as keyof typeof known];
+  }
+
+  return "STU";
 }
 
 export async function approveAdmissionApplication(input: {
@@ -554,16 +571,35 @@ export async function approveAdmissionApplication(input: {
           );
         }
 
-        const year = new Date().getFullYear();
-        const studentCount = await tx.student.count({
-          where: {
-            schoolId: application.schoolId,
+        const school = await tx.school.findUnique({
+          where: { id: application.schoolId },
+          select: {
+            id: true,
+            schoolType: true,
+            admissionPrefix: true,
+            admissionSequence: true,
           },
         });
+
+        if (!school) {
+          throw new AdmissionNotFoundError("School not found.");
+        }
+
+        const prefix =
+          school.admissionPrefix?.trim().toUpperCase() ||
+          fallbackSchoolPrefix(school.schoolType);
+
+        const sequence = school.admissionSequence + 1;
+
         const admissionNumber = generatedAdmissionNumber(
-          year,
-          studentCount + 1 + attempt - 1
+          prefix,
+          sequence,
         );
+
+        await tx.school.update({
+          where: { id: school.id },
+          data: { admissionSequence: sequence },
+        });
 
         const student = await tx.student.create({
           data: {
