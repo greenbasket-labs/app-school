@@ -211,7 +211,7 @@ export default async function ApproveAdmissionPage({
                 color: "#173d2a",
               }}
             >
-              Admission number
+              Confirm approval
             </h2>
 
             <p
@@ -222,9 +222,9 @@ export default async function ApproveAdmissionPage({
                 color: "#53615a",
               }}
             >
-              Enter the admission number this school wants to assign to the
-              student. Approval will create the official student record and
-              enroll the student in the requested class.
+              SkulGo will generate the student's admission number
+              automatically. Approval will create the official student record
+              and enroll the student in the requested class.
             </p>
 
             <ApproveAdmissionForm
