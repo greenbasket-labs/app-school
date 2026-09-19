@@ -83,6 +83,28 @@ A person who registers a school uses their existing personal SkulGo account when
 
 This keeps identity stable when a person changes schools or has more than one legitimate school relationship.
 
+### Role-based school entry
+
+After a person has an approved relationship with a school, the personal account shows the school and the person's relationship. **Open school** enters the authorized operational workspace for that relationship.
+
+Confirmed dashboard references from the GB School demo:
+
+- Owner / Admin → Owner operational dashboard
+- Teacher → Teacher dashboard
+- Cashier / Accountant → Cashier dashboard
+- Parent / Guardian → Parent dashboard
+- Student → Student dashboard
+- Principal / Headmaster → owner-assigned role; a person may first join through the teacher/staff path and later be assigned Principal
+- Staff → role to be defined from a concrete product requirement/sample
+
+The same personal account and school membership remain in place when a school owner changes a person's role. The authorized dashboard changes with the role/capabilities.
+
+The school workspace uses **← Account** to return to the personal account. The demo's `Switch role` and `?role=` URL parameters are not part of the SkulGo authorization model.
+
+### Owner setup state
+
+A newly registered school can temporarily show a **Continue setup** entry while required school configuration is incomplete. After setup is complete, the owner sees the normal school entry and opens the operational owner dashboard like other connected users. School setup remains a configuration/admin surface, not the permanent operational dashboard.
+
 ### School workspace return
 
 Inside a school workspace, **← Account** returns the person to the personal SkulGo account page. It replaces role-switching as the navigation concept. The workspace is derived from the person's approved school relationship and capabilities; role-selection URL parameters are not an identity mechanism.
