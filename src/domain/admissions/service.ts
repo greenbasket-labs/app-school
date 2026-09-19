@@ -593,6 +593,8 @@ export async function approveAdmissionApplication(input: {
 
         const admissionNumber = generatedAdmissionNumber(
           prefix,
+          application.submittedAt.getUTCFullYear(),
+          school.schoolType,
           sequence,
         );
 
