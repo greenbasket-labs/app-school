@@ -156,6 +156,60 @@ Pending changes → Sync → server validation/authorization
 - Actions that inherently require current server authority may remain online-only, but this must be deliberate and documented rather than an accidental network dependency.
 - Modules must reuse the shared offline/local-data/outbox/sync architecture rather than implementing unrelated offline mechanisms.
 
+## Current handoff snapshot — 19 Sep 2026
+
+### Repository state
+
+- Branch: `feat/personal-account-school-relationship-flow`
+- Latest remote commit: `a763243` — school discovery query normalization fix.
+- CI branch is clean and up to date with its remote branch.
+- A local working tree may contain an uncommitted change in `src/domain/reports/operational-summary.ts`; inspect it before discarding or committing it.
+- Do not assume a clean local working tree just because the remote branch is clean.
+
+### Current verified product state
+
+- Personal SkulGo account → school relationship foundation is implemented.
+- School registration reuses an existing personal account.
+- Owner/Admin operational dashboard is implemented and loads school-scoped operational data.
+- Student admission persistence, lifecycle service, review APIs, owner review page and transactional approval into Student + Enrollment are implemented.
+- The current admission workflow is **not yet end-to-end browser verified**.
+- CAC is optional during current school onboarding; it can be supplied and uniquely claimed when present.
+- `skulgo.com` is registered; DNS/production deployment remain pending.
+
+### Current runtime investigation
+
+The current manual browser test is focused on **Find a school / Join a school**.
+
+Observed behavior:
+- The user can reach `/app/schools/join`.
+- School discovery previously worked for existing test schools.
+- A recent discovery-query normalization change is now under investigation because a school search can return no match even though the school exists.
+- The current API searches normalized school names and only includes schools with `status` `SETUP` or `ACTIVE`.
+- Do not change database records or normalization code until the stored school `name`, `normalizedName`, `status`, and `setupStatus` values have been verified.
+- A separate join-request list mismatch is also known: the Join page requests `/api/schools/join-requests`, while the existing route is school-scoped at `/api/schools/[schoolId]/join-requests`. Treat that as a separate slice after school discovery is verified.
+
+### Dashboard/finance boundary
+
+The current operational dashboard must not invent invoice/payment data. The current Prisma schema used by the dashboard does not contain the invoice/payment models that an earlier dashboard query expected, so finance summary values remain zero until the authoritative finance records are confirmed and wired. Do not mark finance reporting as runtime-complete merely because older roadmap entries say so.
+
+### Immediate next step
+
+Work one case at a time:
+
+```text
+Verify school discovery data
+        ↓
+Fix only the discovery regression
+        ↓
+Verify Join request list
+        ↓
+Complete admission browser flow
+        ↓
+Continue core daily operations
+```
+
+Do not delete test schools or join requests while diagnosing these issues.
+
 ## Product development philosophy
 
 App-School is **problem-first, not feature-first**.
@@ -178,7 +232,7 @@ Rules:
 - Use evidence from tests/runtime behavior; do not change product code merely to satisfy an unrelated test.
 - Finish and document a slice before starting the next one.
 
-**Current execution slice: Student admissions end-to-end.** The Owner/Admin operational dashboard, Students workspace admission-request surface, admission application schema/service/API, review page and approval flow are implemented and typechecked. The remaining slice is to connect the applicant/parent submission path, complete edit/reject actions, verify the approval flow in a real browser, and then retire the old manual student-creation path.
+**Current execution slice: verify the personal-account school-relationship flow, then finish student admissions end-to-end.** The Owner/Admin operational dashboard and admission foundation are implemented. Current browser verification has exposed a school-discovery regression that must be diagnosed before dependent join-request testing. The next work remains applicant/parent submission, edit/reject actions, browser approval verification, and retirement/demotion of the legacy manual student-creation path.
 
 Do not copy another school application and rename its features. Start from the real school problem, understand the people and workflow involved, identify what the software should prevent/detect/remember/calculate/connect/communicate, then design the smallest reliable mechanism that solves it.
 
@@ -358,7 +412,7 @@ The implementation has crossed the basic engineering gate.
 - [x] Local production build: 28/28 static pages generated.
 - [ ] Local Next.js workspace-root warning caused by multiple lockfiles — cleanup only; not a current build failure.
 
-The current product sequence has moved beyond the initial personal-account registration implementation. The next slice is **Owner/Admin operational dashboard after school setup**, followed by core daily operations, people/relationships/communication, role-specific workspaces, and production readiness. Focused browser/runtime acceptance for registration, owner routing, owner application review, and Parent/Guardian verification remains explicitly tracked in docs/ROADMAP.md.
+The current product sequence has moved beyond the initial personal-account registration implementation. The Owner/Admin dashboard foundation is now implemented. The immediate runtime work is verifying school discovery/join behavior, then completing the student admission browser flow before advancing through core daily operations. Focused browser/runtime acceptance remains explicitly tracked in docs/ROADMAP.md.
 
 We continue with: **one small slice → test → document → commit → next slice**.
 
