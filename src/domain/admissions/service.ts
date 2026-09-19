@@ -577,7 +577,6 @@ export async function approveAdmissionApplication(input: {
             id: true,
             schoolType: true,
             admissionPrefix: true,
-            admissionSequence: true,
           },
         });
 
@@ -589,19 +588,36 @@ export async function approveAdmissionApplication(input: {
           school.admissionPrefix?.trim().toUpperCase() ||
           fallbackSchoolPrefix(school.schoolType);
 
-        const sequence = school.admissionSequence + 1;
+        const admissionYear = application.submittedAt.getUTCFullYear();
+        const sectionCode = school.schoolType.trim().toUpperCase() || "CUSTOM";
+
+        const admissionSequence = await tx.admissionSequence.upsert({
+          where: {
+            schoolId_admissionYear_sectionCode: {
+              schoolId: school.id,
+              admissionYear,
+              sectionCode,
+            },
+          },
+          create: {
+            schoolId: school.id,
+            admissionYear,
+            sectionCode,
+            sequence: 1,
+          },
+          update: {
+            sequence: {
+              increment: 1,
+            },
+          },
+        });
 
         const admissionNumber = generatedAdmissionNumber(
           prefix,
-          application.submittedAt.getUTCFullYear(),
-          school.schoolType,
-          sequence,
+          admissionYear,
+          sectionCode,
+          admissionSequence.sequence,
         );
-
-        await tx.school.update({
-          where: { id: school.id },
-          data: { admissionSequence: sequence },
-        });
 
         const student = await tx.student.create({
           data: {
