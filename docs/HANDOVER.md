@@ -1,6 +1,6 @@
 # SkulGo V1 Engineering Handover
 
-**Date:** 18 Sep 2026
+**Date:** 19 Sep 2026
 **Product:** SkulGo / App-School
 **Company:** GREEN BASKET GLOBAL LIMITED
 
@@ -31,33 +31,55 @@ Rules:
 - Use evidence from tests and runtime behavior.
 - Document and commit a slice before moving to the next dependent slice.
 
-## Next slice — Register a school
+## Current next slice — Personal account → school → role workspace
+
+Register-a-school implementation exists and reuses the existing authenticated personal SkulGo account. The next verification slice is the complete school-entry experience.
 
 ```text
-Existing personal SkulGo account
-→ Register a school
-→ school information + person's relationship
-→ Organization + School + owner Membership
-→ correct school workspace
-→ ← Account returns to personal account
+Personal SkulGo account
+→ Your schools
+→ School + approved relationship
+→ Open school
+→ Correct operational dashboard
 ```
 
-Acceptance target:
-- Existing authenticated User is reused.
-- No second person account is created.
-- School and organization records are created in the correct tenant boundary.
-- Owner membership is created correctly.
-- Correct school workspace opens.
-- ← Account returns to the personal account.
-- Typecheck and focused browser verification pass before moving on.
+### Confirmed role destinations
 
-## Sequence after Register a school
+- Owner / Admin → Owner operational dashboard.
+- Teacher → Teacher dashboard.
+- Cashier / Accountant → Cashier dashboard.
+- Parent / Guardian → Parent dashboard.
+- Student → Student dashboard.
+- Principal / Headmaster → owner-assigned role; a person may first join through the teacher/staff path, then receive Principal.
+- Staff → dashboard to be defined from a concrete product sample.
 
-1. Verify owner workspace and Account routing.
-2. Owner review / acceptance of applications.
-3. Membership and capability creation.
-4. Parent/Guardian verified connection backend.
-5. Remaining V1 runtime and production gates.
+The same SkulGo account and school membership remain in place when the school owner changes a person's role. The dashboard changes because the authorized role/capabilities change.
+
+### Owner setup state
+
+While a newly registered school still requires setup, the owner's personal account may show **Continue setup**. After required setup is complete, that temporary setup entry should no longer be shown as the primary school entry. The owner then uses the same **Open school** path as other connected users.
+
+The setup page is for school administration/configuration; it is not the permanent owner operational dashboard.
+
+### Find a school vs Applications
+
+Find a school establishes a relationship. The school handles incoming requests in **Applications**.
+
+- Teacher / Staff / Cashier → application.
+- Student → admission request.
+- Parent / Guardian → verified student connection.
+- Existing active relationships must not be offered inappropriate duplicate relationships for the same school.
+
+The backend, not UI labels or role query parameters, remains authoritative.
+
+## Sequence after this slice
+
+1. Verify personal account → school → correct role dashboard routing.
+2. Verify owner setup state and ← Account routing.
+3. Verify owner review/acceptance in Applications.
+4. Verify membership + capabilities, including owner-assigned Principal/Headmaster.
+5. Implement Parent/Guardian verified connection backend using existing Guardian/StudentGuardian infrastructure.
+6. Continue remaining V1 runtime and production gates.
 
 ## Important boundaries
 
@@ -75,6 +97,10 @@ Acceptance target:
 - Identity E2E passes.
 - School-access E2E passes.
 - School-setup E2E remains a known failing tooling/test-state item; it is intentionally left for later rather than changing working product behavior to satisfy it.
+
+## Dashboard reference samples
+
+The current GB School demo is the reference source for the five already-defined operational dashboards: Owner/Admin, Teacher, Cashier/Accountant, Parent and Student. Preserve their role-specific information hierarchy when implementing SkulGo. Do not copy the demo's `?role=` routing as an authorization mechanism.
 
 ## Handoff rule
 
