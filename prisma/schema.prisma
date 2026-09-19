@@ -123,8 +123,8 @@ model Organization {
 model OrganizationIdentity {
   id                  String                     @id @default(uuid()) @db.Uuid
   organizationId      String                     @unique @db.Uuid
-  cacNumber           String
-  normalizedCacNumber String                     @unique
+  cacNumber           String?
+  normalizedCacNumber String?                    @unique
   verificationStatus  IdentityVerificationStatus @default(SUPPLIED)
   organization        Organization               @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   createdAt           DateTime                   @default(now()) @db.Timestamptz(6)
