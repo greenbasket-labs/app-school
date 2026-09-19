@@ -17,7 +17,8 @@ const inputSchema = z.object({
   existingUserId: z.string().uuid().optional(),
   organizationName: z.string().min(2).max(200),
   schoolName: z.string().min(2).max(200),
-  cacNumber: z.string().min(4).max(64),
+  capacity: z.enum(["OWNER", "PRINCIPAL", "HEADMASTER"]).default("OWNER"),
+  cacNumber: z.string().max(64).optional(),
 }).superRefine((value, ctx) => {
   if (value.existingUserId) return;
   if (!value.email) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["email"], message: "Email is required." });
@@ -35,8 +36,9 @@ export class RegistrationConflictError extends Error {
 
 export async function registerSchoolOwner(raw: RegisterSchoolOwnerInput) {
   const input = inputSchema.parse(raw);
-  const normalizedCacNumber = normalizeCacNumber(input.cacNumber);
-  if (!normalizedCacNumber) throw new Error("CAC number is required.");
+  const normalizedCacNumber = input.cacNumber
+    ? normalizeCacNumber(input.cacNumber)
+    : null;
 
   const passwordHash = input.password ? await hash(input.password, 12) : null;
 
@@ -94,12 +96,16 @@ export async function registerSchoolOwner(raw: RegisterSchoolOwnerInput) {
         data: {
           name: input.organizationName.trim(),
           normalizedName: normalizeOrganizationName(input.organizationName),
-          identity: {
-            create: {
-              cacNumber: input.cacNumber.trim(),
-              normalizedCacNumber,
-            },
-          },
+          ...(normalizedCacNumber
+            ? {
+                identity: {
+                  create: {
+                    cacNumber: input.cacNumber!.trim(),
+                    normalizedCacNumber,
+                  },
+                },
+              }
+            : {}),
         },
         select: { id: true, createdAt: true },
       });
@@ -120,7 +126,7 @@ export async function registerSchoolOwner(raw: RegisterSchoolOwnerInput) {
           organizationId: organization.id,
           schoolId: school.id,
           isOwner: true,
-          relationship: "OWNER",
+          relationship: input.capacity,
         },
         select: { id: true },
       });
@@ -171,7 +177,8 @@ export async function registerSchoolOwner(raw: RegisterSchoolOwnerInput) {
             schoolId: school.id,
             schoolName: school.name,
             schoolCreatedAt: school.createdAt.toISOString(),
-            cacIdentityBound: true,
+            cacIdentityBound: Boolean(normalizedCacNumber),
+            capacity: input.capacity,
             ownerMembershipId: membership.id,
             personalAccountReused: Boolean(input.existingUserId),
           },
