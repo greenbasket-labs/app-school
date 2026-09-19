@@ -476,8 +476,16 @@ export async function updateAdmissionApplication(input: {
   });
 }
 
-function generatedAdmissionNumber(prefix: string, sequence: number) {
-  return `${prefix}-${String(sequence).padStart(4, "0")}`;
+function generatedAdmissionNumber(
+  prefix: string,
+  admissionYear: number,
+  section: string,
+  sequence: number,
+) {
+  const year = String(admissionYear % 100).padStart(2, "0");
+  const normalizedSection = section.trim().toUpperCase() || "CUSTOM";
+
+  return `${prefix}/${year}/${normalizedSection}/${String(sequence).padStart(4, "0")}`;
 }
 
 function fallbackSchoolPrefix(schoolType: string) {
