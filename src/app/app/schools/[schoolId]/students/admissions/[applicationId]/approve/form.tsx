@@ -12,19 +12,11 @@ export default function ApproveAdmissionForm({
 }) {
   const router = useRouter();
 
-  const [admissionNumber, setAdmissionNumber] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    const value = admissionNumber.trim();
-
-    if (!value) {
-      setMessage("Enter an admission number.");
-      return;
-    }
 
     setSaving(true);
     setMessage("");
@@ -39,7 +31,6 @@ export default function ApproveAdmissionForm({
           },
           body: JSON.stringify({
             action: "APPROVE",
-            admissionNumber: value,
           }),
         },
       );
@@ -72,23 +63,6 @@ export default function ApproveAdmissionForm({
 
   return (
     <form onSubmit={submit} style={{ marginTop: 18 }}>
-      <input
-        required
-        value={admissionNumber}
-        onChange={(event) => setAdmissionNumber(event.target.value)}
-        placeholder="e.g. HIK/2026/001"
-        disabled={saving}
-        style={{
-          width: "100%",
-          boxSizing: "border-box",
-          padding: "12px 13px",
-          border: "1px solid #ccd6d0",
-          borderRadius: 9,
-          background: "white",
-          font: "inherit",
-        }}
-      />
-
       {message && (
         <div
           role="alert"
@@ -137,7 +111,7 @@ export default function ApproveAdmissionForm({
 
         <button
           type="submit"
-          disabled={saving || !admissionNumber.trim()}
+          disabled={saving}
           style={{
             border: 0,
             borderRadius: 9,
@@ -160,8 +134,9 @@ export default function ApproveAdmissionForm({
           lineHeight: 1.5,
         }}
       >
-        Approval will create the official student record and enroll the
-        student in the requested class.
+        SkulGo will generate the student admission number automatically, then
+        create the official student record and enroll the student in the
+        requested class.
       </p>
     </form>
   );
