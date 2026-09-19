@@ -357,7 +357,7 @@ For each slice:
 
 The latest application of this method is the Find a school relationship UX: Parent/Guardian was added only to the existing Requested relationship dropdown. The parent UI appears only when selected. Its backend is intentionally not connected to the generic worker join-request endpoint yet.
 
-**Next slice: Register a school from the existing personal SkulGo account.**
+**Current execution slice: Owner/Admin operational dashboard after school setup.** The personal-account → school-registration flow has been implemented; focused browser/runtime acceptance remains tracked in the roadmap.
 
 ## 9. Who owns the school's data?## 9. Who owns the school's data?
 
@@ -664,3 +664,31 @@ For current implementation status and roadmap, see `README.md` and `docs/ROADMAP
 For frozen technical architecture, see `ARCHITECTURE.md`.
 
 When these documents appear to conflict, the implementation should be reviewed deliberately rather than silently changing a foundational rule.
+
+
+## 20. What is the current execution order after identity and setup?
+
+### Decision
+The implementation now moves from the completed personal-account/school-relationship foundation into the **Owner/Admin operational dashboard**, then into the core school operations that the dashboard exposes.
+
+The execution order is:
+
+```text
+School setup
+   ↓
+Owner/Admin dashboard
+   ↓
+Students / Classes / Attendance / Fees / Results / Reports
+   ↓
+Staff / Parents / Applications / Communication
+   ↓
+Teacher / Cashier / Parent / Student workspaces
+   ↓
+Production readiness
+```
+
+The Owner/Admin dashboard is the permanent operational home after setup. The setup workspace is temporary configuration. The personal account remains the identity boundary, and **← Account** remains the return path from a school workspace.
+
+The GB School demo remains a reference for navigation and visual organization. The deeper school-management-system repository remains a reference for proven school workflows. SkulGo must continue to implement those ideas inside its own personal-account, membership, capability, tenant and audit architecture rather than copying either repository's architecture.
+
+This execution order is intentionally separate from the detailed domain capability phases in docs/ROADMAP.md. It describes what should be built next, not a claim that every older capability phase is empty.
