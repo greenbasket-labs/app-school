@@ -255,7 +255,9 @@ export async function POST(
       { status: 500 }
     );
   }
-}port async function POST(
+}
+
+export async function POST(
   request: Request,
   { params }: { params: Promise<{ schoolId: string }> }
 ) {
