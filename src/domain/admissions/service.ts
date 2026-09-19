@@ -149,6 +149,61 @@ export async function createAdmissionApplication(input: {
   });
 }
 
+export async function getAdmissionOptions(schoolId: string) {
+  const [sessions, classLevels, classArms] = await Promise.all([
+    db.academicSession.findMany({
+      where: { schoolId, status: "ACTIVE" },
+      select: { id: true, name: true, status: true },
+      orderBy: { startsAt: "desc" },
+    }),
+    db.classLevel.findMany({
+      where: { schoolId },
+      select: { id: true, name: true, order: true },
+      orderBy: { order: "asc" },
+    }),
+    db.classArm.findMany({
+      where: { classLevel: { schoolId } },
+      select: {
+        id: true,
+        name: true,
+        classLevelId: true,
+        classLevel: { select: { name: true } },
+      },
+      orderBy: [
+        { classLevel: { order: "asc" } },
+        { name: "asc" },
+      ],
+    }),
+  ]);
+
+  return { sessions, classLevels, classArms };
+}
+
+export async function getApplicantAdmissionApplications(
+  schoolId: string,
+  applicantUserId: string,
+) {
+  return db.admissionApplication.findMany({
+    where: { schoolId, applicantUserId },
+    select: {
+      id: true,
+      firstName: true,
+      middleName: true,
+      lastName: true,
+      dateOfBirth: true,
+      status: true,
+      submittedAt: true,
+      academicSession: { select: { id: true, name: true } },
+      classLevel: { select: { id: true, name: true } },
+      classArm: { select: { id: true, name: true } },
+      student: {
+        select: { id: true, admissionNumber: true },
+      },
+    },
+    orderBy: { submittedAt: "desc" },
+  });
+}
+
 export async function getAdmissionApplications(
   schoolId: string,
   status?: AdmissionApplicationStatus
