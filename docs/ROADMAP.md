@@ -180,6 +180,19 @@ This requirement applies across the platform, including students, enrollment, at
 
 ## Verification checkpoint — 19 Sep 2026
 
+### Current runtime handoff note — 19 Sep 2026
+
+The remote branch currently contains a school-discovery query normalization change in commit `a763243`. During manual browser verification, school discovery behavior is being checked before any database cleanup or join-request changes are made.
+
+Current investigation rules:
+- Treat the test schools as intentional test data; do not delete or merge them merely because several school names exist.
+- Verify the actual stored `name`, `normalizedName`, `status`, and `setupStatus` for the school being searched before changing discovery code.
+- Discovery currently allows only `SETUP` and `ACTIVE` schools.
+- The Join page also has a separate request-list route mismatch that should be handled only after discovery is confirmed.
+- The repository's dashboard finance summary currently returns zero values because the authoritative invoice/payment models are not present in the current Prisma schema used by the dashboard. Older finance/report checklist entries therefore require runtime/schema reconciliation before being treated as complete.
+
+
+
 ### Student admissions checkpoint
 
 - [x] Admission application enum and school-scoped persistence added.
@@ -284,7 +297,7 @@ These tools are engineering infrastructure. Their presence never overrides the p
 
 The detailed domain phases below describe product capability maturity. The current execution roadmap is the order in which the SkulGo implementation should now be advanced.
 
-The immediate goal is to move from the completed school setup/dashboard foundation into a verified end-to-end student admission workflow, while preserving the existing personal-account, membership, capability, audit and offline-first architecture.
+The immediate goal is to verify the personal-account → school-discovery → joining flow, then complete the end-to-end student admission workflow, while preserving the existing personal-account, membership, capability, audit and offline-first architecture.
 
 ### Phase 3 — Owner/Admin operational control center
 
@@ -412,7 +425,7 @@ V1 is complete when:
 
 ## Phase 0 — Foundation & trust
 - [x] User / organization / school identity
-- [x] CAC identity claim
+- [x] Optional CAC identity claim — unique when supplied
 - [x] School membership
 - [x] Capability primitives
 - [x] Audit history
@@ -678,7 +691,11 @@ COMPLETED: Owner/Admin operational foundation
   ✓ real school-scoped summary data
   ✓ Students workspace admission-request surface
 
-CURRENT: Student admission workflow
+CURRENT: Personal-account school discovery/join verification
+  → verify school search against stored normalized name/status
+  → verify existing join-request list route
+
+NEXT: Student admission workflow
   ✓ admission application schema + lifecycle service
   ✓ school-scoped admission APIs
   ✓ owner review page
