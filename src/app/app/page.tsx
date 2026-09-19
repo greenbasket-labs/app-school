@@ -176,8 +176,10 @@ export default async function AppHomePage() {
                     >
                       Open school →
                     </Link>
-                    <Link
-                      href={`/app/schools/${school.id}/students/admissions/apply`}
+
+                    {!isOwner && (
+                      <Link
+                        href={`/app/schools/${school.id}/students/admissions/apply`}
                         style={{
                           display: "inline-block",
                           padding: "10px 14px",
@@ -191,6 +193,7 @@ export default async function AppHomePage() {
                       >
                         Apply for admission
                       </Link>
+                    )}
                   </div>
                 </div>
               </div>
