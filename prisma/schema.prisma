@@ -330,6 +330,7 @@ model AssessmentDefinition {
 model Student {
   id                   String                @id @default(uuid()) @db.Uuid
   schoolId             String                @db.Uuid
+  schoolTypeAtAdmission String?               
   admissionNumber      String
   firstName            String
   middleName           String?
