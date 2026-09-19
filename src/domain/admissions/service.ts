@@ -604,6 +604,7 @@ export async function approveAdmissionApplication(input: {
         const student = await tx.student.create({
           data: {
             schoolId: application.schoolId,
+            schoolTypeAtAdmission: school.schoolType,
             admissionNumber,
             firstName: application.firstName,
             middleName: application.middleName,
