@@ -377,13 +377,15 @@ The existing product has established foundations for:
 
 The roadmap is the authoritative guide to what comes next. Inspect the actual repository before deciding what is already complete.
 
-At the current roadmap boundary, the next academic-engine slice is:
+At the current roadmap boundary, the active implementation slice is:
 
-**Assessment Definitions**
+**Student Admissions**
 
-Keep that slice lean. Assessment definitions should establish the trusted definition of an assessment before score capture, validation, submission, approval or publication are implemented.
+The repository now contains the admission application persistence model, lifecycle service, school-scoped list/detail/update/approval APIs, Students-page admission request surface, Owner/Admin review page and approval form. Approval is transactional: it creates the official Student and Enrollment and marks the application approved.
 
-Do not prematurely implement the whole assessment/result engine just because it appears in the roadmap.
+The slice is not end-to-end complete yet. Applicant/parent submission, edit UI, rejection/withdrawal UI and real-browser acceptance remain. Do not mark admissions complete until those remaining behaviors are implemented and verified.
+
+After the admission slice, continue with the smallest dependent core-operations slice.
 
 ## 17. Assessment Definitions boundary
 
@@ -406,6 +408,39 @@ Use the existing assessment capability boundary where appropriate, especially `A
 The Assessments module is currently disabled by default for a new school, so assessment operations must respect the `ASSESSMENTS` module boundary.
 
 Do **not** add score capture, result approval, publication or a large report-card system in the definition slice unless the repository's current product decision explicitly expands the scope.
+
+## 17A. Student admission workflow boundary
+
+Admissions belongs to the Students domain for the current V1 product boundary.
+
+### Authoritative records
+
+- AdmissionApplication is the pending/request record.
+- Student is created only when an application is approved.
+- Enrollment records the student's placement into the academic session/class.
+- AuditEvent records meaningful admission state changes.
+
+### State model
+
+Supported application states are PENDING, UNDER_REVIEW, APPROVED, REJECTED, and WITHDRAWN.
+
+### Authorization
+
+Admission APIs remain school-scoped and require the Students module plus the appropriate STUDENTS.VIEW or STUDENTS.MANAGE capability. Client-side visibility is not the authorization boundary.
+
+### Approval rule
+
+Approval must use the existing admission domain service. It must not duplicate Student/Enrollment creation in the UI. The current approval flow requires a school-supplied admission number and creates Student + Enrollment in one transaction.
+
+### Current incomplete work
+
+- applicant/parent admission submission UI;
+- edit application UI;
+- reject/withdraw UI;
+- real-browser submit → review → approve verification;
+- safe removal/demotion of the legacy manual student-creation path after admissions is proven.
+
+Do not introduce a second student-creation workflow while this slice is being completed.
 
 ## 18. Configuration is data
 
