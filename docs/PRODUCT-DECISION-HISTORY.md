@@ -716,10 +716,28 @@ For frozen technical architecture, see `ARCHITECTURE.md`.
 When these documents appear to conflict, the implementation should be reviewed deliberately rather than silently changing a foundational rule.
 
 
-## 20. What is the current execution order after identity and setup?
+## 20. Current implementation/handoff checkpoint — 19 Sep 2026
+
+### Decision/status
+
+The personal-account/school-relationship foundation and Owner/Admin dashboard foundation are implemented. Current browser verification is deliberately paused on a school-discovery/search regression before dependent join-request testing.
+
+The test database may contain many intentionally created schools. Multiple school records are not evidence of accidental duplication and must not be deleted during this investigation.
+
+Current known boundaries:
+- School discovery must use the stored normalized school name and only expose eligible school statuses.
+- Join-request listing is a separate route concern and must be verified after discovery.
+- Finance/dashboard values must remain honest when authoritative invoice/payment models are not available in the current schema.
+- CAC is optional during current onboarding; when supplied, its normalized identity remains unique.
+
+### Handoff rule
+
+Do not infer database state from the UI. Verify the actual school record and schema before changing data or query behavior. One verified case at a time.
+
+## 21. What is the current execution order after identity and setup?
 
 ### Decision
-The personal-account/school-relationship foundation and Owner/Admin operational dashboard are now implemented. The immediate execution focus is the **student admission workflow**, because it connects the existing personal student path to authoritative Student + Enrollment records.
+The personal-account/school-relationship foundation and Owner/Admin operational dashboard are now implemented. The immediate execution focus is **school discovery/join verification, followed by the student admission workflow**, because it connects the existing personal student path to authoritative Student + Enrollment records.
 
 The execution order is:
 
