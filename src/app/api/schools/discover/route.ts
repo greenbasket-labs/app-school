@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { currentSession } from "@/domain/auth/session-cookie";
+import { normalizeSchoolName } from "@/domain/identity/normalize";
 import { db } from "@/lib/db";
 
 const querySchema = z.object({
@@ -9,16 +10,30 @@ const querySchema = z.object({
 
 export async function GET(request: Request) {
   const session = await currentSession();
-  if (!session) return NextResponse.json({ ok: false, error: "UNAUTHENTICATED" }, { status: 401 });
+
+  if (!session) {
+    return NextResponse.json(
+      { ok: false, error: "UNAUTHENTICATED" },
+      { status: 401 },
+    );
+  }
 
   const search = new URL(request.url).searchParams.get("q") ?? "";
   const parsed = querySchema.safeParse({ q: search });
-  if (!parsed.success) return NextResponse.json({ ok: false, error: "INVALID_SEARCH" }, { status: 400 });
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { ok: false, error: "INVALID_SEARCH" },
+      { status: 400 },
+    );
+  }
+
+  const normalizedQuery = normalizeSchoolName(parsed.data.q);
 
   const schools = await db.school.findMany({
     where: {
       status: { in: ["SETUP", "ACTIVE"] },
-      normalizedName: { contains: parsed.data.q.toLowerCase() },
+      normalizedName: { contains: normalizedQuery },
     },
     orderBy: { name: "asc" },
     take: 20,
@@ -26,7 +41,11 @@ export async function GET(request: Request) {
       id: true,
       name: true,
       status: true,
-      organization: { select: { name: true } },
+      organization: {
+        select: {
+          name: true,
+        },
+      },
     },
   });
 
