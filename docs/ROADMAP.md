@@ -50,6 +50,55 @@ Do not redesign a working flow while adding a new relationship. Reuse existing d
 
 A school membership must never be treated as the prerequisite for the person's SkulGo identity. The current owner registration UX may create the personal account and school together, but the resulting person remains a normal SkulGo user account.
 
+### Personal account → school → role workspace
+
+The school entry experience is now defined as a single clean relationship-driven flow:
+
+```text
+Personal SkulGo account
+        ↓
+Your schools
+        ↓
+School name + approved relationship
+        ↓
+Open school
+        ↓
+Authorized operational dashboard
+```
+
+The confirmed dashboard references are:
+
+- **Owner / Admin** → Owner operational dashboard (GB School demo reference)
+- **Teacher** → Teacher dashboard (GB School demo reference)
+- **Cashier / Accountant** → Cashier dashboard (GB School demo reference)
+- **Parent / Guardian** → Parent dashboard (GB School demo reference)
+- **Student** → Student dashboard (GB School demo reference)
+- **Principal / Headmaster** → may be assigned later by the school owner; the person can initially join through the teacher/staff path and then receive the Principal role.
+- **Staff** → staff workspace to be defined from a concrete sample; do not invent a dashboard before that requirement is defined.
+
+A person does not create a second account when their school role changes. The same SkulGo account and school membership remain in place; the owner's role/capability assignment changes the authorized workspace.
+
+The demo's **Switch role** concept is not part of the SkulGo identity model. The school workspace uses **← Account** to return to the personal account. URL parameters such as `?role=teacher` are never the source of authorization or identity.
+
+### Owner setup state
+
+School registration creates the owner relationship immediately. While required school setup is incomplete, the personal account may show a clear setup entry for that school. Once setup is complete, that setup prompt is no longer shown as the primary school entry; the owner simply opens the school like every other connected person.
+
+Setup remains a school administration/configuration surface. It is not the owner's permanent operational dashboard.
+
+### Find a school and Applications
+
+**Find a school** establishes relationships; it is not a second dashboard.
+
+- Teacher / Staff / Cashier → application/request.
+- Student → admission request.
+- Parent / Guardian → verified student connection request.
+- Existing active school relationships must not be offered an inappropriate duplicate relationship for the same school.
+
+Incoming school requests are handled through the owner's/authorized administrator's **Applications** area. Approval establishes the authoritative school relationship and capabilities.
+
+The backend remains authoritative for all of these rules; hiding an option in the UI is not sufficient authorization.
+
 ### Workspace routing rule
 
 After login:
@@ -284,8 +333,9 @@ V1 is complete when:
 - [x] Personal account → school discovery → student admission UI slice verified
 - [x] Personal account → school discovery → teacher/staff application UI slice verified
 - [x] Parent/Guardian relationship option + conditional UI slice verified
-- [ ] Register a school from the existing personal SkulGo account — **NEXT SLICE**
-- [ ] Owner application review → approval/offer → membership creation
+- [x] Register a school from the existing personal SkulGo account — implementation complete; focused browser/runtime acceptance remains.
+- [ ] Verify personal account → registered school → owner setup → operational dashboard routing.
+- [ ] Owner application review → approval/offer → membership creation in a real browser/runtime.
 - [ ] Parent/Guardian self-service request → school verification → Guardian.userId/StudentGuardian linkage
 
 ## Phase 3 — Assessments, results & academic trust
