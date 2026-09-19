@@ -152,6 +152,40 @@ export async function GET(
   }
 }
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ schoolId: string }> }
+) {
+  try {
+    const { schoolId } = await params;
+    const { session, school } = await applicantAccess(schoolId);
+    const applications = await getApplicantAdmissionApplications(
+      school.id,
+      session.user.id,
+    );
+
+    return NextResponse.json({ ok: true, applications });
+  } catch (error) {
+    if (error instanceof AdmissionNotFoundError) {
+      return NextResponse.json(
+        { ok: false, error: "NOT_FOUND", message: error.message },
+        { status: 404 },
+      );
+    }
+    if (error instanceof AuthorizationError || error instanceof ModuleDisabledError) {
+      return NextResponse.json(
+        { ok: false, error: "FORBIDDEN", message: error.message },
+        { status: 403 },
+      );
+    }
+    console.error("applicant admission list failed", error);
+    return NextResponse.json(
+      { ok: false, error: "REQUEST_FAILED" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ schoolId: string }> }
