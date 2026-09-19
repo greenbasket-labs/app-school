@@ -159,7 +159,7 @@ export async function getOperationalSummary(schoolId: string) {
       ? Math.min((scores / assessments) * 100, 100)
       : 0;
 
-  return {
+  const invoiced = Number(finance.invoiced);\n  const paid = Number(finance.paid);\n  const outstanding = Number(finance.outstanding);\n  const feeCollectionRate = invoiced > 0 ? (paid / invoiced) * 100 : 0;\n\n  return {
     activeStudents,
     activeStaff: activeTeachingStaff,
 
