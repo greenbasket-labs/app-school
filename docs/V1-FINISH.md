@@ -62,16 +62,18 @@ Inspect evidence → define one slice → implement smallest change
 
 UI-only work must be clearly separated from server/domain completion. Reuse existing Guardian, authorization, membership and audit infrastructure before creating new systems.
 
-### Immediate next slice: Register a school
+### Immediate next slice: Personal account → school → role workspace
 
 ```text
 Personal SkulGo account
-→ Register a school
-→ school information + relationship
-→ Organization + School + owner Membership
-→ correct school workspace
+→ Your schools
+→ School + approved relationship
+→ Open school
+→ Correct operational dashboard
 → ← Account returns to personal account
 ```
+
+Register-a-school implementation already exists; this slice verifies the resulting owner journey and routing.
 
 ### 1. Identity and school joining
 
@@ -81,18 +83,27 @@ Personal SkulGo account
 - [x] Teacher/staff/cashier application UI works from the existing relationship flow.
 - [x] Parent/Guardian exists only as an option in the existing Requested relationship dropdown; its conditional UI works.
 - [ ] Parent/Guardian backend request → school verification → Guardian/StudentGuardian linkage.
-- [ ] Register a school from the existing personal SkulGo account — **NEXT SLICE**.
+- [x] Register a school from the existing personal SkulGo account — implementation complete; runtime acceptance remains.
 - [x] Join-request persistence and authenticated requester APIs exist on the implementation branch.
 - [x] Owner-only pending-request list and review API exist on the implementation branch.
 - [x] Approval path reuses the existing SkulGo `User` and stores the owner's authoritative relationship on `Membership`.
-- [ ] School owner can review pending requests in a real browser/runtime.
-- [ ] Owner determines the school relationship and grants the appropriate capabilities.
+- [ ] School owner can review pending requests in a real browser/runtime through Applications.
+- [ ] Owner determines the school relationship and grants the appropriate capabilities, including later assignment of Principal/Headmaster.
 - [ ] Approval creates/activates the school membership and required relationship records.
 - [x] Owner can disable/deactivate a school membership when the person leaves.
 - [x] Disabled membership is excluded from active-workspace access while the personal User remains intact.
 - [ ] Login routes one-school users directly to the correct workspace.
 - [ ] Multiple active school relationships show a selector.
 - [ ] No role-selection URL parameters are used.
+
+### 1A. School entry and role workspace
+
+- [ ] Personal account lists connected schools with the person's approved relationship.
+- [ ] Owner, Teacher, Cashier, Parent/Guardian and Student route to the corresponding demo-reference dashboard.
+- [ ] Principal/Headmaster can be assigned by the owner without creating a second account.
+- [ ] Owner setup is shown only while setup is incomplete, then disappears as the primary school entry.
+- [ ] School workspace uses ← Account rather than Switch role.
+- [ ] No dashboard authorization depends on `?role=` URL parameters.
 
 ### 2. Academic trust
 
@@ -305,10 +316,10 @@ Do not add these before V1 release unless a concrete launch requirement makes on
 ### Current sequence
 
 ```text
-1. Register a school from existing personal account
-2. Verify owner workspace + ← Account routing
-3. Owner review/acceptance
-4. Membership + capabilities
+1. Verify personal account → school → correct role dashboard
+2. Verify owner setup state + ← Account routing
+3. Verify owner review/acceptance in Applications
+4. Membership + capabilities, including Principal/Headmaster assignment
 5. Parent/Guardian verified connection backend
 6. Remaining V1 runtime and production gates
 ```
