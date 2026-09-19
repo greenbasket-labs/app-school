@@ -18,9 +18,9 @@ This is an identity rule, not a role simulation. Do not create role-only account
 
 ### Relationship flows
 
-### Current identity/joining UX slice
+### Completed identity/joining UX slice
 
-The next implementation slice makes the existing personal-account model concrete without adding separate role account systems:
+The completed identity/joining slice made the existing personal-account model concrete without adding separate role account systems:
 
 - [x] Make **Find a school** the universal school-discovery page for all users.
 - [x] Keep one existing page for the relationship-driven flow after a school is selected.
@@ -267,6 +267,111 @@ OpenTelemetry
 
 These tools are engineering infrastructure. Their presence never overrides the product requirement that school tenancy, authorization, audit, server truth and offline state remain correct.
 
+## Current execution roadmap — September 2026
+
+The detailed domain phases below describe product capability maturity. The current execution roadmap is the order in which the SkulGo implementation should now be advanced.
+
+The immediate goal is to move from school setup → Owner/Admin operational dashboard → real daily operations, while preserving the existing personal-account, membership, capability, audit and offline-first architecture.
+
+### Phase 3 — Owner/Admin operational control center
+
+**Status: NEXT**
+
+The setup workspace is temporary. Once the required school foundation is ready, the owner enters the normal operational dashboard.
+
+- [ ] Replace the basic SkulGo dashboard with the Owner/Admin control-center layout.
+- [ ] Keep ← Account as the return path to the personal SkulGo account.
+- [ ] Show the school name and Owner/Admin relationship from the authenticated school membership.
+- [ ] Add navigation for Students, Classes, Attendance, Fees & Payments, Results, Reports, Announcements, Staff & Teachers, Parents, Subjects & Setup, School Settings, Applications, Users & Roles and Audit History.
+- [ ] Build dashboard summary cards from real school-scoped database records; do not hardcode demo numbers.
+- [ ] Add today's attendance, fee collection and result-processing summaries from authoritative records.
+- [ ] Add useful quick actions without creating duplicate business logic.
+- [ ] Verify setup-complete → owner dashboard routing in a real browser.
+
+Reference rule: GB-demo-school is the visual/navigation reference; school-management-system is the deeper workflow/business-logic reference. Neither repository is the SkulGo architecture.
+
+### Phase 4 — Core daily school operations
+
+**Status: NEXT AFTER OWNER DASHBOARD**
+
+Build the operational areas behind the dashboard, reusing the existing domain logic where it is already proven.
+
+- [ ] Students operational workspace and profile flow.
+- [ ] Classes operational workspace.
+- [ ] Resolve the class/arm model so schools can support both Primary 1 and Primary 1A / Primary 1B without fake placeholder arms.
+- [ ] Attendance operational workspace and history.
+- [ ] Fees & Payments operational workspace.
+- [ ] Results operational workspace.
+- [ ] Reports operational workspace.
+- [ ] Verify each module through school-scoped capabilities and module enforcement.
+- [ ] Preserve audit/history for meaningful changes.
+- [ ] Extend offline support only through the shared local-data/outbox/sync architecture.
+
+### Phase 5 — People, relationships and communication
+
+**Status: AFTER CORE OPERATIONS**
+
+- [ ] Staff & Teachers workspace.
+- [ ] Parents/Guardians workspace.
+- [ ] Applications review and approval workflow.
+- [ ] Users & Roles / capability administration.
+- [ ] Announcements and school communication.
+- [ ] Complete the Parent/Guardian verified relationship backend path.
+- [ ] Verify that one personal SkulGo account can hold legitimate relationships across schools without duplicate identities.
+- [ ] Keep Principal/Headmaster as an owner-assigned capability/role path; do not create a separate identity system.
+- [ ] Define a Staff dashboard only after a concrete product requirement exists.
+
+### Phase 6 — Role-specific workspaces
+
+**Status: AFTER PEOPLE / OPERATIONS**
+
+Role dashboards are different views over the same school-scoped platform, not separate applications.
+
+- [ ] Owner/Admin dashboard — operational control center.
+- [ ] Teacher dashboard — classes, attendance, subjects and academic work.
+- [ ] Cashier dashboard — payments, receipts, balances and finance work.
+- [ ] Parent dashboard — authorized children, attendance, results, fees and announcements.
+- [ ] Student dashboard — enrollment, attendance, results, fees and announcements.
+- [ ] Verify capability boundaries server-side for every role workspace.
+- [ ] Verify direct URL access cannot bypass membership, capability or module checks.
+- [ ] Verify the same personal account remains stable when a school changes a person's capabilities.
+
+### Phase 7 — Production readiness and controlled launch
+
+**Status: AFTER ROLE WORKSPACES**
+
+- [ ] Complete browser/runtime acceptance for the main owner, teacher, cashier, parent and student journeys.
+- [ ] Complete tenant-isolation integration tests against real PostgreSQL.
+- [ ] Complete authentication/session hardening, including the offline/session boundary.
+- [ ] Verify production migrations and rollback/recovery procedures.
+- [ ] Verify backups and restoration, including important pending-sync/outbox considerations.
+- [ ] Add production error monitoring and uptime monitoring.
+- [ ] Complete security scanning and dependency hygiene.
+- [ ] Run representative performance/load tests before scale requires them.
+- [ ] Deploy the production application.
+- [ ] Connect skulgo.com and www.skulgo.com.
+- [ ] Verify HTTPS, tenant-safe onboarding and operational support procedures.
+- [ ] Launch only after the core school workflows are verified end-to-end.
+
+### Execution rule
+
+Do not treat these phases as permission to build everything in advance. Complete one narrow vertical slice, verify it, document it, commit it, then move to the next dependent slice.
+
+```text
+Current
+  ↓
+Setup completion + verification
+  ↓
+Owner/Admin dashboard
+  ↓
+Students / Classes / Attendance / Finance / Results / Reports
+  ↓
+Staff / Parents / Applications / Communication
+  ↓
+Teacher / Cashier / Parent / Student workspaces
+  ↓
+Production readiness
+```
 ## V1 finish line
 
 V1 is complete when:
