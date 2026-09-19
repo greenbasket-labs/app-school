@@ -46,7 +46,6 @@ const statusSchema = z.discriminatedUnion("status", [
 
 const approveSchema = z.object({
   action: z.literal("APPROVE"),
-  admissionNumber: z.string().trim().min(1).max(50),
 });
 
 async function access(schoolId: string, capability: string) {
@@ -167,7 +166,7 @@ export async function PATCH(
         schoolId: membership.schoolId,
         applicationId,
         reviewedByUserId: session.user.id,
-        admissionNumber: input.admissionNumber,
+        });
       });
 
       await db.auditEvent.create({
