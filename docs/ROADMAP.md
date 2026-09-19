@@ -178,7 +178,20 @@ This requirement applies across the platform, including students, enrollment, at
 - Modules reuse the same platform persistence/outbox/sync infrastructure.
 - Server-authoritative actions such as final publication remain intentionally online-only.
 
-## Verification checkpoint — 18 Sep 2026
+## Verification checkpoint — 19 Sep 2026
+
+### Student admissions checkpoint
+
+- [x] Admission application enum and school-scoped persistence added.
+- [x] Admission application service with lifecycle validation and transactional approval added.
+- [x] Admission list/detail/approval APIs added with capability + Students-module enforcement.
+- [x] Students page loads real pending/under-review applications and links to review.
+- [x] Owner/Admin review page added.
+- [x] Approval page/form added; approval uses the existing admission service to create Student + Enrollment atomically.
+- [x] `npx tsc --noEmit` passes after the admission workflow slice.
+- [ ] Parent/applicant submission runtime verification.
+- [ ] Edit/reject UI completion.
+- [ ] Full browser acceptance of submit → review → approve → student enrollment.
 
 **Engineering gate:** passed.
 
@@ -271,32 +284,40 @@ These tools are engineering infrastructure. Their presence never overrides the p
 
 The detailed domain phases below describe product capability maturity. The current execution roadmap is the order in which the SkulGo implementation should now be advanced.
 
-The immediate goal is to move from school setup → Owner/Admin operational dashboard → real daily operations, while preserving the existing personal-account, membership, capability, audit and offline-first architecture.
+The immediate goal is to move from the completed school setup/dashboard foundation into a verified end-to-end student admission workflow, while preserving the existing personal-account, membership, capability, audit and offline-first architecture.
 
 ### Phase 3 — Owner/Admin operational control center
 
-**Status: NEXT**
+**Status: IMPLEMENTED — runtime verification remains**
 
 The setup workspace is temporary. Once the required school foundation is ready, the owner enters the normal operational dashboard.
 
-- [ ] Replace the basic SkulGo dashboard with the Owner/Admin control-center layout.
-- [ ] Keep ← Account as the return path to the personal SkulGo account.
-- [ ] Show the school name and Owner/Admin relationship from the authenticated school membership.
-- [ ] Add navigation for Students, Classes, Attendance, Fees & Payments, Results, Reports, Announcements, Staff & Teachers, Parents, Subjects & Setup, School Settings, Applications, Users & Roles and Audit History.
-- [ ] Build dashboard summary cards from real school-scoped database records; do not hardcode demo numbers.
-- [ ] Add today's attendance, fee collection and result-processing summaries from authoritative records.
-- [ ] Add useful quick actions without creating duplicate business logic.
+- [x] Owner/Admin operational dashboard exists as the post-setup operational surface.
+- [x] Keep ← Account as the return path to the personal SkulGo account.
+- [x] Show the school name and Owner/Admin relationship from the authenticated school membership.
+- [x] Dashboard summary cards use real school-scoped database records.
+- [x] Today's attendance, fee collection and result-processing summaries use authoritative records.
+- [x] Quick actions link into existing school workflows without duplicating business logic.
+- [ ] Complete/verify the final dashboard navigation set as each operational module becomes production-ready.
 - [ ] Verify setup-complete → owner dashboard routing in a real browser.
 
 Reference rule: GB-demo-school is the visual/navigation reference; school-management-system is the deeper workflow/business-logic reference. Neither repository is the SkulGo architecture.
 
 ### Phase 4 — Core daily school operations
 
-**Status: NEXT AFTER OWNER DASHBOARD**
+**Status: IN PROGRESS**
 
 Build the operational areas behind the dashboard, reusing the existing domain logic where it is already proven.
 
-- [ ] Students operational workspace and profile flow.
+- [x] Students operational workspace foundation.
+- [x] Student admission application schema, lifecycle service and school-scoped APIs.
+- [x] Students page shows real pending/under-review admission requests.
+- [x] Owner/Admin admission review page.
+- [x] Admission approval transaction creates the official Student and Enrollment and records audit evidence.
+- [ ] Applicant/parent admission submission UI and end-to-end submission verification.
+- [ ] Admission application edit page.
+- [ ] Admission rejection/withdrawal actions from the review workflow.
+- [ ] Remove or demote the legacy manual student-creation path after admission workflow is verified end-to-end.
 - [ ] Classes operational workspace.
 - [ ] Resolve the class/arm model so schools can support both Primary 1 and Primary 1A / Primary 1B without fake placeholder arms.
 - [ ] Attendance operational workspace and history.
@@ -428,6 +449,9 @@ V1 is complete when:
 - [x] Student records
 - [x] Student enrollment
 - [x] Daily attendance
+- [x] Admission application persistence, lifecycle states and school-scoped API foundation
+- [x] Owner/Admin admission review and transactional approval into Student + Enrollment
+- [ ] Applicant/parent admission submission and browser end-to-end verification
 - [x] Attendance history and correction workflow
 - [x] Staff accounts and school membership management — initial owner-managed slice
 - [x] Capability assignment UI — initial owner-managed slice
@@ -583,6 +607,7 @@ Capabilities and school module configuration remain the authorization boundary.
 6. Membership/workspace creation after approval.
 7. Parent/guardian verified relationship path.
 8. Automatic dashboard routing after login.
+9. Complete student admission review → approval → Student + Enrollment creation in a real browser.
 
 ### Gate B — Academic trust
 
@@ -641,19 +666,35 @@ Do not expand V1 into:
 ### Immediate engineering sequence
 
 ```text
-CURRENT: Find a school relationship UX
+COMPLETED: Personal account → school relationship foundation
   ✓ worker application UI
-  ✓ student admission UI
+  ✓ student admission entry UI
   ✓ Parent/Guardian dropdown + conditional UI
+  ✓ Register school from existing personal account
+  ✓ ← Account school-workspace return path
 
-NEXT: Register a school
-  → reuse existing personal SkulGo account
-  → collect school information + relationship
-  → create Organization + School + owner Membership
-  → verify workspace routing and ← Account
+COMPLETED: Owner/Admin operational foundation
+  ✓ operational dashboard
+  ✓ real school-scoped summary data
+  ✓ Students workspace admission-request surface
 
-THEN: Owner review / acceptance
-THEN: Parent/Guardian verified connection backend
+CURRENT: Student admission workflow
+  ✓ admission application schema + lifecycle service
+  ✓ school-scoped admission APIs
+  ✓ owner review page
+  ✓ transactional approval → Student + Enrollment
+  → applicant/parent submission
+  → edit/reject actions
+  → real-browser end-to-end verification
+  → retire legacy manual student creation
+
+THEN: Continue core operations
+  → Classes
+  → Attendance
+  → Fees & Payments
+  → Results
+  → Reports
+  → Staff / Parents / Communication
 ```
 
 Call V1 complete only when:
