@@ -7,12 +7,11 @@ import {
 import { CAPABILITIES } from "@/domain/auth/capabilities";
 import { currentSession } from "@/domain/auth/session-cookie";
 import {
-  createAdmissionApplication,
-  getAdmissionApplications,
-  getAdmissionOptions,
-  getApplicantAdmissionApplications,
   AdmissionConflictError,
   AdmissionNotFoundError,
+  createAdmissionApplication,
+  getAdmissionApplications,
+  getApplicantAdmissionApplications,
 } from "@/domain/admissions/service";
 import {
   ModuleDisabledError,
@@ -40,15 +39,12 @@ async function access(schoolId: string, capability: string) {
   const membership = await requireCapability(
     session.user.id,
     schoolId,
-    capability
+    capability,
   );
 
   await requireSchoolModule(membership.schoolId, "STUDENTS");
 
-  return {
-    session,
-    membership,
-  };
+  return { session, membership };
 }
 
 async function applicantAccess(schoolId: string) {
@@ -74,97 +70,64 @@ async function applicantAccess(schoolId: string) {
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ schoolId: string }> }
+  { params }: { params: Promise<{ schoolId: string }> },
 ) {
   try {
     const { schoolId } = await params;
-    const { membership } = await access(
-      schoolId,
-      CAPABILITIES.VIEW_STUDENTS
-    );
+    const session = await currentSession();
+
+    if (!session) {
+      throw new AuthorizationError("Authentication required.");
+    }
 
     const url = new URL(request.url);
     const status = url.searchParams.get("status") || undefined;
 
-    const allowedStatuses = [
-      "PENDING",
-      "UNDER_REVIEW",
-      "APPROVED",
-      "REJECTED",
-      "WITHDRAWN",
-    ] as const;
+    try {
+      const { membership } = await access(schoolId, CAPABILITIES.VIEW_STUDENTS);
+      const allowedStatuses = [
+        "PENDING",
+        "UNDER_REVIEW",
+        "APPROVED",
+        "REJECTED",
+        "WITHDRAWN",
+      ] as const;
 
-    if (
-      status &&
-      !allowedStatuses.includes(
-        status as (typeof allowedStatuses)[number]
-      )
-    ) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "INVALID_STATUS",
-          message: "Invalid admission application status.",
-        },
-        { status: 400 }
+      if (
+        status &&
+        !allowedStatuses.includes(
+          status as (typeof allowedStatuses)[number],
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "INVALID_STATUS",
+            message: "Invalid admission application status.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const applications = await getAdmissionApplications(
+        membership.schoolId,
+        status as (typeof allowedStatuses)[number] | undefined,
       );
-    }
 
-    const applications = await getAdmissionApplications(
-      membership.schoolId,
-      status as
-        | "PENDING"
-        | "UNDER_REVIEW"
-        | "APPROVED"
-        | "REJECTED"
-        | "WITHDRAWN"
-        | undefined
-    );
+      return NextResponse.json({ ok: true, applications });
+    } catch (error) {
+      if (!(error instanceof AuthorizationError)) {
+        throw error;
+      }
 
-    return NextResponse.json({
-      ok: true,
-      applications,
-    });
-  } catch (error) {
-    if (
-      error instanceof AuthorizationError ||
-      error instanceof ModuleDisabledError
-    ) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "FORBIDDEN",
-          message: error.message,
-        },
-        { status: 403 }
+      const { school } = await applicantAccess(schoolId);
+      const applications = await getApplicantAdmissionApplications(
+        school.id,
+        session.user.id,
       );
+
+      return NextResponse.json({ ok: true, applications });
     }
-
-    console.error("admission application list failed", error);
-
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "REQUEST_FAILED",
-      },
-      { status: 500 }
-    );
-  }
-}
-
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ schoolId: string }> }
-) {
-  try {
-    const { schoolId } = await params;
-    const { session, school } = await applicantAccess(schoolId);
-    const applications = await getApplicantAdmissionApplications(
-      school.id,
-      session.user.id,
-    );
-
-    return NextResponse.json({ ok: true, applications });
   } catch (error) {
     if (error instanceof AdmissionNotFoundError) {
       return NextResponse.json(
@@ -172,13 +135,18 @@ export async function GET(
         { status: 404 },
       );
     }
-    if (error instanceof AuthorizationError || error instanceof ModuleDisabledError) {
+
+    if (
+      error instanceof AuthorizationError ||
+      error instanceof ModuleDisabledError
+    ) {
       return NextResponse.json(
         { ok: false, error: "FORBIDDEN", message: error.message },
         { status: 403 },
       );
     }
-    console.error("applicant admission list failed", error);
+
+    console.error("admission application list failed", error);
     return NextResponse.json(
       { ok: false, error: "REQUEST_FAILED" },
       { status: 500 },
@@ -188,7 +156,7 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ schoolId: string }> }
+  { params }: { params: Promise<{ schoolId: string }> },
 ) {
   try {
     const { schoolId } = await params;
@@ -224,104 +192,14 @@ export async function POST(
     if (error instanceof ZodError) {
       return NextResponse.json(
         { ok: false, error: "INVALID_ADMISSION_DATA", issues: error.issues },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (error instanceof AdmissionConflictError) {
       return NextResponse.json(
         { ok: false, error: "ADMISSION_CONFLICT", message: error.message },
-        { status: 409 }
-      );
-    }
-
-    if (error instanceof AdmissionNotFoundError) {
-      return NextResponse.json(
-        { ok: false, error: "ADMISSION_REFERENCE_NOT_FOUND", message: error.message },
-        { status: 404 }
-      );
-    }
-
-    if (error instanceof AuthorizationError || error instanceof ModuleDisabledError) {
-      return NextResponse.json(
-        { ok: false, error: "FORBIDDEN", message: error.message },
-        { status: 403 }
-      );
-    }
-
-    console.error("admission application create failed", error);
-    return NextResponse.json(
-      { ok: false, error: "REQUEST_FAILED" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ schoolId: string }> }
-) {
-  try {
-    const { schoolId } = await params;
-
-    const { session, membership } = await access(
-      schoolId,
-      CAPABILITIES.MANAGE_STUDENTS
-    );
-
-    const input = schema.parse(await request.json());
-
-    const application = await createAdmissionApplication({
-      schoolId: membership.schoolId,
-      applicantUserId: session.user.id,
-      ...input,
-    });
-
-    await db.auditEvent.create({
-      data: {
-        schoolId: membership.schoolId,
-        actorUserId: membership.userId,
-        action: "admission_application.created",
-        entityType: "AdmissionApplication",
-        entityId: application.id,
-        currentState: {
-          status: application.status,
-          firstName: application.firstName,
-          lastName: application.lastName,
-          academicSessionId: application.academicSessionId,
-          classLevelId: application.classLevelId,
-          classArmId: application.classArmId,
-        },
-      },
-    });
-
-    return NextResponse.json(
-      {
-        ok: true,
-        application,
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "INVALID_ADMISSION_DATA",
-          issues: error.issues,
-        },
-        { status: 400 }
-      );
-    }
-
-    if (error instanceof AdmissionConflictError) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "ADMISSION_CONFLICT",
-          message: error.message,
-        },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -332,7 +210,7 @@ export async function POST(
           error: "ADMISSION_REFERENCE_NOT_FOUND",
           message: error.message,
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -341,23 +219,15 @@ export async function POST(
       error instanceof ModuleDisabledError
     ) {
       return NextResponse.json(
-        {
-          ok: false,
-          error: "FORBIDDEN",
-          message: error.message,
-        },
-        { status: 403 }
+        { ok: false, error: "FORBIDDEN", message: error.message },
+        { status: 403 },
       );
     }
 
     console.error("admission application create failed", error);
-
     return NextResponse.json(
-      {
-        ok: false,
-        error: "REQUEST_FAILED",
-      },
-      { status: 500 }
+      { ok: false, error: "REQUEST_FAILED" },
+      { status: 500 },
     );
   }
 }
