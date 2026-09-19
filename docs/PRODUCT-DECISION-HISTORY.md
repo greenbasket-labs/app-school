@@ -357,7 +357,57 @@ For each slice:
 
 The latest application of this method is the Find a school relationship UX: Parent/Guardian was added only to the existing Requested relationship dropdown. The parent UI appears only when selected. Its backend is intentionally not connected to the generic worker join-request endpoint yet.
 
-**Current execution slice: Owner/Admin operational dashboard after school setup.** The personal-account → school-registration flow has been implemented; focused browser/runtime acceptance remains tracked in the roadmap.
+**Current execution slice: Student admissions end-to-end.** The Owner/Admin operational dashboard, Students admission-request surface, admission schema/service/APIs, review page and transactional approval flow are implemented and typechecked. Applicant/parent submission, edit/reject UI and real-browser end-to-end verification remain tracked in the roadmap.
+
+## 8C. Student admission workflow boundary
+
+### Decision
+Student admissions is part of the Students domain for the current V1 product. It uses a school-scoped AdmissionApplication record rather than creating a second student identity or bypassing the existing Student/Enrollment records.
+
+The intended lifecycle is:
+
+```text
+Personal SkulGo account
+      ↓
+Admission application
+      ↓
+School review
+      ↓
+Approval
+      ↓
+Student + Enrollment
+```
+
+The application supports explicit lifecycle states: PENDING, UNDER_REVIEW, APPROVED, REJECTED and WITHDRAWN.
+
+### Approval rule
+
+Approval is performed through the domain service and transactionally creates the official Student and Enrollment before marking the application APPROVED. The current flow requires the school to provide the admission number. The UI must not duplicate Student/Enrollment creation logic.
+
+### Current implementation checkpoint — 19 Sep 2026
+
+Implemented:
+
+- AdmissionApplication schema and Prisma migration.
+- Admission domain service and lifecycle validation.
+- School-scoped admission list/detail/update/status/approval APIs.
+- Students page pending/under-review admission request surface.
+- Owner/Admin review page.
+- Approval page/form and transactional Student + Enrollment creation.
+- Audit events for admission creation and meaningful state changes.
+- Typecheck verification after the slice.
+
+Not yet complete:
+
+- Applicant/parent submission UI and runtime verification.
+- Edit application UI.
+- Rejection/withdrawal UI.
+- Full browser acceptance of submit → review → approve → student enrollment.
+- Retirement/demotion of the legacy manual student creation path after admissions is proven.
+
+This checkpoint does not claim end-to-end admission completion until the remaining runtime workflow is verified.
+
+---
 
 ## 9. Who owns the school's data?## 9. Who owns the school's data?
 
@@ -669,7 +719,7 @@ When these documents appear to conflict, the implementation should be reviewed d
 ## 20. What is the current execution order after identity and setup?
 
 ### Decision
-The implementation now moves from the completed personal-account/school-relationship foundation into the **Owner/Admin operational dashboard**, then into the core school operations that the dashboard exposes.
+The personal-account/school-relationship foundation and Owner/Admin operational dashboard are now implemented. The immediate execution focus is the **student admission workflow**, because it connects the existing personal student path to authoritative Student + Enrollment records.
 
 The execution order is:
 
@@ -678,14 +728,18 @@ School setup
    ↓
 Owner/Admin dashboard
    ↓
-Students / Classes / Attendance / Fees / Results / Reports
+Student admissions: submit → review → approve → Student + Enrollment
    ↓
-Staff / Parents / Applications / Communication
+Classes / Attendance / Fees / Results / Reports
+   ↓
+Staff / Parents / Communication
    ↓
 Teacher / Cashier / Parent / Student workspaces
    ↓
 Production readiness
 ```
+
+The current admission slice is intentionally narrow. Do not treat the existing review/approval implementation as end-to-end complete until applicant submission, remaining review actions and browser verification are finished.
 
 The Owner/Admin dashboard is the permanent operational home after setup. The setup workspace is temporary configuration. The personal account remains the identity boundary, and **← Account** remains the return path from a school workspace.
 
