@@ -421,147 +421,173 @@ export async function updateAdmissionApplication(input: {
   });
 }
 
+function generatedAdmissionNumber(year: number, sequence: number) {
+  return `ADM-${year}-${String(sequence).padStart(4, "0")}`;
+}
+
 export async function approveAdmissionApplication(input: {
   schoolId: string;
   applicationId: string;
   reviewedByUserId: string;
-  admissionNumber: string;
 }) {
-  const admissionNumber = input.admissionNumber.trim();
+  let attempt = 0;
 
-  if (!admissionNumber) {
-    throw new AdmissionConflictError(
-      "An admission number is required."
-    );
+  while (attempt < 5) {
+    attempt += 1;
+
+    try {
+      return await db.$transaction(async (tx) => {
+        const application = await tx.admissionApplication.findFirst({
+          where: {
+            id: input.applicationId,
+            schoolId: input.schoolId,
+          },
+          include: {
+            academicSession: true,
+            classLevel: true,
+            classArm: true,
+          },
+        });
+
+        if (!application) {
+          throw new AdmissionNotFoundError(
+            "Admission application not found."
+          );
+        }
+
+        if (application.status === "APPROVED") {
+          throw new AdmissionStateError(
+            "This admission application has already been approved."
+          );
+        }
+
+        if (application.status === "REJECTED") {
+          throw new AdmissionStateError(
+            "A rejected admission application cannot be approved."
+          );
+        }
+
+        if (application.status === "WITHDRAWN") {
+          throw new AdmissionStateError(
+            "A withdrawn admission application cannot be approved."
+          );
+        }
+
+        if (application.schoolId !== application.academicSession.schoolId) {
+          throw new AdmissionConflictError(
+            "The academic session does not belong to this school."
+          );
+        }
+
+        if (application.classLevel.schoolId !== application.schoolId) {
+          throw new AdmissionConflictError(
+            "The class level does not belong to this school."
+          );
+        }
+
+        if (!application.classArmId || !application.classArm) {
+          throw new AdmissionConflictError(
+            "A class must be selected before approving this admission."
+          );
+        }
+
+        if (
+          application.classArm.classLevelId !== application.classLevelId
+        ) {
+          throw new AdmissionConflictError(
+            "The selected class does not belong to the requested class level."
+          );
+        }
+
+        const year = new Date().getFullYear();
+        const studentCount = await tx.student.count({
+          where: {
+            schoolId: application.schoolId,
+          },
+        });
+        const admissionNumber = generatedAdmissionNumber(
+          year,
+          studentCount + 1 + attempt - 1
+        );
+
+        const student = await tx.student.create({
+          data: {
+            schoolId: application.schoolId,
+            admissionNumber,
+            firstName: application.firstName,
+            middleName: application.middleName,
+            lastName: application.lastName,
+            dateOfBirth: application.dateOfBirth,
+            status: "ACTIVE",
+          },
+        });
+
+        const enrollment = await tx.enrollment.create({
+          data: {
+            studentId: student.id,
+            academicSessionId: application.academicSessionId,
+            classArmId: application.classArmId,
+            status: "ACTIVE",
+          },
+          include: {
+            student: true,
+            academicSession: true,
+            classArm: {
+              include: {
+                classLevel: true,
+              },
+            },
+          },
+        });
+
+        const approvedApplication = await tx.admissionApplication.update({
+          where: {
+            id: application.id,
+          },
+          data: {
+            status: "APPROVED",
+            reviewedAt: new Date(),
+            reviewedByUserId: input.reviewedByUserId,
+            studentId: student.id,
+            rejectionReason: null,
+          },
+          include: {
+            student: true,
+            academicSession: true,
+            classLevel: true,
+            classArm: true,
+          },
+        });
+
+        return {
+          application: approvedApplication,
+          student,
+          enrollment,
+        };
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002" &&
+        attempt < 5
+      ) {
+        continue;
+      }
+
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        throw new AdmissionConflictError(
+          "Could not generate a unique admission number. Please try again."
+        );
+      }
+
+      throw error;
+    }
   }
 
-  return db.$transaction(async (tx) => {
-    const application = await tx.admissionApplication.findFirst({
-      where: {
-        id: input.applicationId,
-        schoolId: input.schoolId,
-      },
-      include: {
-        academicSession: true,
-        classLevel: true,
-        classArm: true,
-      },
-    });
-
-    if (!application) {
-      throw new AdmissionNotFoundError(
-        "Admission application not found."
-      );
-    }
-
-    if (application.status === "APPROVED") {
-      throw new AdmissionStateError(
-        "This admission application has already been approved."
-      );
-    }
-
-    if (application.status === "REJECTED") {
-      throw new AdmissionStateError(
-        "A rejected admission application cannot be approved."
-      );
-    }
-
-    if (application.status === "WITHDRAWN") {
-      throw new AdmissionStateError(
-        "A withdrawn admission application cannot be approved."
-      );
-    }
-
-    if (application.schoolId !== application.academicSession.schoolId) {
-      throw new AdmissionConflictError(
-        "The academic session does not belong to this school."
-      );
-    }
-
-    if (application.classLevel.schoolId !== application.schoolId) {
-      throw new AdmissionConflictError(
-        "The class level does not belong to this school."
-      );
-    }
-
-    if (!application.classArmId || !application.classArm) {
-      throw new AdmissionConflictError(
-        "A class must be selected before approving this admission."
-      );
-    }
-
-    if (
-      application.classArm.classLevelId !== application.classLevelId
-    ) {
-      throw new AdmissionConflictError(
-        "The selected class does not belong to the requested class level."
-      );
-    }
-
-    const student = await tx.student.create({
-      data: {
-        schoolId: application.schoolId,
-        admissionNumber,
-        firstName: application.firstName,
-        middleName: application.middleName,
-        lastName: application.lastName,
-        dateOfBirth: application.dateOfBirth,
-        status: "ACTIVE",
-      },
-    });
-
-    const enrollment = await tx.enrollment.create({
-      data: {
-        studentId: student.id,
-        academicSessionId: application.academicSessionId,
-        classArmId: application.classArmId,
-        status: "ACTIVE",
-      },
-      include: {
-        student: true,
-        academicSession: true,
-        classArm: {
-          include: {
-            classLevel: true,
-          },
-        },
-      },
-    });
-
-    const approvedApplication = await tx.admissionApplication.update({
-      where: {
-        id: application.id,
-      },
-      data: {
-        status: "APPROVED",
-        reviewedAt: new Date(),
-        reviewedByUserId: input.reviewedByUserId,
-        studentId: student.id,
-        rejectionReason: null,
-      },
-      include: {
-        student: true,
-        academicSession: true,
-        classLevel: true,
-        classArm: true,
-      },
-    });
-
-    return {
-      application: approvedApplication,
-      student,
-      enrollment,
-    };
-  }).catch((error) => {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      throw new AdmissionConflictError(
-        "That admission number is already in use in this school."
-      );
-    }
-
-    throw error;
-  });
+  throw new AdmissionConflictError(
+    "Could not generate a unique admission number. Please try again."
+  );
 }
