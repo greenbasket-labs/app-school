@@ -3,11 +3,18 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
+const CAPACITIES = [
+  { value: "OWNER", label: "Owner / Proprietor" },
+  { value: "PRINCIPAL", label: "Principal" },
+  { value: "HEADMASTER", label: "Headmaster / Headmistress" },
+] as const;
+
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({
     organizationName: "",
     schoolName: "",
+    capacity: "OWNER",
     cacNumber: "",
   });
   const [error, setError] = useState("");
@@ -61,37 +68,97 @@ export default function RegisterPage() {
         <p style={{ margin: 0, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", fontSize: 13 }}>
           SkulGo account
         </p>
-        <h1 style={{ margin: "12px 0 8px", fontSize: 32 }}>Register your school</h1>
+        <h1 style={{ margin: "12px 0 8px", fontSize: 32 }}>Register a school</h1>
         <p style={{ color: "#53615a", lineHeight: 1.5 }}>
-          Your personal SkulGo account stays the same. This creates a school
-          relationship where you are the owner.
+          Your personal SkulGo account stays the same. Create a school workspace
+          and tell us your capacity at the school.
         </p>
 
-        {[
-          ["organizationName", "Organization / registered business name"],
-          ["schoolName", "School name"],
-          ["cacNumber", "CAC registration number"],
-        ].map(([field, label]) => (
-          <label key={field} style={{ display: "block", marginTop: 16, fontWeight: 700 }}>
-            {label}
-            <input
-              value={form[field as keyof typeof form]}
-              onChange={(event) =>
-                update(field as keyof typeof form, event.target.value)
-              }
-              required
-              style={{
-                display: "block",
-                width: "100%",
-                boxSizing: "border-box",
-                marginTop: 8,
-                padding: 12,
-                borderRadius: 10,
-                border: "1px solid #ccd6d0",
-              }}
-            />
-          </label>
-        ))}
+        <label style={{ display: "block", marginTop: 16, fontWeight: 700 }}>
+          Organization / proprietor name
+          <input
+            value={form.organizationName}
+            onChange={(event) => update("organizationName", event.target.value)}
+            required
+            placeholder="e.g. AHM Education"
+            style={{
+              display: "block",
+              width: "100%",
+              boxSizing: "border-box",
+              marginTop: 8,
+              padding: 12,
+              borderRadius: 10,
+              border: "1px solid #ccd6d0",
+            }}
+          />
+        </label>
+
+        <label style={{ display: "block", marginTop: 16, fontWeight: 700 }}>
+          School name
+          <input
+            value={form.schoolName}
+            onChange={(event) => update("schoolName", event.target.value)}
+            required
+            placeholder="e.g. AHM International School"
+            style={{
+              display: "block",
+              width: "100%",
+              boxSizing: "border-box",
+              marginTop: 8,
+              padding: 12,
+              borderRadius: 10,
+              border: "1px solid #ccd6d0",
+            }}
+          />
+        </label>
+
+        <label style={{ display: "block", marginTop: 16, fontWeight: 700 }}>
+          Your capacity at the school
+          <select
+            value={form.capacity}
+            onChange={(event) => update("capacity", event.target.value)}
+            style={{
+              display: "block",
+              width: "100%",
+              boxSizing: "border-box",
+              marginTop: 8,
+              padding: 12,
+              borderRadius: 10,
+              border: "1px solid #ccd6d0",
+              background: "white",
+            }}
+          >
+            {CAPACITIES.map((capacity) => (
+              <option key={capacity.value} value={capacity.value}>
+                {capacity.label}
+              </option>
+            ))}
+          </select>
+          <span style={{ display: "block", marginTop: 6, color: "#68756e", fontSize: 13, fontWeight: 400 }}>
+            This records your school role during onboarding. Access permissions are managed separately.
+          </span>
+        </label>
+
+        <label style={{ display: "block", marginTop: 16, fontWeight: 700 }}>
+          CAC registration number <span style={{ color: "#68756e", fontWeight: 400 }}>(optional for now)</span>
+          <input
+            value={form.cacNumber}
+            onChange={(event) => update("cacNumber", event.target.value)}
+            placeholder="Enter CAC number if available"
+            style={{
+              display: "block",
+              width: "100%",
+              boxSizing: "border-box",
+              marginTop: 8,
+              padding: 12,
+              borderRadius: 10,
+              border: "1px solid #ccd6d0",
+            }}
+          />
+          <span style={{ display: "block", marginTop: 6, color: "#68756e", fontSize: 13, fontWeight: 400 }}>
+            You can add or verify this information later.
+          </span>
+        </label>
 
         {error && (
           <p role="alert" style={{ color: "#a32929", marginTop: 16 }}>
