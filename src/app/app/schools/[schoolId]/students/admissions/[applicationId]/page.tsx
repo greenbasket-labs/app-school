@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { CAPABILITIES } from "@/domain/auth/capabilities";
 import { currentSession } from "@/domain/auth/session-cookie";
 import { db } from "@/lib/db";
+import AdmissionStatusActions from "./status-actions";
 
 export default async function AdmissionReviewPage({
   params,
@@ -363,6 +364,12 @@ export default async function AdmissionReviewPage({
                 >
                   Approve
                 </Link>
+
+                <AdmissionStatusActions
+                  schoolId={schoolId}
+                  applicationId={applicationId}
+                  status={application.status}
+                />
               </div>
             )}
         </section>
