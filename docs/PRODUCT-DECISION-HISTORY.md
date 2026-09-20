@@ -764,3 +764,30 @@ The Owner/Admin dashboard is the permanent operational home after setup. The set
 The GB School demo remains a reference for navigation and visual organization. The deeper school-management-system repository remains a reference for proven school workflows. SkulGo must continue to implement those ideas inside its own personal-account, membership, capability, tenant and audit architecture rather than copying either repository's architecture.
 
 This execution order is intentionally separate from the detailed domain capability phases in docs/ROADMAP.md. It describes what should be built next, not a claim that every older capability phase is empty.
+
+
+## 22. Owner navigation as operational frontend — 20 Sep 2026
+
+### Decision
+The GB School demo is treated primarily as a frontend/operational reference for the Owner/Admin workspace. It is not a backend architecture to copy.
+
+The owner sidebar represents what the school is doing and seeing, while Setup/Settings represents what the school is configuring.
+
+### Decision: separate setup from operation
+Configuration/setup → authoritative school records → owner operational frontend.
+
+Examples:
+- fee structures and payment-provider setup belong in configuration surfaces;
+- Fees & Payments belongs to the operational finance register;
+- academic structure is configured in setup, while Classes shows the resulting current class operation;
+- assessment definitions are configuration, while Results shows the operational result lifecycle.
+
+### Decision: completion must distinguish frontend from backend
+An owner page may be frontend-present, frontend + backend verified, backed by existing setup/domain infrastructure but not yet represented correctly in the owner frontend, or broken/missing.
+
+A route/file existing is not sufficient evidence of completion.
+
+### Current execution rule
+Build and verify one owner sidebar slice at a time: inspect reference → inspect current App-School → identify smallest missing behavior → reuse existing backend/domain logic → implement frontend slice → typecheck/test → browser verification → record status → next item.
+
+This decision is durable handoff guidance for future developers and AI agents.
