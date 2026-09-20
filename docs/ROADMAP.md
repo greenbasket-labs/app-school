@@ -907,3 +907,81 @@ Do not create duplicate finance models or business logic. Existing App-School fi
 After each narrow owner slice: verify the exact route in the browser, verify school-scoped data, verify important actions against existing backend/domain paths, run typecheck/focused tests, update this handoff, commit, then move to the next slice.
 
 This checkpoint supersedes older broad owner-navigation wording. The work is deliberately incremental and evidence-driven.
+
+
+## Durable product architecture rule — Settings control plane vs School Operations — 20 Sep 2026
+
+This is now a core product rule for all current and future modules.
+
+### School Settings / Setup = school control plane
+
+School Settings is the authoritative configuration surface for the school. It is used when a school is first configured and whenever the owner/admin changes school configuration.
+
+It includes, as applicable:
+
+- Academic sessions and terms
+- Classes / class arms
+- Subjects and subject configuration
+- Fee structures and finance configuration
+- Assessment definitions
+- Staff and roles
+- Parent access configuration
+- Module enablement
+- Other school configuration required by future modules
+
+The setup experience is primarily an onboarding/configuration workflow. It is not a replacement for the school's daily operational workspace.
+
+### School Operations = daily working surface
+
+The owner sidebar represents the school's operational frontend after configuration:
+
+- Dashboard
+- Students
+- Classes
+- Attendance
+- Fees & Payments
+- Results
+- Reports
+- Announcements
+- Staff & Teachers
+- Parents
+- Applications
+- Users & Roles
+- Audit History
+
+Operational pages consume authoritative records created/configured through the control plane. They should not expose setup forms merely because they use the same underlying records.
+
+### Future module rule
+
+School Settings is also the extensible control plane for future modules.
+
+When a new reusable module is added:
+
+```text
+New module
+   ↓
+Module definition
+   ↓
+School Settings
+   ↓
+Owner enables/configures module
+   ↓
+Module becomes available
+   ↓
+Operational frontend
+```
+
+Only the school owner should control module enablement. Module state and staff capabilities remain separate authorization boundaries. Disabling a module must preserve historical records.
+
+### Build rule
+
+For every new domain:
+
+1. Establish or reuse its backend/domain records and authorization.
+2. Give the owner a Settings/Setup surface for configuration.
+3. Give the appropriate operational users a separate working surface.
+4. Make the operational surface consume real configured records.
+5. Never fake setup data in the operational UI.
+6. Verify configuration → operation end to end before marking the slice complete.
+
+This rule applies to modules added after V1 as well as the current owner navigation work.
