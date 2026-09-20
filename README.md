@@ -766,3 +766,64 @@ A setup page existing does not mean the corresponding owner operational page is 
 Do not mark an owner sidebar item complete solely because a page file exists. Use: Frontend exists; Frontend + backend verified; Setup/backend exists; or Missing/broken.
 
 The next developer should continue from the current sidebar item rather than redesigning the whole workspace.
+
+
+## Product architecture rule: Settings is the control plane
+
+App-School separates **school configuration** from **school operation**.
+
+### School Settings / Setup
+
+The school owner configures the school's foundation here, especially during initial school setup and later administration:
+
+- academic sessions and terms;
+- classes and class arms;
+- subjects;
+- fee structures and finance configuration;
+- assessment definitions;
+- staff and roles;
+- parent access;
+- enabled modules;
+- future module-specific configuration.
+
+### School Operations
+
+The owner operational sidebar is the daily working surface:
+
+- Dashboard
+- Students
+- Classes
+- Attendance
+- Fees & Payments
+- Results
+- Reports
+- Announcements
+- Staff & Teachers
+- Parents
+- Applications
+- Users & Roles
+- Audit History
+
+The operational frontend uses the authoritative records established by Settings/Setup. It should not turn configuration screens into daily-operation screens.
+
+### Extensible module model
+
+School Settings is intentionally the control plane for future reusable modules:
+
+```text
+Reusable module
+      ↓
+School Settings
+      ↓
+Owner enables/configures
+      ↓
+Operational module surface
+```
+
+This lets App-School grow without creating separate school applications or redesigning the owner control plane for every new feature.
+
+Module enablement is owner-controlled and enforced server-side. Staff capability is a separate authorization boundary. Disabling a module preserves historical records.
+
+### Developer handoff rule
+
+When adding a module, build its **configuration/control-plane slice** and its **operational slice** as distinct responsibilities. Reuse the same domain services and authoritative records rather than duplicating business logic.
