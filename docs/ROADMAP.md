@@ -297,7 +297,7 @@ These tools are engineering infrastructure. Their presence never overrides the p
 
 The detailed domain phases below describe product capability maturity. The current execution roadmap is the order in which the SkulGo implementation should now be advanced.
 
-The immediate goal is to verify the personal-account → school-discovery → joining flow, then complete the end-to-end student admission workflow, while preserving the existing personal-account, membership, capability, audit and offline-first architecture.
+The immediate goal is to make the owner school workspace fully navigable using the capabilities already present in the platform, then verify the connected school lifecycle from setup → students → attendance → finance → results → reports, while preserving the existing personal-account, membership, capability, audit and offline-first architecture.
 
 ### Phase 3 — Owner/Admin operational control center
 
@@ -316,9 +316,76 @@ The setup workspace is temporary. Once the required school foundation is ready, 
 
 Reference rule: GB-demo-school is the visual/navigation reference; school-management-system is the deeper workflow/business-logic reference. Neither repository is the SkulGo architecture.
 
+### Phase 4A — Owner navigation and operational surface parity
+
+**Status: NEXT — owner demo parity**
+
+The owner-facing school workspace must expose the real capabilities already present in the platform. Do not create duplicate domains merely to match navigation labels. Where a dedicated route is missing, create a thin owner-facing page over the existing authoritative domain/service/API.
+
+Target owner navigation:
+
+```text
+Dashboard
+Students
+Classes
+Attendance
+Fees & Payments
+Results
+Reports
+Announcements
+Staff & Teachers
+Parents
+Subjects & Setup
+School Settings
+Applications
+Users & Roles
+Audit History
+```
+
+- [ ] Replace stale sidebar routes that currently lead to 404 pages.
+- [ ] Add a dedicated **Classes** owner workspace over the existing school-structure/setup services.
+- [ ] Add a dedicated **Fees & Payments** entry over the existing finance workspace; do not create a second finance domain.
+- [ ] Add a dedicated **Results** owner workspace over the existing assessments/result workflow; do not create a duplicate Results domain.
+- [ ] Add a dedicated **Announcements** owner workspace over the existing communication/notification infrastructure.
+- [ ] Add a dedicated **Staff & Teachers** owner workspace over the existing staff service and capability administration.
+- [ ] Add a dedicated **Parents** owner workspace over the existing Guardian + StudentGuardian records and parent-access infrastructure.
+- [ ] Add a dedicated **Applications** owner workspace over the existing admission/join-request services.
+- [ ] Add a dedicated **Users & Roles** owner workspace over the existing membership/capability model.
+- [ ] Add a dedicated **Audit History** owner workspace over authoritative AuditEvent records; finance audit remains a finance-specific view.
+- [x] Keep **Subjects & Setup** on the existing setup workspace.
+- [x] Keep **School Settings** on the existing settings workspace.
+- [x] Keep **Dashboard, Students, Attendance and Reports** on their existing operational routes.
+- [ ] Ensure every sidebar item resolves to a real page before browser acceptance is considered complete.
+- [ ] Verify every owner page enforces the authenticated school membership, capability boundary and module state server-side.
+- [ ] Verify direct URL access cannot bypass those boundaries.
+- [ ] Reuse existing domain services and database records; do not duplicate business logic to satisfy navigation.
+- [ ] Keep the owner workspace as an operational control center, not a collection of disconnected demo pages.
+
+**Important implementation rule:** a navigation label may differ from the underlying domain name. For example, **Results** is the owner-facing surface for the existing assessment/result lifecycle, while **Fees & Payments** is the owner-facing surface for the existing finance domain.
+
+**Owner-demo acceptance flow:**
+
+```text
+Open school
+  ↓
+Dashboard
+  ↓
+Students / Classes / Attendance
+  ↓
+Fees & Payments / Results
+  ↓
+Reports / Announcements
+  ↓
+Staff / Parents / Applications
+  ↓
+Users & Roles / Audit History
+  ↓
+Back to Account
+```
+
 ### Phase 4 — Core daily school operations
 
-**Status: IN PROGRESS**
+**Status: IN PROGRESS — after owner navigation parity**
 
 Build the operational areas behind the dashboard, reusing the existing domain logic where it is already proven.
 
@@ -331,7 +398,7 @@ Build the operational areas behind the dashboard, reusing the existing domain lo
 - [ ] Admission application edit page.
 - [ ] Admission rejection/withdrawal actions from the review workflow.
 - [ ] Remove or demote the legacy manual student-creation path after admission workflow is verified end-to-end.
-- [ ] Classes operational workspace.
+- [ ] Classes operational workspace (owner-facing dedicated route; reuse school-structure services).
 - [ ] Resolve the class/arm model so schools can support both Primary 1 and Primary 1A / Primary 1B without fake placeholder arms.
 - [ ] Attendance operational workspace and history.
 - [ ] Fees & Payments operational workspace.
@@ -639,6 +706,9 @@ Capabilities and school module configuration remain the authorization boundary.
 
 ### Gate D — Human value
 
+Before this gate, the owner navigation parity gate must be passed: no owner sidebar item should intentionally point to a 404 or placeholder route.
+
+
 18. Verify parent journey end-to-end.
 19. Verify teacher daily workflow end-to-end.
 20. Verify owner configuration, finance and reports against real operational questions.
@@ -705,13 +775,28 @@ NEXT: Student admission workflow
   → real-browser end-to-end verification
   → retire legacy manual student creation
 
-THEN: Continue core operations
+NEXT: Owner navigation parity
+  → remove stale 404 sidebar routes
   → Classes
+  → Fees & Payments
+  → Results
+  → Announcements
+  → Staff & Teachers
+  → Parents
+  → Applications
+  → Users & Roles
+  → Audit History
+
+THEN: Verify the connected owner lifecycle
+  → Setup
+  → Classes
+  → Admissions / Students
   → Attendance
   → Fees & Payments
   → Results
   → Reports
-  → Staff / Parents / Communication
+  → Communication
+  → Audit
 ```
 
 Call V1 complete only when:
