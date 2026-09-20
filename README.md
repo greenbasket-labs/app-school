@@ -741,3 +741,28 @@ Run the same request again with a different email but the same CAC. Expected res
 This is an actively developed school platform, not yet a production-ready complete school application. The basic engineering gate has passed, and the public product domain `skulgo.com` has now been acquired. Remaining release work includes browser/runtime verification, tenant/security testing, production migration and recovery, observability, production deployment, DNS/HTTPS configuration, and representative offline/online verification.
 
 See `docs/PRODUCT-DECISION-HISTORY.md` for the product reasoning and durable decisions. See `ARCHITECTURE.md` for frozen technical architecture. See `docs/ROADMAP.md` for the current execution roadmap, detailed capability phases, verification status and offline-first work.
+
+## Current handoff — owner navigation parity — 20 Sep 2026
+
+### How the remaining owner workspace is being built
+The GB School demo is primarily a frontend/operational reference. We study what the owner sees and does, then connect that experience to App-School's existing backend/domain records. We do not copy the demo repository's backend or database architecture.
+
+### Setup/backend vs operational/frontend
+Setup/control-plane work includes school configuration, academic structure, fee definitions and assignments, module configuration, payment-provider configuration, and staff/capability administration.
+
+Operational owner frontend includes current students, classes, attendance activity, live finance position, results, reports, communication, and staff/parent/application activity.
+
+A setup page existing does not mean the corresponding owner operational page is complete. An operational page may also be frontend-complete while deeper backend actions still require verification.
+
+### Owner navigation verification
+- Students: working.
+- Classes: working and browser verified through dedicated /academics.
+- Attendance: working.
+- Fees & Payments: route exists and reaches finance when FINANCE is enabled, but the main page currently mixes setup/configuration with the operational register. The next slice is to make /finance the owner-facing finance overview while retaining existing setup/payment/invoice/balance pages.
+- Results: route exists; browser verification pending.
+- Remaining owner sidebar items: verify one at a time.
+
+### Handoff rule
+Do not mark an owner sidebar item complete solely because a page file exists. Use: Frontend exists; Frontend + backend verified; Setup/backend exists; or Missing/broken.
+
+The next developer should continue from the current sidebar item rather than redesigning the whole workspace.
