@@ -827,3 +827,192 @@ Module enablement is owner-controlled and enforced server-side. Staff capability
 ### Developer handoff rule
 
 When adding a module, build its **configuration/control-plane slice** and its **operational slice** as distinct responsibilities. Reuse the same domain services and authoritative records rather than duplicating business logic.
+
+
+---
+
+## Current authoritative handoff checkpoint — 20 Sep 2026
+
+> This section supersedes older dated handoff snapshots above. It records the state actually verified during the current Owner/Admin build sequence.
+
+### Verified engineering checkpoint
+
+- Local branch checkpoint: 27466a1 — feat: add permanent school person identity.
+- The permanent school person-identity slice is committed locally; it has not yet been published from the local working tree in this checkpoint.
+- npm test: 11 test files / 25 tests passed.
+- npm run typecheck: passed.
+- Prisma migration status: 32 migrations, database schema up to date.
+
+### Permanent school person identity
+
+The platform now has a permanent human-readable person identifier for school relationships.
+
+    [SCHOOL PREFIX]/[YEAR]/[CATEGORY]/[RANDOM UNIQUE CODE]
+
+Examples:
+
+    AHA/2026/AC/K7M4Q9
+    AHA/2026/N/P4X8QM
+
+Rules:
+- School prefix is generated from the school name and stored on School.personIdPrefix.
+- Academic/teaching relationship uses AC.
+- Non-academic staff/cashier relationship uses N.
+- Owner receives a permanent person identifier as part of school registration.
+- Internal UUIDs remain the database identity; the person identifier is the stable human-facing school identity.
+- Role changes must not change the identifier.
+- No sequential counter and no detailed job title is encoded into the identifier.
+
+### Owner product architecture now established
+
+    SCHOOL SETTINGS / SETUP
+        ↓
+    Configuration and control plane
+        ↓
+    Authoritative school records
+        ↓
+    SCHOOL OPERATIONS
+        ↓
+    Owner dashboard / daily work / reports
+
+Configuration belongs in Settings/Setup. Operational navigation must show what the school is doing and seeing. Do not turn operational pages into setup forms merely because the same domain has configuration records.
+
+The owner flow is:
+
+    Owner setup + rules
+            ↓
+    Existing staff / teachers perform daily work
+            ↓
+    Authoritative records
+            ↓
+    Owner dashboard / reports / audit
+
+Do not introduce new staff categories just to make the demo navigation fit. Reuse the existing relationship, membership and capability model.
+
+### Owner/Admin surfaces verified in this sequence
+
+- Dashboard: read-only operational overview using school-scoped authoritative records.
+- Classes: dedicated owner operational page over ClassLevel → ClassArm → Enrollment → Student; no invented class-teacher relation.
+- Attendance reports: real school-scoped report route verified in browser.
+- Results: operational Results page now separates score capture/review from assessment-definition setup; existing assessment APIs remain authoritative.
+- Finance: owner page is an operational reconciliation/overview surface; finance setup remains configuration. Finance/platform schema restoration was applied and verified with Prisma.
+- Communication: owner can send an in-app notice; notification ID generation was restored at the database layer.
+- School Settings: remains the control plane for academic configuration, staff/access, modules and other school settings.
+
+### Results boundary
+
+Assessment definitions are configured in School Setup. Results is the operational workflow:
+
+    Assessment definition
+       ↓
+    Enter scores
+       ↓
+    Submit
+       ↓
+    Review / approve
+       ↓
+    Publish
+
+The current demo school has a verified assessment definition for CA1, Primary 1 A, Mathematics, maximum score 20. Score capture currently reports no active enrolled students for that class/session; student enrollment is deliberately deferred until the Owner/Admin phase is complete.
+
+### Owner dashboard boundary
+
+The Owner dashboard is intentionally read-only. It derives operational indicators from authoritative school records and does not create or mutate operational data.
+
+Current dashboard indicators:
+- active students
+- teaching-staff count
+- today's attendance rate/records
+- outstanding fees
+- fee collection rate
+- result-processing rate
+- quick links to reports, students, classes and attendance
+
+Do not add speculative dashboard data. If an authoritative record is unavailable, show the honest empty/zero state instead of inventing values.
+
+### Current build method
+
+Every Owner slice follows this exact sequence:
+
+    Reference demo / current requirement
+            ↓
+    Inspect current App-School implementation
+            ↓
+    Identify the smallest missing slice
+            ↓
+    Reuse existing models/services/APIs
+            ↓
+    Implement only that slice
+            ↓
+    Typecheck + tests
+            ↓
+    Browser/runtime verification
+            ↓
+    Document actual result
+            ↓
+    Commit checkpoint
+            ↓
+    Next queue item
+
+The existing Owner queue is followed in order. If a dependency is discovered, it should be suggested before changing the queue; do not silently jump ahead.
+
+### Owner-first execution plan
+
+Phase 1 — Finish Owner/Admin experience
+
+Complete and browser-verify the existing Owner navigation one small slice at a time:
+
+    Dashboard
+    Students
+    Classes
+    Attendance
+    Fees & Payments
+    Results
+    Reports
+    Announcements
+    Staff & Teachers
+    Parents
+    Subjects & Setup
+    School Settings
+    Applications
+    Users & Roles
+    Audit History
+
+Current state is mixed: several surfaces are verified, while Staff & Teachers, Parents, Applications, Users & Roles and the dedicated Audit History operational surface still require their queued slices.
+
+Phase 2 — Follow every user end-to-end
+
+After Owner/Admin is complete, follow each user from personal sign-in through their full lifecycle:
+
+    Teacher / Staff application
+    → approval
+    → membership + capabilities
+    → teacher/staff workspace
+    → daily work
+    → Owner sees resulting records
+
+    Student admission
+    → review
+    → approval
+    → Student + Enrollment
+    → student workspace
+    → Owner sees resulting records
+
+    Parent / Guardian
+    → verified relationship
+    → parent workspace
+    → authorized child visibility
+    → Owner sees appropriate relationship state
+
+The same principle applies to Cashier/Accountant and other existing relationships. Do not invent new relationship categories unless a concrete product requirement requires them.
+
+### Current deferred work
+
+- Full applicant/student admission browser flow is not yet the current Owner queue item.
+- Student enrollment is intentionally deferred until the Owner/Admin phase reaches it.
+- Offline-first remains a platform requirement, but no module should invent a separate offline mechanism.
+- Production DNS/deployment and launch hardening remain later gates.
+
+### Working-tree discipline
+
+The permanent-ID checkpoint was deliberately committed separately from the remaining Owner work. The remaining modified/untracked files include previously developed Owner slices, communication/report APIs, Classes page and migration/inspection artifacts. Do not stage all of them blindly. Each logical slice should be reviewed, tested and committed separately.
