@@ -985,3 +985,142 @@ For every new domain:
 6. Verify configuration → operation end to end before marking the slice complete.
 
 This rule applies to modules added after V1 as well as the current owner navigation work.
+
+
+---
+
+## Current authoritative execution checkpoint — 20 Sep 2026
+
+This section supersedes older dated execution snapshots where they conflict.
+
+### Engineering verification
+
+- Permanent school person identity slice committed locally as 27466a1.
+- Local test suite: 11 test files / 25 tests passed.
+- Typecheck: passed.
+- Prisma migrations: 32 found; database schema up to date.
+- The permanent identity slice has its own unit test and real-PostgreSQL registration integration test.
+- The integration test verifies school prefix generation and permanent owner person ID creation with clean database cleanup.
+
+### Owner/Admin phase status
+
+The Owner/Admin phase remains the active execution phase. The rule is not to build every sidebar route at once. Each item is a narrow vertical slice.
+
+Verified/implemented in the current sequence:
+
+- Dashboard — read-only operational overview verified.
+- Classes — dedicated operational page verified in browser.
+- Attendance reporting — school-scoped report verified in browser.
+- Results — operational page verified; setup definitions separated from score capture/review.
+- Finance — operational overview verified; authoritative finance/platform schema restored and migration deployed.
+- Communication — in-app notice sending verified; notification ID default restored.
+- School Settings / Setup — control-plane responsibility verified.
+
+Still queued for dedicated Owner slices:
+
+- Staff & Teachers
+- Parents
+- Applications
+- Users & Roles
+- Audit History
+- Any remaining stale sidebar destinations
+
+### Important Owner boundary
+
+Do not confuse these two planes:
+
+    SETTINGS / SETUP
+    configuration, rules, access, module enablement
+             ↓
+    SCHOOL OPERATIONS
+    daily work, records, dashboards, reports, history
+
+For a new reusable module:
+
+    New module
+       ↓
+    Settings / owner configuration
+       ↓
+    Backend authority + module/capability enforcement
+       ↓
+    Operational frontend
+       ↓
+    Browser/runtime verification
+
+A frontend route alone does not complete a module.
+
+### Permanent person identity milestone
+
+The person identifier format is:
+
+    [SCHOOL PREFIX]/[YEAR]/[CATEGORY]/[RANDOM UNIQUE CODE]
+
+Current categories:
+- AC — academic/teaching relationship.
+- N — non-academic staff/cashier relationship.
+
+The school prefix is derived from the school name and stored on School. The identifier is generated during school relationship creation where applicable and is not changed by later role changes.
+
+Do not encode detailed job titles or sequential counters into this identifier.
+
+### Phase 1 — Finish Owner/Admin experience
+
+Execution order remains:
+
+1. Dashboard
+2. Students
+3. Classes
+4. Attendance
+5. Fees & Payments
+6. Results
+7. Reports
+8. Announcements
+9. Staff & Teachers
+10. Parents
+11. Subjects & Setup
+12. School Settings
+13. Applications
+14. Users & Roles
+15. Audit History
+
+The queue is followed in order. If a dependency is discovered, surface it as a proposed queue change first rather than silently jumping ahead.
+
+### Phase 2 — Full user journeys
+
+Only after the Owner/Admin experience is complete, trace every existing user relationship from sign-in to completed work:
+
+- Teacher/Staff: apply → approval → membership/capabilities → workspace → daily work → Owner visibility.
+- Student: admission → review → approval → Student + Enrollment → student workspace → Owner visibility.
+- Parent/Guardian: verified student relationship → parent workspace → authorized child visibility → Owner visibility.
+- Cashier/Accountant and other existing relationships: follow the same relationship/capability model.
+
+Do not invent new staff types or relationships merely to fill a navigation slot.
+
+### Current deliberate deferrals
+
+- Student enrollment is not being pulled forward merely because score capture currently has no active students.
+- Applicant admission end-to-end browser verification remains later in the execution order.
+- Offline-first remains an application-wide requirement; modules must share the platform synchronization architecture.
+- Production DNS, backups/recovery, monitoring and launch hardening remain later gates.
+
+### Slice completion gate
+
+A slice is complete only when the relevant layer is actually present and verified:
+
+    configuration boundary
+       +
+    authoritative backend/domain behavior
+       +
+    authorization/module enforcement
+       +
+    operational frontend
+       +
+    tests/typecheck
+       +
+    browser/runtime verification where applicable
+       +
+    documented status
+       +
+    commit checkpoint
+
+Do not mark a roadmap item complete because a file or route exists.
