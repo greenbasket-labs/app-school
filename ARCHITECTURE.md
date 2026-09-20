@@ -149,3 +149,25 @@ Before building a new operational module:
 5. define which operations can be performed offline and which require current server authority;
 6. reuse the shared offline repository/sync foundation rather than creating module-specific infrastructure;
 7. test offline → online transitions as part of the module's acceptance criteria.
+
+
+## Current handoff — operational frontend over authoritative backend — 20 Sep 2026
+
+### Product/architecture interpretation for owner screens
+Owner sidebar pages are operational frontends over the existing authoritative App-School backend.
+
+The GB School demo is primarily a frontend behavior/reference source. App-School must reuse its own tenant-scoped records, domain services, API routes, capability checks, module guards, audit infrastructure and offline/synchronization architecture.
+
+Do not copy a reference application's persistence model merely because its screen looks useful.
+
+### Setup vs operation
+Configuration belongs to the school control plane. Operational owner pages consume configured records and present the school's current state.
+
+Setup/control plane → authoritative records → operational frontend.
+
+For finance specifically, fee configuration and payment-provider setup are configuration concerns, while Fees & Payments in the owner sidebar is the operational finance register.
+
+### Verification boundary
+A route being present is not proof that the feature is complete. Runtime verification must establish that the owner route opens, membership and capability/module checks remain enforced, displayed data is school-scoped, important actions use the existing domain/API path, and resulting state returns to the operational frontend.
+
+This keeps frontend parity work separate from backend/domain completion.
