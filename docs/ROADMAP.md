@@ -36,13 +36,44 @@ These are UX/workflow changes to the existing identity architecture, not new ide
 
 ### Engineering method for remaining V1 work
 
+The implementation method is intentionally **small-slice and reference-driven**. The user may provide a demo screen, an older codebase, a screenshot, a route, or an existing App-School page as the reference. That reference defines the requested behavior and shape; App-School's own architecture remains authoritative for data, authorization, tenancy and domain logic.
+
 ```text
-Inspect current implementation → define one narrow slice → preserve working behavior
-→ implement → typecheck + focused browser/runtime verification
-→ document actual status → commit → next slice
+Reference demo / existing code
+        ↓
+Inspect the current App-School implementation
+        ↓
+Identify the smallest missing/failing slice
+        ↓
+Reuse existing App-School models + services + APIs
+        ↓
+Implement only that slice
+        ↓
+Typecheck + tests
+        ↓
+Browser/runtime verification
+        ↓
+Confirm the actual result
+        ↓
+Update roadmap/docs + commit
+        ↓
+Move to the next small slice
 ```
 
-Do not redesign a working flow while adding a new relationship. Reuse existing domain/security/audit infrastructure. Do not mark UI-only behavior as backend-complete.
+**Rules for this method:**
+
+1. **One small fix/slice at a time.** Do not build several missing modules together just because the sidebar lists them.
+2. **Reference first.** If a demo or existing codebase is supplied, inspect it before designing the App-School equivalent.
+3. **Architecture second.** Copy the useful behavior, not another repository's database model. App-School's existing tenancy, membership, capability, audit, offline and domain boundaries remain authoritative.
+4. **Reuse before creating.** If an existing service, API, record or workspace already owns the behavior, build a thin page/workspace over it instead of creating duplicate business logic.
+5. **Separate setup from operations.** Configuration pages such as School Setup should not be used as substitutes for operational pages such as Classes merely because the same records appear there.
+6. **Do not invent missing data.** If the reference shows a class teacher, payment state, role or other field that App-School does not currently model, inspect the current domain first. Do not fake the value; either use a real existing relationship or leave it out until that domain is implemented.
+7. **Keep navigation honest.** A sidebar item should point to a real working route. A temporary mapping is acceptable only when the destination genuinely represents the requested surface; do not hide missing functionality behind unrelated setup pages.
+8. **Verify before declaring complete.** Typecheck/tests prove code integrity; browser/runtime verification proves the user-facing slice actually works.
+9. **Document actual status.** Mark only what has been implemented and verified. Keep backend-complete, UI-complete and browser-verified states distinct.
+10. **Then move on.** Once the narrow slice passes, update the roadmap and continue to the next dependent slice.
+
+This is the default build method for the remainder of V1.
 - **School owner:** personal SkulGo account + school registration → Organization + School + owner membership.
 - **Student:** personal SkulGo account → discover school → submit admission application → school review → admission/acceptance → school membership/student relationship.
 - **Teacher/staff:** personal SkulGo account → discover school → submit job/application → school review → offer/acceptance → school membership/staff relationship.
@@ -318,7 +349,11 @@ Reference rule: GB-demo-school is the visual/navigation reference; school-manage
 
 ### Phase 4A — Owner navigation and operational surface parity
 
-**Status: NEXT — owner demo parity**
+**Status: IN PROGRESS — narrow-slice owner parity**
+
+Owner navigation is being implemented one small operational slice at a time. The current slice is **Classes**. It was compared against the GB demo/reference behavior, mapped onto App-School's existing ClassLevel → ClassArm → Enrollment → Student model, implemented as a dedicated route, typechecked, and verified in the browser.
+
+Do not implement the remaining owner pages as one large batch. Finish and verify each route before moving to the next one.
 
 The owner-facing school workspace must expose the real capabilities already present in the platform. Do not create duplicate domains merely to match navigation labels. Where a dedicated route is missing, create a thin owner-facing page over the existing authoritative domain/service/API.
 
@@ -342,8 +377,12 @@ Users & Roles
 Audit History
 ```
 
-- [ ] Replace stale sidebar routes that currently lead to 404 pages.
-- [ ] Add a dedicated **Classes** owner workspace over the existing school-structure/setup services.
+- [ ] Replace the remaining stale sidebar routes that currently lead to 404 pages.
+- [x] Add a dedicated **Classes** owner workspace over the existing school-structure/setup services.
+- [x] Point the **Classes** sidebar item to the dedicated `/academics` route instead of `/setup`.
+- [x] Keep **Subjects & Setup** on `/setup`; Classes and Setup are separate owner surfaces.
+- [x] Verify the Classes page renders real class arms and active enrollment counts from school-scoped records.
+- [ ] Add the next owner slice only after the current slice is verified.
 - [ ] Add a dedicated **Fees & Payments** entry over the existing finance workspace; do not create a second finance domain.
 - [ ] Add a dedicated **Results** owner workspace over the existing assessments/result workflow; do not create a duplicate Results domain.
 - [ ] Add a dedicated **Announcements** owner workspace over the existing communication/notification infrastructure.
@@ -775,11 +814,11 @@ NEXT: Student admission workflow
   → real-browser end-to-end verification
   → retire legacy manual student creation
 
-NEXT: Owner navigation parity
-  → remove stale 404 sidebar routes
-  → Classes
-  → Fees & Payments
-  → Results
+IN PROGRESS: Owner navigation parity — one small slice at a time
+  ✓ Classes → dedicated /academics operational page
+  ✓ Classes sidebar route no longer points to /setup
+  → next: Fees & Payments
+  → then: Results
   → Announcements
   → Staff & Teachers
   → Parents
