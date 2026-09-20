@@ -862,3 +862,119 @@ This prevents the product from becoming a collection of setup screens disguised 
 ### Handoff rule
 
 A developer or AI agent adding a new module must first identify its Settings/control-plane requirements and then its operational workflow. Do not implement only a frontend route and call the module complete. Completion requires the configuration boundary, authoritative backend records, authorization/module enforcement, operational frontend and runtime verification to agree.
+
+
+---
+
+## 24. Permanent school person identity — 20 Sep 2026
+
+### Decision
+
+Each school relationship may carry a permanent human-readable person identifier:
+
+    [SCHOOL PREFIX]/[YEAR]/[CATEGORY]/[RANDOM UNIQUE CODE]
+
+The prefix is derived from the school name and stored on School. Current categories are AC (academic/teaching) and N (non-academic staff/cashier).
+
+The identifier is separate from the internal UUID. It is intended to remain stable across role changes and preserve understandable school-facing identity/history. It must not encode a detailed job title or use a sequential counter.
+
+### Implementation boundary
+
+- School stores personIdPrefix.
+- Membership stores personIdentifier with school-scoped uniqueness.
+- School registration generates the school prefix and permanent owner identifier.
+- The generation utility has unit tests.
+- Owner registration has a real PostgreSQL integration test.
+
+---
+
+## 25. Owner-first narrow-slice development method — 20 Sep 2026
+
+The Owner/Admin experience is now the active build phase. Development proceeds through the existing Owner queue, one narrow vertical slice at a time.
+
+    Reference / requirement
+            ↓
+    Inspect current App-School
+            ↓
+    Smallest missing slice
+            ↓
+    Reuse existing models/services/APIs
+            ↓
+    Implement
+            ↓
+    Typecheck + tests
+            ↓
+    Browser/runtime verification
+            ↓
+    Document
+            ↓
+    Commit
+            ↓
+    Next queue item
+
+If a dependency is discovered, propose the queue change explicitly rather than silently jumping ahead.
+
+---
+
+## 26. Settings is the control plane; Owner navigation is the operational plane — 20 Sep 2026
+
+School configuration belongs in Settings/Setup. The Owner sidebar represents daily operational work.
+
+    Settings / Setup
+        ↓
+    Rules + configuration + access + module enablement
+        ↓
+    Authoritative school records
+        ↓
+    Operations
+        ↓
+    Dashboard / work / reports / history
+
+Assessment definitions belong in Setup; Results is operational score/result work. Fee structures and payment-provider configuration belong in Setup/Settings; Fees & Payments is operational finance work. Academic structure is configured in Setup; Classes shows the resulting current operation.
+
+A future module must establish both its control-plane configuration and its operational workflow before it is considered complete.
+
+---
+
+## 27. Owner dashboard is read-only operational observation — 20 Sep 2026
+
+The Owner dashboard derives metrics from authoritative school records. It must not create operational records or invent missing data.
+
+The Owner is not expected to enter teacher scores or mark daily attendance merely to make the dashboard work. Existing staff/teachers perform daily operations according to their existing capabilities; the Owner sees the resulting state.
+
+---
+
+## 28. Owner phase verified checkpoint — 20 Sep 2026
+
+The following slices have been implemented/verified during the current Owner phase:
+
+- Owner dashboard operational overview.
+- Classes operational workspace.
+- Attendance report.
+- Results operational workspace separated from assessment setup.
+- Finance operational overview with restored authoritative finance/platform schema.
+- Communication in-app notice sending.
+- School Settings/Setup as the configuration control plane.
+
+The remaining Owner queue includes dedicated Staff & Teachers, Parents, Applications, Users & Roles and Audit History surfaces, plus any stale navigation destinations.
+
+### Verification
+
+Current local verification: 11 test files passed, 25 tests passed, typecheck passed, and 32 Prisma migrations are applied with the database schema up to date.
+
+### Queue rule
+
+The Owner phase is completed before the project returns to end-to-end user journeys.
+
+After Owner completion:
+
+    Personal sign-in
+       ↓
+    Teacher/Staff application → approval → workspace → daily work
+    Student admission → approval → Student + Enrollment → workspace
+    Parent/Guardian verification → parent workspace → authorized child visibility
+    Cashier/Accountant → existing relationship/capabilities → finance workspace
+       ↓
+    Owner observes resulting authoritative records
+
+This is a product execution decision, not a claim that all downstream workflows are already complete.
