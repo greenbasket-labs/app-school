@@ -854,3 +854,56 @@ Call V1 complete only when:
 ## Principle
 
 > **Solve the painful daily school problems first. Build the smallest trustworthy platform that can solve them. Stop adding features when the V1 problem is solved.**
+
+
+## Current handoff — owner navigation parity and reference-driven frontend operations — 20 Sep 2026
+
+### Immediate execution target
+The current work is Owner/Admin sidebar parity and runtime verification. Work one sidebar item at a time. The target is not to redesign every backend domain at once.
+
+The working loop is:
+Reference/demo → inspect current App-School → identify smallest missing slice → reuse existing models/services/APIs → implement only that slice → typecheck/tests → browser verification → record actual status → next slice.
+
+### Frontend vs backend distinction
+The GB School demo is primarily a frontend/operational reference. It defines what the owner should see and do. It does not define the App-School database or backend architecture.
+
+App-School remains authoritative for tenancy, membership, capabilities, module enforcement, PostgreSQL records, domain services, APIs, audit and offline-first behavior.
+
+Use these status meanings:
+- Frontend exists: intended screen opens and the operational UI is present.
+- Frontend + backend verified: real school-scoped records and important actions have been tested through the real domain/API path.
+- Setup/backend exists: configuration infrastructure exists but is not necessarily the owner operational surface.
+- Missing/broken: focused work remains.
+
+### Setup vs operation
+The owner sidebar is primarily the operational frontend. Setup/Settings is the school control plane.
+
+For example, Fees & Payments should show the live finance position and register. Fee definitions, payment-provider configuration and other finance setup belong in setup/settings or dedicated configuration screens.
+
+### Owner navigation checkpoint
+- Students — working.
+- Classes — dedicated /academics operational page; browser verified.
+- Attendance — working.
+- Fees & Payments — route exists, but the current main page mixes setup/configuration with operation. The next slice is the owner finance overview/register.
+- Results — route exists; browser verification pending.
+- Reports — pending verification.
+- Announcements — pending verification.
+- Staff & Teachers — pending verification.
+- Parents — pending verification.
+- Subjects & Setup — pending verification.
+- School Settings — pending verification.
+- Applications — pending verification.
+- Users & Roles — pending verification.
+- Audit History — pending verification.
+
+A sidebar item is not complete merely because its file exists. Browser/runtime verification is required.
+
+### Fees & Payments handoff
+The intended owner surface, based on the demo, is a finance register/overview with collected amount, outstanding amount, invoice count, All/Outstanding/Paid views, invoice, student, fee, amount, paid, balance and operational payment actions.
+
+Do not create duplicate finance models or business logic. Existing App-School finance records and services remain authoritative. Existing setup, invoice, payment, balance, receipt and audit screens remain available separately.
+
+### Completion discipline
+After each narrow owner slice: verify the exact route in the browser, verify school-scoped data, verify important actions against existing backend/domain paths, run typecheck/focused tests, update this handoff, commit, then move to the next slice.
+
+This checkpoint supersedes older broad owner-navigation wording. The work is deliberately incremental and evidence-driven.
