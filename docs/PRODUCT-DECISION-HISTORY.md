@@ -791,3 +791,74 @@ A route/file existing is not sufficient evidence of completion.
 Build and verify one owner sidebar slice at a time: inspect reference → inspect current App-School → identify smallest missing behavior → reuse existing backend/domain logic → implement frontend slice → typecheck/test → browser verification → record status → next item.
 
 This decision is durable handoff guidance for future developers and AI agents.
+
+
+## 23. School Settings is the extensible control plane — 20 Sep 2026
+
+### Decision
+
+**School Settings / Setup is the authoritative control plane for school configuration. School Operations is the daily working plane.**
+
+A school is configured once during initial setup and can be reconfigured by the owner/admin later. The operational sidebar then represents the school's actual day-to-day work.
+
+```text
+SCHOOL SETTINGS
+     │
+     ├── Backend / Control Plane
+     │     ├── Academic sessions & terms
+     │     ├── Classes / class arms
+     │     ├── Subjects
+     │     ├── Fee structures
+     │     ├── Assessment definitions
+     │     ├── Staff & roles
+     │     ├── Parent access
+     │     ├── Modules
+     │     └── Other school configuration
+     │
+     └── SCHOOL OPERATIONS
+           ├── Dashboard
+           ├── Students
+           ├── Classes
+           ├── Attendance
+           ├── Fees & Payments
+           ├── Results
+           ├── Reports
+           ├── Announcements
+           ├── Staff & Teachers
+           ├── Parents
+           ├── Applications
+           ├── Users & Roles
+           └── Audit History
+```
+
+This is a product responsibility boundary, not a requirement to physically move every domain service into a settings directory.
+
+### Future module decision
+
+School Settings must remain extensible because App-School will gain new reusable modules over time.
+
+For every future module:
+
+```text
+New module
+   ↓
+Owner sees module in School Settings
+   ↓
+Owner enables/configures it
+   ↓
+Server enforces module state + capability
+   ↓
+Operational frontend becomes available
+```
+
+Only the school owner controls module enablement. Staff permissions/capabilities are separate. Turning a module off changes availability but does not delete historical records.
+
+### Product consequence
+
+The owner sidebar must remain an operational surface. Configuration forms should live in Settings/Setup even when the same underlying domain is used by an operational page.
+
+This prevents the product from becoming a collection of setup screens disguised as daily school software and gives future modules a stable place to plug into the platform.
+
+### Handoff rule
+
+A developer or AI agent adding a new module must first identify its Settings/control-plane requirements and then its operational workflow. Do not implement only a frontend route and call the module complete. Completion requires the configuration boundary, authoritative backend records, authorization/module enforcement, operational frontend and runtime verification to agree.
