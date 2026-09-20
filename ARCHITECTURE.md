@@ -171,3 +171,83 @@ For finance specifically, fee configuration and payment-provider setup are confi
 A route being present is not proof that the feature is complete. Runtime verification must establish that the owner route opens, membership and capability/module checks remain enforced, displayed data is school-scoped, important actions use the existing domain/API path, and resulting state returns to the operational frontend.
 
 This keeps frontend parity work separate from backend/domain completion.
+
+
+## Core boundary: School Settings control plane vs operational frontend — 20 Sep 2026
+
+App-School has a durable two-layer product boundary.
+
+### 1. School Settings / Setup — control plane
+
+Settings owns school configuration and administration. It is the place where an owner establishes the school's operational foundation and later changes that configuration.
+
+Typical configuration domains include:
+
+- AcademicSession / AcademicTerm
+- ClassLevel / ClassArm
+- Subject / class-subject configuration
+- FeeStructure and finance configuration
+- AssessmentDefinition
+- Staff / role / capability configuration
+- Parent access configuration
+- School module enablement
+- Future module-specific configuration
+
+This does not require moving all domain services into a settings folder. The boundary is a product responsibility and authorization boundary; existing domain services remain reusable.
+
+### 2. School Operations — operational plane
+
+Operational pages consume the configured school state:
+
+```text
+Settings / Setup
+      ↓
+authoritative school records
+      ↓
+operational frontend
+      ↓
+real school work
+```
+
+Examples:
+
+- Setup configures class levels/arms → Classes shows current classes and enrolled students.
+- Setup defines fees → Fees & Payments shows obligations, collections, balances and receipts.
+- Setup defines assessments → Results captures/reviews/submits/approves results.
+- Settings configures staff capabilities → Staff/Teachers uses those authorized relationships operationally.
+
+An operational page must not become a setup page merely because it can write the same underlying records.
+
+### Future module extensibility
+
+School Settings is the stable control plane for future modules:
+
+```text
+New reusable module
+       ↓
+module definition + domain services
+       ↓
+School Settings
+       ↓
+owner enables/configures
+       ↓
+capability + module enforcement
+       ↓
+operational module surface
+```
+
+The owner controls module enablement. Module state and staff capability remain distinct. Historical data survives module disablement.
+
+### Architectural test for new work
+
+Before adding a new module, answer:
+
+1. What does the owner configure?
+2. Where is that configuration stored authoritatively?
+3. Which operational records consume it?
+4. Which users can operate it?
+5. Which capability and module checks protect it?
+6. What happens when the module is disabled?
+7. What historical records must remain available?
+
+This prevents future modules from mixing onboarding/configuration UI with daily operational UI.
