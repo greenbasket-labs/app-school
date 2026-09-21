@@ -77,6 +77,24 @@ async function seedTeacherScenario() {
       },
     });
 
+    const studentsModule = await tx.module.findUnique({
+      where: { code: "STUDENTS" },
+      select: { id: true },
+    });
+
+    if (!studentsModule) {
+      throw new Error("Required E2E Students module is missing.");
+    }
+
+    await tx.schoolModule.create({
+      data: {
+        schoolId: school.id,
+        moduleId: studentsModule.id,
+        enabled: true,
+        enabledAt: new Date(),
+      },
+    });
+
     return {
       teacherId: teacher.id,
       schoolId: school.id,
