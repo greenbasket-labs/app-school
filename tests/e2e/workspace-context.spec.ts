@@ -205,7 +205,7 @@ test.describe("school workspace context", () => {
     await page.getByText("Open school →").click();
 
     await expect(
-      page.getByRole("heading", { name: fixture.schoolId ? /E2E School/ : /.*/ }),
+      page.getByRole("heading", { name: /E2E School/ }),
     ).toBeVisible();
 
     await expect(
