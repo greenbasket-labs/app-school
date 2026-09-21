@@ -142,18 +142,16 @@ export default function TeacherAssignmentsSettings({ schoolId, canManage }: { sc
           {(sessions.find((session) => session.id === sessionId)?.terms ?? []).map((term) => <option key={term.id} value={term.id}>{term.name}</option>)}
         </select>
       </label>
-      <label style={field}>Class
-        <select value={classArmId} onChange={(e) => setClassArmId(e.target.value)} style={input}>
-          <option value="">Select class</option>
-          {arms.map((arm) => <option key={arm.id} value={arm.id}>{arm.classLevelName} {arm.name}</option>)}
-        </select>
-      </label>
-      <label style={field}>Subject
-        <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} disabled={!classArmId || !sessionId} style={input}>
-          <option value="">{classArmId && sessionId ? "Select subject configured for this class" : "Select class and session first"}</option>
-          {allowedSubjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}{subject.code ? ` · ${subject.code}` : ""}</option>)}
-        </select>
-      </label>
+      <label style={field} htmlFor="teacher-assignment-class">Class</label>
+      <select id="teacher-assignment-class" aria-label="Class" value={classArmId} onChange={(e) => setClassArmId(e.target.value)} style={input}>
+        <option value="">Select class</option>
+        {arms.map((arm) => <option key={arm.id} value={arm.id}>{arm.classLevelName} {arm.name}</option>)}
+      </select>
+      <label style={field} htmlFor="teacher-assignment-subject">Subject</label>
+      <select id="teacher-assignment-subject" aria-label="Subject" value={subjectId} onChange={(e) => setSubjectId(e.target.value)} disabled={!classArmId || !sessionId} style={input}>
+        <option value="">{classArmId && sessionId ? "Select subject configured for this class" : "Select class and session first"}</option>
+        {allowedSubjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}{subject.code ? ` · ${subject.code}` : ""}</option>)}
+      </select>
       <button type="button" disabled={busy || !teacherId || !sessionId || !termId || !classArmId || !subjectId} onClick={() => void createAssignment()} style={button}>{busy ? "Saving…" : "Create assignment"}</button>
     </div>
 
