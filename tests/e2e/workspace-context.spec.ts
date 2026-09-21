@@ -401,16 +401,22 @@ test.describe("school workspace context", () => {
     await expect(page.getByRole("status")).toHaveText("Teacher assignment created.");
     await expect(page.getByText(/JSS 1 A · Mathematics/)).toBeVisible();
 
-    const ended = await db.teacherAssignment.findFirst({
+    const assignments = await db.teacherAssignment.findMany({
       where: { schoolId: fixture.schoolId },
-      orderBy: { createdAt: "desc" },
-      select: { status: true, endedAt: true, id: true },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, status: true, endedAt: true, createdAt: true },
     });
-    expect(ended?.status).toBe("ENDED");
-    expect(ended?.endedAt).not.toBeNull();
+    expect(assignments).toHaveLength(2);
+
+    const originalAssignment = assignments[0];
+    const recreatedAssignment = assignments[1];
+    expect(originalAssignment.status).toBe("ENDED");
+    expect(originalAssignment.endedAt).not.toBeNull();
+    expect(recreatedAssignment.status).toBe("ACTIVE");
+    expect(recreatedAssignment.endedAt).toBeNull();
 
     const audit = await db.auditEvent.findFirst({
-      where: { schoolId: fixture.schoolId, action: "teacher.assignment.ended", entityId: ended?.id },
+      where: { schoolId: fixture.schoolId, action: "teacher.assignment.ended", entityId: originalAssignment.id },
       select: { actorUserId: true, action: true },
     });
     expect(audit?.actorUserId).toBe(fixture.ownerId);
