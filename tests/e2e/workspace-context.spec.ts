@@ -203,6 +203,34 @@ test.describe("school workspace context", () => {
         where: { schoolId: { in: schoolIds } },
       });
 
+      await db.classSubject.deleteMany({
+        where: { academicSession: { schoolId: { in: schoolIds } } },
+      });
+
+      await db.academicTerm.deleteMany({
+        where: { academicSession: { schoolId: { in: schoolIds } } },
+      });
+
+      await db.academicSession.deleteMany({
+        where: { schoolId: { in: schoolIds } },
+      });
+
+      await db.classArm.deleteMany({
+        where: { classLevel: { schoolId: { in: schoolIds } } },
+      });
+
+      await db.classLevel.deleteMany({
+        where: { schoolId: { in: schoolIds } },
+      });
+
+      await db.subject.deleteMany({
+        where: { schoolId: { in: schoolIds } },
+      });
+
+      await db.schoolModule.deleteMany({
+        where: { schoolId: { in: schoolIds } },
+      });
+
       const memberships = await db.membership.findMany({
         where: { schoolId: { in: schoolIds } },
         select: { id: true, userId: true },
