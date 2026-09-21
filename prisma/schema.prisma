@@ -152,7 +152,6 @@ model School {
   teacherAssignments TeacherAssignment[]
   assessmentScores AssessmentScore[]
   feeStructures FeeStructure[]
-  teacherAssignments TeacherAssignment[]
   guardianNotificationPreferences GuardianNotificationPreference[]
   guardianNotificationRecipients GuardianNotificationRecipient[]
   notifications Notification[]
@@ -204,7 +203,6 @@ model AcademicSession {
   assessments AssessmentDefinition[]
   assessmentScores AssessmentScore[]
   feeStructures FeeStructure[]
-  teacherAssignments TeacherAssignment[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([schoolId, name])
