@@ -168,6 +168,10 @@ test.describe("school workspace context", () => {
     }
 
     if (organizationIds.length) {
+      await db.organizationIdentity.deleteMany({
+        where: { organizationId: { in: organizationIds } },
+      });
+
       await db.organization.deleteMany({
         where: { id: { in: organizationIds } },
       });
