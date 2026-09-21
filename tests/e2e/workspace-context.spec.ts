@@ -362,6 +362,15 @@ test.describe("school workspace context", () => {
     await expect(page.getByRole("status")).toHaveText("Teacher assignment ended.");
     await expect(page.getByText("No active assignments.")).toBeVisible();
 
+    await page.getByLabel("Teacher").selectOption({ label: /e2e-teacher-/ });
+    await page.getByLabel("Academic session").selectOption({ label: /2026\/2027 E2E Session/ });
+    await page.getByLabel("Academic term").selectOption({ label: "First Term" });
+    await page.getByLabel("Class").selectOption({ label: "JSS 1 A" });
+    await page.getByLabel("Subject").selectOption({ label: /Mathematics/ });
+    await page.getByRole("button", { name: "Create assignment" }).click();
+    await expect(page.getByRole("status")).toHaveText("Teacher assignment created.");
+    await expect(page.getByText(/JSS 1 A · Mathematics/)).toBeVisible();
+
     const ended = await db.teacherAssignment.findFirst({
       where: { schoolId: fixture.schoolId },
       orderBy: { createdAt: "desc" },
@@ -394,7 +403,6 @@ test.describe("school workspace context", () => {
 
     const response = await page.request.get(`/api/schools/${fixture.schoolId}/teacher-assignments`);
     expect(response.status()).toBe(403);
-    await expect(page.getByText("")).toHaveCount(0);
   });
 
 });
