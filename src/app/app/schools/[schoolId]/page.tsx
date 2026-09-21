@@ -37,11 +37,11 @@ export default async function SchoolWorkspacePage({ params }: { params: Promise<
       <div style={{ marginTop: 24, background: "white", borderRadius: 20, padding: 32, boxShadow: "0 8px 28px rgba(0,0,0,.05)" }}>
         <p style={{ margin: 0, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", fontSize: 13 }}>School workspace</p>
         <h1 style={{ margin: "10px 0 8px", fontSize: 36 }}>{membership.school.name}</h1>
-        <p style={{ color: "#53615a", lineHeight: 1.6 }}>School identity and access are established first. Operational workflows sit behind the same school boundary.</p>
+        <p style={{ color: "#53615a", lineHeight: 1.6 }}>{membership.isOwner ? "You own this school. Owner controls are separate from the capabilities granted to other school relationships." : "You are connected to this school as " + membership.relationship.toLowerCase() + ". Your workspace is limited to the capabilities granted by the school."}</p>
         <div style={{ marginTop: 28, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
           <div style={{ border: "1px solid #e0e6e2", borderRadius: 12, padding: 16 }}><strong>School status</strong><div style={{ marginTop: 6 }}>{membership.school.status}</div></div>
           <div style={{ border: "1px solid #e0e6e2", borderRadius: 12, padding: 16 }}><strong>Setup status</strong><div style={{ marginTop: 6 }}>{membership.school.setupStatus.replaceAll("_", " ").toLowerCase()}</div></div>
-          <div style={{ border: "1px solid #e0e6e2", borderRadius: 12, padding: 16 }}><strong>School management</strong><div style={{ marginTop: 6 }}>{canManageSchool ? "Allowed" : "Not allowed"}</div></div>
+          <div style={{ border: "1px solid #e0e6e2", borderRadius: 12, padding: 16 }}><strong>Your relationship</strong><div style={{ marginTop: 6 }}>{membership.isOwner ? "OWNER" : membership.relationship}</div></div>
         </div>
 
         <Link href={`/app/schools/${schoolId}/dashboard`} style={cardLink}><strong>Operational dashboard →</strong><p style={sub}>See the current school operating picture at a glance.</p></Link>
