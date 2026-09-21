@@ -16,6 +16,10 @@ export default function RegisterPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
     setBusy(true);
 
     try {
@@ -25,7 +29,10 @@ export default function RegisterPage() {
         body: JSON.stringify({ ...form, organizationName: form.schoolName, cacNumber: "" }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message ?? "Registration failed.");
+      if (!response.ok) {
+        const validationMessage = data.issues?.[0]?.message;
+        throw new Error(data.message ?? validationMessage ?? "Registration failed. Please check your details and try again.");
+      }
       router.push("/login");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed.");
