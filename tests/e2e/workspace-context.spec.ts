@@ -423,6 +423,64 @@ test.describe("school workspace context", () => {
     expect(audit?.action).toBe("teacher.assignment.ended");
   });
 
+  test("owner can create, reject duplicate and end a class teacher responsibility", async ({ page }) => {
+    const fixture = await seedTeacherScenario();
+    const sessionToken = await createBrowserSession(fixture.ownerId);
+    await page.context().addCookies([{ name: "gb_school_session", value: sessionToken, url: "http://127.0.0.1:3000", httpOnly: true, sameSite: "Lax" }]);
+
+    await page.goto(`/app/schools/${fixture.schoolId}/settings`);
+    page.on("dialog", async (dialog) => { await dialog.accept(); });
+
+    await expect(page.getByRole("heading", { name: "Class teacher responsibilities" })).toBeVisible();
+    await page.getByLabel("Teacher").last().selectOption({ index: 1 });
+    await page.getByLabel("Academic session").last().selectOption({ index: 1 });
+    await page.getByLabel("Academic term").last().selectOption({ label: "First Term" });
+    await page.getByLabel("Class teacher class").selectOption({ label: "JSS 1 A" });
+    await page.getByRole("button", { name: "Assign class teacher" }).click();
+    await expect(page.getByRole("status")).toHaveText("Class teacher responsibility created.");
+    const row = page.locator('[data-testid^="class-teacher-row-"]').first();
+    await expect(row).toContainText("JSS 1 A");
+    await expect(row).toContainText("First Term");
+
+    await page.getByLabel("Teacher").last().selectOption({ index: 1 });
+    await page.getByLabel("Academic session").last().selectOption({ index: 1 });
+    await page.getByLabel("Academic term").last().selectOption({ label: "First Term" });
+    await page.getByLabel("Class teacher class").selectOption({ label: "JSS 1 A" });
+    await page.getByRole("button", { name: "Assign class teacher" }).click();
+    await expect(page.getByRole("alert")).toContainText(/already class teacher|already has an active class teacher/i);
+
+    const responsibilityId = await row.getAttribute("data-testid");
+    expect(responsibilityId).toMatch(/^class-teacher-row-/);
+    await row.getByRole("button", { name: "End responsibility" }).click();
+    await expect(page.getByRole("status")).toHaveText("Class teacher responsibility ended.");
+    await expect(page.locator('[data-testid^="class-teacher-row-"]')).toHaveCount(0);
+
+    const records = await db.classTeacherResponsibility.findMany({
+      where: { schoolId: fixture.schoolId },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, status: true, endedAt: true },
+    });
+    expect(records).toHaveLength(1);
+    expect(records[0].status).toBe("ENDED");
+    expect(records[0].endedAt).not.toBeNull();
+
+    const audit = await db.auditEvent.findFirst({
+      where: { schoolId: fixture.schoolId, action: "teacher.class_responsibility.ended", entityId: records[0].id },
+      select: { actorUserId: true, action: true },
+    });
+    expect(audit?.actorUserId).toBe(fixture.ownerId);
+    expect(audit?.action).toBe("teacher.class_responsibility.ended");
+  });
+
+  test("teacher cannot use owner class-teacher responsibility management API", async ({ page }) => {
+    const fixture = await seedTeacherScenario();
+    const sessionToken = await createBrowserSession(fixture.teacherId);
+    await page.context().addCookies([{ name: "gb_school_session", value: sessionToken, url: "http://127.0.0.1:3000", httpOnly: true, sameSite: "Lax" }]);
+
+    const response = await page.request.get(`/api/schools/${fixture.schoolId}/class-teacher-responsibilities`);
+    expect(response.status()).toBe(403);
+  });
+
   test("teacher cannot use owner teacher-assignment management API", async ({ page }) => {
     const fixture = await seedTeacherScenario();
     const sessionToken = await createBrowserSession(fixture.teacherId);
