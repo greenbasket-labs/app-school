@@ -205,11 +205,27 @@ test.describe("school workspace context", () => {
     await page.getByText("Open school →").click();
 
     await expect(
-      page.getByText(/connected to this school as teacher/i),
+      page.getByRole("heading", { name: fixture.schoolId ? /E2E School/ : /.*/ }),
     ).toBeVisible();
+
+    await expect(
+      page.getByText("Teacher workspace", { exact: true }),
+    ).toBeVisible();
+
+    await expect(
+      page.getByText(/connected to this school as teacher/i),
+    ).toHaveCount(0);
 
     await expect(
       page.getByText("Settings & modules →"),
     ).toHaveCount(0);
+
+    await expect(
+      page.getByText("Teacher access", { exact: true }),
+    ).toBeVisible();
+
+    await expect(
+      page.getByText("Students →", { exact: true }),
+    ).toBeVisible();
   });
 });
