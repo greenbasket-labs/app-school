@@ -41,7 +41,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ sch
           user: { select: { email: true } },
           teacherAssignments: {
             where: { status: "ACTIVE" },
-            orderBy: [{ academicSession: { startsAt: "desc" } }, { academicTerm: { order: "asc" } }],
+            orderBy: { createdAt: "desc" },
             select: {
               id: true,
               academicSession: { select: { id: true, name: true } },
