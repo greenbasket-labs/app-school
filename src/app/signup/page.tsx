@@ -40,8 +40,7 @@ export default function SignupPage() {
     <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
       <form onSubmit={submit} style={{ width: "100%", maxWidth: 440, background: "white", borderRadius: 20, padding: 32, boxShadow: "0 12px 40px rgba(0,0,0,.08)" }}>
         <p style={{ margin: 0, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", fontSize: 13 }}>SkulGo</p>
-        <h1 style={{ margin: "12px 0 8px", fontSize: 32 }}>Create your account</h1>
-        <p style={{ color: "#53615a", lineHeight: 1.5 }}>Create your personal SkulGo account first. You can join a school after signing in.</p>
+        <h1 style={{ margin: "12px 0 8px", fontSize: 32 }}>Create account</h1>
 
         <label style={{ display: "block", marginTop: 24, fontWeight: 700 }}>
           Email
@@ -61,7 +60,7 @@ export default function SignupPage() {
         {error && <p role="alert" style={{ color: "#a32929", marginTop: 16 }}>{error}</p>}
 
         <button disabled={busy} type="submit" style={{ width: "100%", marginTop: 24, padding: 13, border: 0, borderRadius: 10, background: "#173d2a", color: "white", fontWeight: 700, cursor: busy ? "wait" : "pointer" }}>
-          {busy ? "Creating account…" : "Create SkulGo account"}
+          {busy ? "Creating account…" : "Create account"}
         </button>
 
         <p style={{ marginTop: 20, color: "#53615a", textAlign: "center" }}>
