@@ -160,10 +160,10 @@ export default function TeacherAssignmentsSettings({ schoolId, canManage }: { sc
     <div style={{ marginTop: 28 }}>
       <h3 style={{ marginBottom: 8 }}>Active assignments</h3>
       {teachers.length === 0 ? <p style={sub}>No active teachers are currently connected to this school.</p> : teachers.map((teacher) => (
-        <div key={teacher.id} style={teacherCard}>
+        <div key={teacher.id} data-testid={`teacher-assignment-${teacher.id}`} style={teacherCard}>
           <strong>{teacher.user.email}</strong>
           {teacher.teacherAssignments.length === 0 ? <p style={sub}>No active assignments.</p> : teacher.teacherAssignments.map((assignment) => (
-            <div key={assignment.id} style={assignmentCard}>
+            <div key={assignment.id} data-testid={`teacher-assignment-row-${assignment.id}`} style={assignmentCard}>
               <div><strong>{assignment.classArm.classLevel.name} {assignment.classArm.name} · {assignment.subject.name}</strong><div style={sub}>{assignment.academicSession.name} · {assignment.academicTerm.name}</div></div>
               <button type="button" disabled={busy} onClick={() => void endAssignment(assignment.id)} style={endButton}>End assignment</button>
             </div>
