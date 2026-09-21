@@ -394,7 +394,9 @@ test.describe("school workspace context", () => {
     await page.getByLabel("Academic session").selectOption(sessionOption!);
     await page.getByLabel("Academic term").selectOption({ label: "First Term" });
     await page.getByLabel("Class").selectOption({ label: "JSS 1 A" });
-    await page.getByLabel("Subject").selectOption({ label: /Mathematics/ });
+    const subjectOption = await page.getByLabel("Subject").locator("option").filter({ hasText: "Mathematics" }).first().getAttribute("value");
+    expect(subjectOption).toBeTruthy();
+    await page.getByLabel("Subject").selectOption(subjectOption!);
     await page.getByRole("button", { name: "Create assignment" }).click();
     await expect(page.getByRole("status")).toHaveText("Teacher assignment created.");
     await expect(page.getByText(/JSS 1 A · Mathematics/)).toBeVisible();
