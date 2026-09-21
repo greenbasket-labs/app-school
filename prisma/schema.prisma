@@ -534,7 +534,6 @@ model ClassTeacherResponsibility {
   @@index([schoolId, membershipId, status])
   @@index([schoolId, academicSessionId, academicTermId, classArmId, status])
   @@index([membershipId, academicSessionId, academicTermId, status])
-  @@unique([schoolId, academicSessionId, academicTermId, classArmId, status])
 }
 
 model SchoolJoinRequest {
