@@ -8,6 +8,7 @@ import StaffSettings from "./staff";
 import SchoolProfileSettings from "./profile";
 import PaymentProviderSettings from "./payment-providers";
 import TeacherAssignmentsSettings from "./teacher-assignments";
+import ClassTeacherResponsibilitiesSettings from "./class-teacher-responsibilities";
 
 export default async function SchoolSettingsPage({ params }: { params: Promise<{ schoolId: string }> }) {
   const session = await currentSession();
@@ -29,6 +30,7 @@ export default async function SchoolSettingsPage({ params }: { params: Promise<{
         <SessionSettings schoolId={schoolId} canManage={membership.isOwner} />
         <StaffSettings schoolId={schoolId} canManage={membership.isOwner} />
         <TeacherAssignmentsSettings schoolId={schoolId} canManage={membership.isOwner} />
+        <ClassTeacherResponsibilitiesSettings schoolId={schoolId} canManage={membership.isOwner} />
         <PaymentProviderSettings schoolId={schoolId} canManage={membership.isOwner} />
         <ModuleSettings schoolId={schoolId} canManage={membership.isOwner} />
       </div>
