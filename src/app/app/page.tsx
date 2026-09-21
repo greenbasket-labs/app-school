@@ -3,6 +3,10 @@ import { redirect } from "next/navigation";
 import { currentSession } from "@/domain/auth/session-cookie";
 import { db } from "@/lib/db";
 
+function formatRelationship(relationship: string) {
+  return relationship.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export default async function AppHomePage() {
   const session = await currentSession();
   if (!session) redirect("/login");
@@ -11,12 +15,12 @@ export default async function AppHomePage() {
     where: { userId: session.user.id, status: "ACTIVE" },
     select: {
       schoolId: true,
+      relationship: true,
+      isOwner: true,
       school: { select: { id: true, name: true, status: true, setupStatus: true } },
     },
     orderBy: { createdAt: "asc" },
   });
-
-  if (memberships.length === 1) redirect(`/app/schools/${memberships[0].schoolId}`);
 
   return (
     <main style={{ minHeight: "100vh", padding: 32 }}>
@@ -25,7 +29,7 @@ export default async function AppHomePage() {
           <div>
             <p style={{ margin: 0, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", fontSize: 13 }}>SkulGo account</p>
             <h1 style={{ margin: "10px 0 6px", fontSize: 36 }}>
-              {memberships.length === 0 ? "Welcome to SkulGo" : "Choose your school"}
+              {memberships.length === 0 ? "Welcome to SkulGo" : "Your schools"}
             </h1>
             <p style={{ margin: 0, color: "#53615a" }}>{session.user.email}</p>
           </div>
@@ -50,17 +54,25 @@ export default async function AppHomePage() {
         ) : (
           <section style={{ marginTop: 32, display: "grid", gap: 16 }}>
             <p style={{ margin: 0, color: "#53615a" }}>Select the school workspace you want to open.</p>
-            {memberships.map(({ school }) => (
-              <Link key={school.id} href={`/app/schools/${school.id}`} style={{ display: "block", background: "white", borderRadius: 16, padding: 24, color: "inherit", textDecoration: "none", boxShadow: "0 8px 24px rgba(0,0,0,.05)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
-                  <div>
-                    <h2 style={{ margin: 0, fontSize: 22 }}>{school.name}</h2>
-                    <p style={{ margin: "8px 0 0", color: "#53615a" }}>Setup: {school.setupStatus.replaceAll("_", " ").toLowerCase()}</p>
+            {memberships.map(({ school, relationship, isOwner }) => {
+              const relationshipLabel = isOwner ? "Owner / Principal" : formatRelationship(relationship);
+
+              return (
+                <Link key={school.id} href={`/app/schools/${school.id}`} style={{ display: "block", background: "white", borderRadius: 16, padding: 24, color: "inherit", textDecoration: "none", boxShadow: "0 8px 24px rgba(0,0,0,.05)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 20, flexWrap: "wrap" }}>
+                    <div>
+                      <h2 style={{ margin: 0, fontSize: 22 }}>{school.name}</h2>
+                      <p style={{ margin: "8px 0 0", color: "#53615a", fontWeight: 600 }}>{relationshipLabel}</p>
+                      <p style={{ margin: "8px 0 0", color: "#53615a" }}>Setup: {school.setupStatus.replaceAll("_", " ").toLowerCase()}</p>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
+                      <span style={{ fontWeight: 700 }}>{school.status}</span>
+                      <span style={{ fontWeight: 700 }}>Open school →</span>
+                    </div>
                   </div>
-                  <span style={{ fontWeight: 700 }}>{school.status}</span>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </section>
         )}
       </div>

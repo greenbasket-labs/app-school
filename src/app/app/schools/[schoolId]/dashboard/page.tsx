@@ -12,7 +12,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ scho
   const { schoolId } = await params;
   const membership = await db.membership.findFirst({
     where: { userId: session.user.id, schoolId, status: "ACTIVE" },
-    select: { school: { select: { name: true } }, capabilities: { select: { capability: { select: { code: true } } } } },
+    select: { relationship: true, school: { select: { name: true } }, capabilities: { select: { capability: { select: { code: true } } } } },
   });
   if (!membership) redirect("/app");
   const canViewReports = membership.capabilities.some(({ capability }) => capability.code === CAPABILITIES.VIEW_ATTENDANCE);
@@ -23,7 +23,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ scho
     <main style={{ minHeight: "100vh", padding: 32 }}><div style={{ maxWidth: 1000, margin: "0 auto" }}>
       <Link href={`/app/schools/${schoolId}/reports`} style={{ color: "#53615a" }}>← Reports</Link>
       <h1 style={{ marginTop: 24 }}>Operational dashboard</h1>
-      <p style={{ color: "#53615a" }}>{membership.school.name} · current recorded state</p>
+      <p style={{ color: "#53615a" }}>{membership.school.name} · {membership.relationship.toLowerCase()} · current recorded state</p>
       <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
         {[
           ["Active students", summary.activeStudents],
