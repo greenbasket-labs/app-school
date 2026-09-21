@@ -1,9 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { CAPABILITIES } from "@/domain/auth/capabilities";
-import { currentSession } from "@/domain/auth/session-cookie";
-import { db } from "@/lib/db";
-import { getSchoolModules } from "@/domain/modules/service";
 
 export default async function TeacherWorkspacePage({ schoolId, schoolName, capabilities, enabledModules }: {
   schoolId: string;
