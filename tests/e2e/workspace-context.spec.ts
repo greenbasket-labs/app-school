@@ -386,8 +386,12 @@ test.describe("school workspace context", () => {
     await expect(page.getByRole("status")).toHaveText("Teacher assignment ended.");
     await expect(page.locator('[data-testid^="teacher-assignment-row-"]')).toHaveCount(0);
 
-    await page.getByLabel("Teacher").selectOption({ label: /e2e-teacher-/ });
-    await page.getByLabel("Academic session").selectOption({ label: /2026\/2027 E2E Session/ });
+    const teacherOption = await page.getByLabel("Teacher").locator("option").filter({ hasText: "e2e-teacher-" }).first().getAttribute("value");
+    const sessionOption = await page.getByLabel("Academic session").locator("option").filter({ hasText: "2026/2027 E2E Session" }).first().getAttribute("value");
+    expect(teacherOption).toBeTruthy();
+    expect(sessionOption).toBeTruthy();
+    await page.getByLabel("Teacher").selectOption(teacherOption!);
+    await page.getByLabel("Academic session").selectOption(sessionOption!);
     await page.getByLabel("Academic term").selectOption({ label: "First Term" });
     await page.getByLabel("Class").selectOption({ label: "JSS 1 A" });
     await page.getByLabel("Subject").selectOption({ label: /Mathematics/ });
