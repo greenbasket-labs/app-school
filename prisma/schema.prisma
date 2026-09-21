@@ -79,6 +79,11 @@ enum TeacherAssignmentStatus {
   ENDED
 }
 
+enum ClassTeacherResponsibilityStatus {
+  ACTIVE
+  ENDED
+}
+
 enum AttendanceStatus {
   PRESENT
   ABSENT
@@ -150,6 +155,7 @@ model School {
   attendanceRecords AttendanceRecord[]
   assessments AssessmentDefinition[]
   teacherAssignments TeacherAssignment[]
+  classTeacherResponsibilities ClassTeacherResponsibility[]
   assessmentScores AssessmentScore[]
   feeStructures FeeStructure[]
   guardianNotificationPreferences GuardianNotificationPreference[]
@@ -198,6 +204,7 @@ model AcademicSession {
   terms AcademicTerm[]
   classSubjects ClassSubject[]
   teacherAssignments TeacherAssignment[]
+  classTeacherResponsibilities ClassTeacherResponsibility[]
   enrollments Enrollment[]
   attendanceRecords AttendanceRecord[]
   assessments AssessmentDefinition[]
@@ -220,6 +227,7 @@ model AcademicTerm {
   assessments AssessmentDefinition[]
   feeStructures FeeStructure[]
   teacherAssignments TeacherAssignment[]
+  classTeacherResponsibilities ClassTeacherResponsibility[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([academicSessionId, order])
@@ -473,6 +481,7 @@ model Membership {
   school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   capabilities MembershipCapability[]
   teacherAssignments TeacherAssignment[]
+  classTeacherResponsibilities ClassTeacherResponsibility[]
   notificationRecipients NotificationRecipient[]
   notificationPreference NotificationPreference?
   createdAt DateTime @default(now()) @db.Timestamptz(6)
@@ -504,6 +513,27 @@ model TeacherAssignment {
   @@index([schoolId, membershipId, status])
   @@index([schoolId, academicSessionId, academicTermId, classArmId, subjectId])
   @@index([membershipId, academicSessionId, academicTermId])
+}
+
+model ClassTeacherResponsibility {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  membershipId String @db.Uuid
+  academicSessionId String @db.Uuid
+  academicTermId String @db.Uuid
+  classArmId String @db.Uuid
+  status ClassTeacherResponsibilityStatus @default(ACTIVE)
+  endedAt DateTime? @db.Timestamptz(6)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+  academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Restrict)
+  academicTerm AcademicTerm @relation(fields: [academicTermId], references: [id], onDelete: Restrict)
+  classArm ClassArm @relation(fields: [classArmId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  @@index([schoolId, membershipId, status])
+  @@index([schoolId, academicSessionId, academicTermId, classArmId, status])
+  @@index([membershipId, academicSessionId, academicTermId, status])
 }
 
 model SchoolJoinRequest {
