@@ -40,13 +40,31 @@ async function seedTeacherScenario() {
       },
     });
 
-    await tx.membership.create({
+    const ownerMembership = await tx.membership.create({
       data: {
         userId: owner.id,
         organizationId: organization.id,
         schoolId: school.id,
         isOwner: true,
         relationship: "OWNER",
+      },
+    });
+
+    const manageSchoolCapability = await tx.capability.upsert({
+      where: { code: "SCHOOL.MANAGE" },
+      update: {},
+      create: {
+        code: "SCHOOL.MANAGE",
+        description: "E2E school management capability",
+      },
+      select: { id: true },
+    });
+
+    await tx.membershipCapability.create({
+      data: {
+        membershipId: ownerMembership.id,
+        capabilityId: manageSchoolCapability.id,
+        schoolId: school.id,
       },
     });
 
