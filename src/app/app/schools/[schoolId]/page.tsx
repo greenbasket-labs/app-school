@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { CAPABILITIES } from "@/domain/auth/capabilities";
 import { currentSession } from "@/domain/auth/session-cookie";
 import { getSchoolModules } from "@/domain/modules/service";
+import { getActiveTeacherAssignments } from "@/domain/teacher-assignments/service";
 import { db } from "@/lib/db";
 import TeacherWorkspacePage from "./teacher-workspace";
 
@@ -17,7 +18,8 @@ export default async function SchoolWorkspacePage({ params }: { params: Promise<
   if (!membership.isOwner && membership.relationship === "TEACHER") {
     const modules = await getSchoolModules(schoolId);
     const enabledModules = new Set(modules.filter((module) => module.enabled).map((module) => module.code));
-    return <TeacherWorkspacePage schoolId={schoolId} schoolName={membership.school.name} capabilities={capabilitySet} enabledModules={enabledModules} />;
+    const assignments = await getActiveTeacherAssignments({ schoolId, userId: session.user.id });
+    return <TeacherWorkspacePage schoolId={schoolId} schoolName={membership.school.name} capabilities={capabilitySet} enabledModules={enabledModules} assignments={assignments} />;
   }
 
   const canManageSchool = capabilitySet.has(CAPABILITIES.MANAGE_SCHOOL);
