@@ -194,6 +194,10 @@ test.describe("school workspace context", () => {
         where: { schoolId: { in: schoolIds } },
       });
 
+      await db.teacherAssignment.deleteMany({
+        where: { schoolId: { in: schoolIds } },
+      });
+
       const memberships = await db.membership.findMany({
         where: { schoolId: { in: schoolIds } },
         select: { id: true, userId: true },
