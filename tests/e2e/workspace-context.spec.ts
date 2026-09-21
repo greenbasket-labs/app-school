@@ -60,14 +60,15 @@ async function seedTeacherScenario() {
       },
     });
 
-    const capability = await tx.capability.findUnique({
+    const capability = await tx.capability.upsert({
       where: { code: "STUDENTS.VIEW" },
+      update: {},
+      create: {
+        code: "STUDENTS.VIEW",
+        description: "E2E Students view capability",
+      },
       select: { id: true },
     });
-
-    if (!capability) {
-      throw new Error("Required E2E capability is missing.");
-    }
 
     await tx.membershipCapability.create({
       data: {
@@ -77,14 +78,18 @@ async function seedTeacherScenario() {
       },
     });
 
-    const studentsModule = await tx.module.findUnique({
+    const studentsModule = await tx.module.upsert({
       where: { code: "STUDENTS" },
+      update: {},
+      create: {
+        code: "STUDENTS",
+        name: "Students",
+        description: "E2E student records module",
+        category: "Core",
+        sortOrder: 20,
+      },
       select: { id: true },
     });
-
-    if (!studentsModule) {
-      throw new Error("Required E2E Students module is missing.");
-    }
 
     await tx.schoolModule.create({
       data: {
