@@ -95,6 +95,56 @@ async function seedTeacherScenario() {
       },
     });
 
+    const academicSession = await tx.academicSession.create({
+      data: {
+        schoolId: school.id,
+        name: `2026/2027 E2E Session ${suffix}`,
+        startsAt: new Date("2026-09-01T00:00:00.000Z"),
+        endsAt: new Date("2027-07-31T00:00:00.000Z"),
+      },
+    });
+
+    const academicTerm = await tx.academicTerm.create({
+      data: {
+        name: "First Term",
+        order: 1,
+        startsAt: new Date("2026-09-01T00:00:00.000Z"),
+        endsAt: new Date("2026-12-18T00:00:00.000Z"),
+        academicSessionId: academicSession.id,
+      },
+    });
+
+    const classLevel = await tx.classLevel.create({
+      data: { schoolId: school.id, name: "JSS 1", order: 1 },
+    });
+
+    const classArm = await tx.classArm.create({
+      data: { classLevelId: classLevel.id, name: "A" },
+    });
+
+    const subject = await tx.subject.create({
+      data: { schoolId: school.id, name: "Mathematics", code: `MATH-${suffix}` },
+    });
+
+    await tx.classSubject.create({
+      data: {
+        academicSessionId: academicSession.id,
+        classArmId: classArm.id,
+        subjectId: subject.id,
+      },
+    });
+
+    await tx.teacherAssignment.create({
+      data: {
+        schoolId: school.id,
+        membershipId: teacherMembership.id,
+        academicSessionId: academicSession.id,
+        academicTermId: academicTerm.id,
+        classArmId: classArm.id,
+        subjectId: subject.id,
+      },
+    });
+
     return {
       teacherId: teacher.id,
       schoolId: school.id,
@@ -241,6 +291,10 @@ test.describe("school workspace context", () => {
     await expect(
       page.getByText("Teacher access", { exact: true }),
     ).toBeVisible();
+
+    await expect(page.getByText("Teaching assignments", { exact: true })).toBeVisible();
+    await expect(page.getByText(/JSS 1 A · Mathematics/)).toBeVisible();
+    await expect(page.getByText(/First Term/)).toBeVisible();
 
     await expect(
       page.getByText("Students →", { exact: true }),
