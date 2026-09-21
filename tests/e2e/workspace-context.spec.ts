@@ -372,6 +372,9 @@ test.describe("school workspace context", () => {
     ]);
 
     await page.goto(`/app/schools/${fixture.schoolId}/settings`);
+    page.on("dialog", async (dialog) => {
+      await dialog.accept();
+    });
 
     await expect(page.getByRole("heading", { name: "Teacher assignments" })).toBeVisible();
     const assignmentRow = page.locator('[data-testid^="teacher-assignment-row-"]').first();
