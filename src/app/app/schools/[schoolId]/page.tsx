@@ -9,7 +9,7 @@ export default async function SchoolWorkspacePage({ params }: { params: Promise<
   const session = await currentSession();
   if (!session) redirect("/login");
   const { schoolId } = await params;
-  const membership = await db.membership.findFirst({ where: { userId: session.user.id, schoolId, status: "ACTIVE" }, select: { id: true, isOwner: true, school: { select: { id: true, name: true, status: true, setupStatus: true } }, capabilities: { select: { capability: { select: { code: true } } } } } });
+  const membership = await db.membership.findFirst({ where: { userId: session.user.id, schoolId, status: "ACTIVE" }, select: { id: true, isOwner: true, relationship: true, school: { select: { id: true, name: true, status: true, setupStatus: true } }, capabilities: { select: { capability: { select: { code: true } } } } } });
   if (!membership) redirect("/app");
 
   const capabilitySet = new Set(membership.capabilities.map(({ capability }) => capability.code));
