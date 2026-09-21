@@ -6,6 +6,7 @@ export default async function TeacherWorkspacePage({ schoolId, schoolName, capab
   schoolName: string;
   capabilities: Set<string>;
   enabledModules: Set<string>;
+  assignments: Array<{ id: string; academicSession: { name: string }; academicTerm: { name: string }; classArm: { name: string; classLevel: { name: string } }; subject: { name: string } }>;
 }) {
   const has = (code: string) => capabilities.has(code);
   const links = [
@@ -27,6 +28,15 @@ export default async function TeacherWorkspacePage({ schoolId, schoolName, capab
             <strong>Teacher access</strong>
             <div style={{ marginTop: 6, color: "#53615a" }}>Only tools enabled for your current access are shown here.</div>
           </div>
+          <section style={{ marginTop: 24 }}>
+            <h2 style={{ margin: "0 0 12px", fontSize: 20 }}>Teaching assignments</h2>
+            {assignments.length ? assignments.map((assignment) => (
+              <div key={assignment.id} style={assignmentCard}>
+                <strong>{assignment.classArm.classLevel.name} {assignment.classArm.name} · {assignment.subject.name}</strong>
+                <p style={sub}>{assignment.academicSession.name} · {assignment.academicTerm.name}</p>
+              </div>
+            )) : <div style={emptyCard}>No active teaching assignments have been assigned to you yet.</div>}
+          </section>
           {links.map(([label, href, description]) => (
             <Link key={href} href={href} style={cardLink}><strong>{label} →</strong><p style={sub}>{description}</p></Link>
           ))}
@@ -39,3 +49,5 @@ export default async function TeacherWorkspacePage({ schoolId, schoolName, capab
 
 const cardLink = { display: "block", marginTop: 16, padding: 20, borderRadius: 14, background: "#f3f7f4", color: "inherit", textDecoration: "none" };
 const sub = { margin: "6px 0 0", color: "#53615a" };
+const assignmentCard = { marginTop: 10, padding: 16, borderRadius: 12, border: "1px solid #e0e6e2", background: "#fff" };
+const emptyCard = { padding: 16, borderRadius: 12, background: "#f3f7f4", color: "#53615a" };
