@@ -151,6 +151,7 @@ async function seedTeacherScenario() {
     });
 
     return {
+      ownerId: owner.id,
       teacherId: teacher.id,
       schoolId: school.id,
     };
@@ -337,4 +338,63 @@ test.describe("school workspace context", () => {
       page.getByText("Students →", { exact: true }),
     ).toBeVisible();
   });
+
+  test("owner can create and end a teacher assignment from school settings", async ({ page }) => {
+    const fixture = await seedTeacherScenario();
+    const sessionToken = await createBrowserSession(fixture.ownerId);
+
+    await page.context().addCookies([
+      {
+        name: "gb_school_session",
+        value: sessionToken,
+        url: "http://127.0.0.1:3000",
+        httpOnly: true,
+        sameSite: "Lax",
+      },
+    ]);
+
+    await page.goto(`/app/schools/${fixture.schoolId}/settings`);
+
+    await expect(page.getByRole("heading", { name: "Teacher assignments" })).toBeVisible();
+    await expect(page.getByText(/JSS 1 A · Mathematics/)).toBeVisible();
+
+    await page.getByRole("button", { name: "End assignment" }).click();
+    await expect(page.getByRole("status")).toHaveText("Teacher assignment ended.");
+    await expect(page.getByText("No active assignments.")).toBeVisible();
+
+    const ended = await db.teacherAssignment.findFirst({
+      where: { schoolId: fixture.schoolId },
+      orderBy: { createdAt: "desc" },
+      select: { status: true, endedAt: true, id: true },
+    });
+    expect(ended?.status).toBe("ENDED");
+    expect(ended?.endedAt).not.toBeNull();
+
+    const audit = await db.auditEvent.findFirst({
+      where: { schoolId: fixture.schoolId, action: "teacher.assignment.ended", entityId: ended?.id },
+      select: { actorUserId: true, action: true },
+    });
+    expect(audit?.actorUserId).toBe(fixture.ownerId);
+    expect(audit?.action).toBe("teacher.assignment.ended");
+  });
+
+  test("teacher cannot use owner teacher-assignment management API", async ({ page }) => {
+    const fixture = await seedTeacherScenario();
+    const sessionToken = await createBrowserSession(fixture.teacherId);
+
+    await page.context().addCookies([
+      {
+        name: "gb_school_session",
+        value: sessionToken,
+        url: "http://127.0.0.1:3000",
+        httpOnly: true,
+        sameSite: "Lax",
+      },
+    ]);
+
+    const response = await page.request.get(`/api/schools/${fixture.schoolId}/teacher-assignments`);
+    expect(response.status()).toBe(403);
+    await expect(page.getByText("")).toHaveCount(0);
+  });
+
 });
