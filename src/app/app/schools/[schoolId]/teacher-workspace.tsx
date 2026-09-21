@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CAPABILITIES } from "@/domain/auth/capabilities";
 
-export default async function TeacherWorkspacePage({ schoolId, schoolName, capabilities, enabledModules }: {
+export default async function TeacherWorkspacePage({ schoolId, schoolName, capabilities, enabledModules, assignments }: {
   schoolId: string;
   schoolName: string;
   capabilities: Set<string>;
