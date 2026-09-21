@@ -356,11 +356,14 @@ test.describe("school workspace context", () => {
     await page.goto(`/app/schools/${fixture.schoolId}/settings`);
 
     await expect(page.getByRole("heading", { name: "Teacher assignments" })).toBeVisible();
-    await expect(page.getByText(/JSS 1 A · Mathematics/)).toBeVisible();
+    const assignmentRow = page.locator('[data-testid^="teacher-assignment-row-"]').first();
+    await expect(assignmentRow).toBeVisible();
+    await expect(assignmentRow).toContainText("JSS 1 A");
+    await expect(assignmentRow).toContainText("Mathematics");
 
-    await page.getByRole("button", { name: "End assignment" }).click();
+    await assignmentRow.getByRole("button", { name: "End assignment" }).click();
     await expect(page.getByRole("status")).toHaveText("Teacher assignment ended.");
-    await expect(page.getByText("No active assignments.")).toBeVisible();
+    await expect(page.locator('[data-testid^="teacher-assignment-row-"]')).toHaveCount(0);
 
     await page.getByLabel("Teacher").selectOption({ label: /e2e-teacher-/ });
     await page.getByLabel("Academic session").selectOption({ label: /2026\/2027 E2E Session/ });
