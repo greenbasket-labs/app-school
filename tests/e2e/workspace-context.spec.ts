@@ -431,7 +431,7 @@ test.describe("school workspace context", () => {
     await page.goto(`/app/schools/${fixture.schoolId}/settings`);
     page.on("dialog", async (dialog) => { await dialog.accept(); });
 
-    await expect(page.getByRole("heading", { name: "Class teacher responsibilities" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Class teacher responsibilities", exact: true })).toBeVisible();
     await page.getByLabel("Teacher").last().selectOption({ index: 1 });
     await page.getByLabel("Academic session").last().selectOption({ index: 1 });
     await page.getByLabel("Academic term").last().selectOption({ label: "First Term" });
