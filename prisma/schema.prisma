@@ -219,6 +219,7 @@ model AcademicTerm {
   academicSession AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Restrict)
   assessments AssessmentDefinition[]
   feeStructures FeeStructure[]
+  teacherAssignments TeacherAssignment[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
   @@unique([academicSessionId, order])
@@ -249,6 +250,7 @@ model ClassArm {
   enrollments Enrollment[]
   attendanceRecords AttendanceRecord[]
   assessments AssessmentDefinition[]
+  teacherAssignments TeacherAssignment[]
   assessmentScores AssessmentScore[]
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
