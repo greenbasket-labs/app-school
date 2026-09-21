@@ -120,7 +120,7 @@ export default function TeacherAssignmentsSettings({ schoolId, canManage }: { sc
     <h2 style={{ margin: 0 }}>Teacher assignments</h2>
     <p style={sub}>Assign a teacher to a class, subject and academic term. Assignments are school-controlled and remain auditable when ended.</p>
 
-    {message && <div role="status" style={success}>{message}</div>}
+    {message && <div role="status" aria-live="polite" style={success}>{message}</div>}
     {error && <div role="alert" style={errorBox}>{error}</div>}
 
     <div style={{ marginTop: 18, display: "grid", gap: 10 }}>
