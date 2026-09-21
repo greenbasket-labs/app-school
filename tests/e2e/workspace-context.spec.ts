@@ -80,8 +80,6 @@ async function seedTeacherScenario() {
     return {
       teacherId: teacher.id,
       schoolId: school.id,
-      ownerId: owner.id,
-      organizationId: organization.id,
     };
   });
 }
@@ -112,6 +110,22 @@ test.describe("school workspace context", () => {
     const organizationIds = schools.map((school) => school.organizationId);
 
     if (schoolIds.length) {
+      const joinRequests = await db.schoolJoinRequest.findMany({
+        where: { schoolId: { in: schoolIds } },
+        select: { id: true },
+      });
+      const joinRequestIds = joinRequests.map((request) => request.id);
+
+      if (joinRequestIds.length) {
+        await db.schoolJoinRequest.deleteMany({
+          where: { id: { in: joinRequestIds } },
+        });
+      }
+
+      await db.auditEvent.deleteMany({
+        where: { schoolId: { in: schoolIds } },
+      });
+
       const memberships = await db.membership.findMany({
         where: { schoolId: { in: schoolIds } },
         select: { id: true, userId: true },
@@ -124,6 +138,11 @@ test.describe("school workspace context", () => {
         await db.membershipCapability.deleteMany({
           where: { membershipId: { in: membershipIds } },
         });
+
+        await db.notificationPreference.deleteMany({
+          where: { membershipId: { in: membershipIds } },
+        });
+
         await db.membership.deleteMany({
           where: { id: { in: membershipIds } },
         });
@@ -133,6 +152,11 @@ test.describe("school workspace context", () => {
         await db.userSession.deleteMany({
           where: { userId: { in: userIds } },
         });
+
+        await db.auditEvent.deleteMany({
+          where: { actorUserId: { in: userIds } },
+        });
+
         await db.user.deleteMany({
           where: { id: { in: userIds } },
         });
